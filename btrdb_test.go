@@ -70,17 +70,24 @@ func TestSimpleInsert(t *testing.T) {
 	expstatistical[1] = &StatisticalValue{Time: 4, Count: 2, Min: 2.5, Mean: 5.0, Max: 7.5}
 	expstatistical[2] = &StatisticalValue{Time: 12, Count: 2, Min: 6.0, Mean: 7.0, Max: 8.0}
 	
+	var expwindow []*StatisticalValue = make([]*StatisticalValue, 3)
+	expwindow[0] = &StatisticalValue{Time: 0, Count: 2, Min: 2.0, Mean: 4.75, Max: 7.5}
+	expwindow[1] = &StatisticalValue{Time: 5, Count: 1, Min: 2.5, Mean: 2.5, Max: 2.5}
+	expwindow[2] = &StatisticalValue{Time: 10, Count: 1, Min: 8.0, Mean: 8.0, Max: 8.0}
+	
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
 		t.Fatal(err)
 	}
 	
+	/* Insert Points */
 	asyncerr, err = bc.InsertValues(uuid, points, true)
 	strerr = <- asyncerr
 	if err != nil || "ok" != strerr {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
 	}
 	
+	/* Statistical Values Query */
 	svchan, _, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +122,33 @@ func TestSimpleInsert(t *testing.T) {
 		if stv == nil {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if stv.Time != expstatistical[i].Time || stv.Count != expstatistical[i].Count || stv.Min != expstatistical[i].Min || !floatEquals(stv.Mean, expstatistical[i].Mean) || stv.Max != expstatistical[i].Max {
-			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max=%v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
+			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max d= %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
+		}
+	}
+	
+	stv = <- stvchan
+	if sv != nil {
+		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
+	
+	/* Window Values Query */
+	stvchan, _, asyncerr, err = bc.QueryWindowValues(uuid, 0, 16, 5, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	for i = range expwindow {
+		stv = <- stvchan
+		if stv == nil {
+			t.Fatalf("Got nil point at index %d", i)
+		} else if stv.Time != expwindow[i].Time || stv.Count != expwindow[i].Count || stv.Min != expwindow[i].Min || !floatEquals(stv.Mean, expwindow[i].Mean) || stv.Max != expwindow[i].Max {
+			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max = %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
 		}
 	}
 	
