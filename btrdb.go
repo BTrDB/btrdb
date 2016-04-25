@@ -432,6 +432,79 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	return rv, versionchan, asyncerr, nil
 }
 
+func (bc *BTrDBConnection) QueryVersion(uuids []*uuid.UUID) (chan uint64, chan string, error) {
+	var err error
+	var et uint64 = bc.newEchoTag()
+	var numrecs int = len(uuids)
+	
+	var seg *capnp.Segment = capnp.NewBuffer(nil)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryVersion = cpint.NewCmdQueryVersion(seg)
+	var dataList capnp.DataList = seg.NewDataList(numrecs)
+	
+	var segments *infchan
+	var rv chan uint64
+	var asyncerr chan string
+	
+	var i int
+	
+	req.SetQueryVersion(query)
+	req.SetEchoTag(et)
+	
+	for i = 0; i < numrecs; i++ {
+		dataList.Set(i, *uuids[i])
+	}
+	query.SetUuids(dataList)
+	
+	segments = newInfChan()
+	bc.outstandinglock.Lock()
+	bc.outstanding[et] = segments
+	bc.outstandinglock.Unlock()
+	
+	bc.connsendlock.Lock()
+	_, err = seg.WriteTo(bc.conn)
+	bc.connsendlock.Unlock()
+	
+	if err != nil {
+		bc.outstandinglock.Lock()
+		delete(bc.outstanding, et)
+		bc.outstandinglock.Unlock()
+		return nil, nil, err
+	}
+	
+	rv = make(chan uint64)
+	asyncerr = make(chan string, 1)
+	
+	go func () {
+		defer close(rv)
+		defer close(asyncerr)
+		
+		for {
+			var rawvalue interface{} = segments.dequeue()
+			if rawvalue == nil {
+				return
+			}
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
+				asyncerr <- stat.String()
+				return
+			}
+			var records cpint.Versions = response.VersionList()
+			
+			var recordlist capnp.UInt64List = records.Versions()
+			var length int = recordlist.Len()
+			var i int
+			
+			for i = 0; i < length; i++ {
+				rv <- recordlist.At(i)
+			}
+		}
+	}()
+	
+	return rv, asyncerr, nil
+}
+
 func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan *TimeRange, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()

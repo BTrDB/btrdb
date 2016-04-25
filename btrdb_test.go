@@ -47,11 +47,12 @@ func TestBadStream(t *testing.T) {
 }
 
 func TestSimpleInsert(t *testing.T) {
-	var uuid uuid.UUID = uuid.NewRandom()
+	var myuuid uuid.UUID = uuid.NewRandom()
 	var err error
 	var bc *BTrDBConnection
 	var oldversion uint64
 	var newversion uint64
+	var version uint64
 	var versionchan chan uint64
 	var sv *StandardValue
 	var svchan chan *StandardValue
@@ -80,20 +81,23 @@ func TestSimpleInsert(t *testing.T) {
 	expwindow[1] = &StatisticalValue{Time: 5, Count: 1, Min: 2.5, Mean: 2.5, Max: 2.5}
 	expwindow[2] = &StatisticalValue{Time: 10, Count: 1, Min: 8.0, Mean: 8.0, Max: 8.0}
 	
+	var uuidslice []*uuid.UUID = make([]*uuid.UUID, 1)
+	uuidslice[0] = &myuuid
+	
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
 		t.Fatal(err)
 	}
 	
 	/* Insert Points */
-	asyncerr, err = bc.InsertValues(uuid, points, true)
+	asyncerr, err = bc.InsertValues(myuuid, points, true)
 	strerr = <- asyncerr
 	if err != nil || "ok" != strerr {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
 	}
 	
 	/* Standard Values Query */
-	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
+	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,8 +118,29 @@ func TestSimpleInsert(t *testing.T) {
 	
 	oldversion = <- versionchan
 	
+	/* Version Query, I */
+	versionchan, asyncerr, err = bc.QueryVersion(uuidslice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	version = <- versionchan
+	if version != oldversion {
+		t.Fatalf("Version query result (%v) does not match version number from previous query (%v)", version, oldversion)
+	}
+	
+	version = <- versionchan
+	if version != 0 {
+		t.Fatalf("Got extra version (%v)", version)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
 	/* Nearest Value Query */
-	svchan, _, asyncerr, err = bc.QueryNearestValue(uuid, 12, true, 0)
+	svchan, _, asyncerr, err = bc.QueryNearestValue(myuuid, 12, true, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +163,7 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Statistical Values Query */
-	stvchan, _, asyncerr, err = bc.QueryStatisticalValues(uuid, 0, 16, 2, 0)
+	stvchan, _, asyncerr, err = bc.QueryStatisticalValues(myuuid, 0, 16, 2, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +189,7 @@ func TestSimpleInsert(t *testing.T) {
 	
 	
 	/* Window Values Query */
-	stvchan, _, asyncerr, err = bc.QueryWindowValues(uuid, 0, 16, 5, 0, 0)
+	stvchan, _, asyncerr, err = bc.QueryWindowValues(myuuid, 0, 16, 5, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +214,7 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Delete Values */
-	asyncerr, err = bc.DeleteValues(uuid, 2, 8)
+	asyncerr, err = bc.DeleteValues(myuuid, 2, 8)
 	strerr = <- asyncerr
 	if err != nil || "ok" != strerr {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
@@ -200,7 +225,7 @@ func TestSimpleInsert(t *testing.T) {
 	points = points[:3]
 	
 	/* Standard Values Query (To Verify Deletion) */
-	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
+	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,8 +255,29 @@ func TestSimpleInsert(t *testing.T) {
 		t.Fatalf("New version (%v) is less recent than the old version (%v)", newversion, oldversion)
 	}
 	
+	/* Version Query, II */
+	versionchan, asyncerr, err = bc.QueryVersion(uuidslice)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	version = <- versionchan
+	if version != newversion {
+		t.Fatalf("Version query result (%v) does not match version number from previous query (%v)", version, newversion)
+	}
+	
+	version = <- versionchan
+	if version != 0 {
+		t.Fatalf("Got extra version (%v)", version)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
 	/* Changed Ranges Query, I */
-	trchan, _, asyncerr, err = bc.QueryChangedRanges(uuid, newversion, 0, 0)
+	trchan, _, asyncerr, err = bc.QueryChangedRanges(myuuid, newversion, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +294,7 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Changed Ranges Query, II */
-	trchan, _, asyncerr, err = bc.QueryChangedRanges(uuid, oldversion, newversion, 0)
+	trchan, _, asyncerr, err = bc.QueryChangedRanges(myuuid, oldversion, newversion, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
