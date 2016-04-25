@@ -17,12 +17,12 @@ func TestBadStream(t *testing.T) {
 	var uuid uuid.UUID = uuid.NewRandom()
 	var err error
 	var bc *BTrDBConnection
-	var sv *StandardValue
-	var svchan chan *StandardValue
+	var svchan chan StandardValue
 	var version uint64
 	var versionchan chan uint64
 	var asyncerr chan string
 	var strerr string
+	var ok bool
 	
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
@@ -34,9 +34,9 @@ func TestBadStream(t *testing.T) {
 	}
 	
 	version = <- versionchan
-	sv = <- svchan
+	_, ok = <- svchan
 	
-	if version != 0 || sv != nil {
+	if version != 0 || ok {
 		t.Fatal("Got something")
 	}
 	
@@ -54,35 +54,36 @@ func TestSimpleInsert(t *testing.T) {
 	var newversion uint64
 	var version uint64
 	var versionchan chan uint64
-	var sv *StandardValue
-	var svchan chan *StandardValue
-	var stv *StatisticalValue
-	var stvchan chan *StatisticalValue
-	var tr *TimeRange
-	var trchan chan *TimeRange
+	var sv StandardValue
+	var svchan chan StandardValue
+	var stv StatisticalValue
+	var stvchan chan StatisticalValue
+	var tr TimeRange
+	var trchan chan TimeRange
 	var asyncerr chan string
 	var strerr string
 	var i int
+	var ok bool
 	
-	var points []*StandardValue = make([]*StandardValue, 5)
-	points[0] = &StandardValue{Time: 1, Value: 2.0}
-	points[1] = &StandardValue{Time: 4, Value: 7.5}
-	points[2] = &StandardValue{Time: 6, Value: 2.5}
-	points[3] = &StandardValue{Time: 13, Value: 8.0}
-	points[4] = &StandardValue{Time: 15, Value: 6.0}
+	var points []StandardValue = make([]StandardValue, 5)
+	points[0] = StandardValue{Time: 1, Value: 2.0}
+	points[1] = StandardValue{Time: 4, Value: 7.5}
+	points[2] = StandardValue{Time: 6, Value: 2.5}
+	points[3] = StandardValue{Time: 13, Value: 8.0}
+	points[4] = StandardValue{Time: 15, Value: 6.0}
 	
-	var expstatistical []*StatisticalValue = make([]*StatisticalValue, 3)
-	expstatistical[0] = &StatisticalValue{Time: 0, Count: 1, Min: 2.0, Mean: 2.0, Max: 2.0}
-	expstatistical[1] = &StatisticalValue{Time: 4, Count: 2, Min: 2.5, Mean: 5.0, Max: 7.5}
-	expstatistical[2] = &StatisticalValue{Time: 12, Count: 2, Min: 6.0, Mean: 7.0, Max: 8.0}
+	var expstatistical []StatisticalValue = make([]StatisticalValue, 3)
+	expstatistical[0] = StatisticalValue{Time: 0, Count: 1, Min: 2.0, Mean: 2.0, Max: 2.0}
+	expstatistical[1] = StatisticalValue{Time: 4, Count: 2, Min: 2.5, Mean: 5.0, Max: 7.5}
+	expstatistical[2] = StatisticalValue{Time: 12, Count: 2, Min: 6.0, Mean: 7.0, Max: 8.0}
 	
-	var expwindow []*StatisticalValue = make([]*StatisticalValue, 3)
-	expwindow[0] = &StatisticalValue{Time: 0, Count: 2, Min: 2.0, Mean: 4.75, Max: 7.5}
-	expwindow[1] = &StatisticalValue{Time: 5, Count: 1, Min: 2.5, Mean: 2.5, Max: 2.5}
-	expwindow[2] = &StatisticalValue{Time: 10, Count: 1, Min: 8.0, Mean: 8.0, Max: 8.0}
+	var expwindow []StatisticalValue = make([]StatisticalValue, 3)
+	expwindow[0] = StatisticalValue{Time: 0, Count: 2, Min: 2.0, Mean: 4.75, Max: 7.5}
+	expwindow[1] = StatisticalValue{Time: 5, Count: 1, Min: 2.5, Mean: 2.5, Max: 2.5}
+	expwindow[2] = StatisticalValue{Time: 10, Count: 1, Min: 8.0, Mean: 8.0, Max: 8.0}
 	
-	var uuidslice []*uuid.UUID = make([]*uuid.UUID, 1)
-	uuidslice[0] = &myuuid
+	var uuidslice []uuid.UUID = make([]uuid.UUID, 1)
+	uuidslice[0] = myuuid
 	
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
@@ -103,16 +104,16 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	for i = range points {
-		sv = <- svchan
-		if sv == nil {
+		sv, ok = <- svchan
+		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
 			t.Fatalf("Got incorrect point (%v, %v) at index %d", sv.Time, sv.Value, i)
 		}
 	}
 	
-	sv = <- svchan
-	if sv != nil {
+	sv, ok = <- svchan
+	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
 	
@@ -145,15 +146,15 @@ func TestSimpleInsert(t *testing.T) {
 		t.Fatal(err)
 	}
 	
-	sv = <- svchan
-	if sv == nil {
+	sv, ok = <- svchan
+	if !ok {
 		t.Fatal("Got nil point for nearest point")
 	} else if sv.Time != points[2].Time || sv.Value != points[2].Value {
 		t.Fatalf("Got incorrect nearest point (%v, %v)", sv.Time, sv.Value)
 	}
 	
-	sv = <- svchan
-	if sv != nil {
+	sv, ok = <- svchan
+	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
 	
@@ -169,17 +170,17 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	for i = range expstatistical {
-		stv = <- stvchan
-		if stv == nil {
+		stv, ok = <- stvchan
+		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if stv.Time != expstatistical[i].Time || stv.Count != expstatistical[i].Count || stv.Min != expstatistical[i].Min || !floatEquals(stv.Mean, expstatistical[i].Mean) || stv.Max != expstatistical[i].Max {
 			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max d= %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
 		}
 	}
 	
-	stv = <- stvchan
-	if sv != nil {
-		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	stv, ok = <- stvchan
+	if ok {
+		t.Fatalf("Got extra point (time = %v, count = %v, min = %v, mean = %v, max d= %v)", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max)
 	}
 	
 	strerr = <- asyncerr
@@ -189,23 +190,23 @@ func TestSimpleInsert(t *testing.T) {
 	
 	
 	/* Window Values Query */
-	stvchan, _, asyncerr, err = bc.QueryWindowValues(myuuid, 0, 16, 5, 0, 0)
+	stvchan, _, asyncerr, err = bc.QueryWindowValues(myuuid, 0, 14, 5, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	
 	for i = range expwindow {
-		stv = <- stvchan
-		if stv == nil {
+		stv, ok = <- stvchan
+		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if stv.Time != expwindow[i].Time || stv.Count != expwindow[i].Count || stv.Min != expwindow[i].Min || !floatEquals(stv.Mean, expwindow[i].Mean) || stv.Max != expwindow[i].Max {
 			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max = %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
 		}
 	}
 	
-	stv = <- stvchan
-	if sv != nil {
-		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	stv, ok = <- stvchan
+	if ok {
+		t.Fatalf("Got extra point (time = %v, count = %v, min = %v, mean = %v, max d= %v)", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max)
 	}
 	
 	strerr = <- asyncerr
@@ -231,16 +232,16 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	for i = range points {
-		sv = <- svchan
-		if sv == nil {
+		sv, ok = <- svchan
+		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
 			t.Fatalf("Got incorrect point (%v, %v) at index %d", sv.Time, sv.Value, i)
 		}
 	}
 	
-	sv = <- svchan
-	if sv != nil {
+	sv, ok = <- svchan
+	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
 	
@@ -283,8 +284,8 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Should get back nothing since both ranges are the same. */
-	tr = <- trchan
-	if tr != nil {
+	tr, ok = <- trchan
+	if ok {
 		t.Fatalf("Got extra changed range [%v, %v]", tr.StartTime, tr.EndTime)
 	}
 	
@@ -300,15 +301,15 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Should get back one changed range. */
-	tr = <- trchan
-	if tr == nil {
+	tr, ok = <- trchan
+	if !ok {
 		t.Fatal("Got nil point for changed range")
 	} else if tr.StartTime > 4 || tr.EndTime < 6 {
 		t.Fatalf("Got incorrect changed range [%v, %v]", tr.StartTime, tr.EndTime)
 	}
 	
-	tr = <- trchan
-	if tr != nil {
+	tr, ok = <- trchan
+	if ok {
 		t.Fatalf("Got extra changed range (%v, %v)", tr.StartTime, tr.EndTime)
 	}
 	

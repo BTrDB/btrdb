@@ -158,7 +158,7 @@ type TimeRange struct {
 	EndTime int64
 }
 
-func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []*StandardValue, sync bool) (chan string, error) {
+func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, sync bool) (chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	var numrecs int = len(points)
@@ -275,7 +275,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	return asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan *StandardValue, chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	
@@ -284,7 +284,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	var query cpint.CmdQueryStandardValues = cpint.NewCmdQueryStandardValues(seg)
 	
 	var segments *infchan
-	var rv chan *StandardValue
+	var rv chan StandardValue
 	var versionchan chan uint64
 	var asyncerr chan string
 	var sentversion bool
@@ -313,7 +313,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 		return nil, nil, nil, err
 	}
 	
-	rv = make(chan *StandardValue)
+	rv = make(chan StandardValue)
 	versionchan = make(chan uint64, 1)
 	asyncerr = make(chan string, 1)
 	sentversion = false
@@ -351,7 +351,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 			
 			for i = 0; i < length; i++ {
 				var record cpint.Record = recordlist.At(i)
-				rv <- &StandardValue{Time: record.Time(), Value: record.Value()}
+				rv <- StandardValue{Time: record.Time(), Value: record.Value()}
 			}
 		}
 	}()
@@ -359,7 +359,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	return rv, versionchan, asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan *StandardValue, chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	
@@ -368,7 +368,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	var query cpint.CmdQueryNearestValue = cpint.NewCmdQueryNearestValue(seg)
 	
 	var segments *infchan
-	var rv chan *StandardValue
+	var rv chan StandardValue
 	var versionchan chan uint64
 	var asyncerr chan string
 	var sentversion bool
@@ -397,7 +397,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 		return nil, nil, nil, err
 	}
 	
-	rv = make(chan *StandardValue)
+	rv = make(chan StandardValue)
 	versionchan = make(chan uint64, 1)
 	asyncerr = make(chan string, 1)
 	sentversion = false
@@ -435,7 +435,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 			
 			for i = 0; i < length; i++ {
 				var record cpint.Record = recordlist.At(i)
-				rv <- &StandardValue{Time: record.Time(), Value: record.Value()}
+				rv <- StandardValue{Time: record.Time(), Value: record.Value()}
 			}
 		}
 	}()
@@ -443,7 +443,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	return rv, versionchan, asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryVersion(uuids []*uuid.UUID) (chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	var numrecs int = len(uuids)
@@ -463,7 +463,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []*uuid.UUID) (chan uint64, chan s
 	req.SetEchoTag(et)
 	
 	for i = 0; i < numrecs; i++ {
-		dataList.Set(i, *uuids[i])
+		dataList.Set(i, uuids[i])
 	}
 	query.SetUuids(dataList)
 	
@@ -516,7 +516,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []*uuid.UUID) (chan uint64, chan s
 	return rv, asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan *TimeRange, chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan TimeRange, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	
@@ -525,7 +525,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	var query cpint.CmdQueryChangedRanges = cpint.NewCmdQueryChangedRanges(seg)
 	
 	var segments *infchan
-	var rv chan *TimeRange
+	var rv chan TimeRange
 	var versionchan chan uint64
 	var asyncerr chan string
 	var sentversion bool
@@ -554,7 +554,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 		return nil, nil, nil, err
 	}
 	
-	rv = make(chan *TimeRange)
+	rv = make(chan TimeRange)
 	versionchan = make(chan uint64, 1)
 	asyncerr = make(chan string, 1)
 	sentversion = false
@@ -592,7 +592,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 			
 			for i = 0; i < length; i++ {
 				var record cpint.ChangedRange = recordlist.At(i)
-				rv <- &TimeRange{StartTime: record.StartTime(), EndTime: record.EndTime()}
+				rv <- TimeRange{StartTime: record.StartTime(), EndTime: record.EndTime()}
 			}
 		}
 	}()
@@ -600,7 +600,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	return rv, versionchan, asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan *StatisticalValue, chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	
@@ -609,7 +609,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	var query cpint.CmdQueryStatisticalValues = cpint.NewCmdQueryStatisticalValues(seg)
 	
 	var segments *infchan
-	var rv chan *StatisticalValue
+	var rv chan StatisticalValue
 	var versionchan chan uint64
 	var asyncerr chan string
 	var sentversion bool
@@ -639,7 +639,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 		return nil, nil, nil, err
 	}
 	
-	rv = make(chan *StatisticalValue)
+	rv = make(chan StatisticalValue)
 	versionchan = make(chan uint64, 1)
 	asyncerr = make(chan string, 1)
 	sentversion = false
@@ -677,7 +677,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 			
 			for i = 0; i < length; i++ {
 				var record cpint.StatisticalRecord = recordlist.At(i)
-				rv <- &StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
+				rv <- StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
 			}
 		}
 	}()
@@ -685,7 +685,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	return rv, versionchan, asyncerr, nil
 }
 
-func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, end_time int64, width uint64, depth uint8, version uint64) (chan *StatisticalValue, chan uint64, chan string, error) {
+func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, end_time int64, width uint64, depth uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
 	
@@ -694,7 +694,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 	var query cpint.CmdQueryWindowValues = cpint.NewCmdQueryWindowValues(seg)
 	
 	var segments *infchan
-	var rv chan *StatisticalValue
+	var rv chan StatisticalValue
 	var versionchan chan uint64
 	var asyncerr chan string
 	var sentversion bool
@@ -725,7 +725,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 		return nil, nil, nil, err
 	}
 	
-	rv = make(chan *StatisticalValue)
+	rv = make(chan StatisticalValue)
 	versionchan = make(chan uint64, 1)
 	asyncerr = make(chan string, 1)
 	sentversion = false
@@ -763,7 +763,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 			
 			for i = 0; i < length; i++ {
 				var record cpint.StatisticalRecord = recordlist.At(i)
-				rv <- &StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
+				rv <- StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
 			}
 		}
 	}()
