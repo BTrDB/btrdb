@@ -87,7 +87,7 @@ func TestSimpleInsert(t *testing.T) {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
 	}
 	
-	/* Statistical Values Query */
+	/* Standard Values Query */
 	svchan, _, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -112,6 +112,7 @@ func TestSimpleInsert(t *testing.T) {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
 	
+	/* Statistical Values Query */
 	stvchan, _, asyncerr, err = bc.QueryStatisticalValues(uuid, 0, 16, 2, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -153,6 +154,42 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	stv = <- stvchan
+	if sv != nil {
+		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
+	/* Delete Values */
+	asyncerr, err = bc.DeleteValues(uuid, 2, 8)
+	strerr = <- asyncerr
+	if err != nil || "ok" != strerr {
+		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
+	}
+	
+	points[1] = points[3]
+	points[2] = points[4]
+	points = points[:3]
+	
+	/* Standard Values Query (To Verify Deletion) */
+	svchan, _, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	for i = range points {
+		sv = <- svchan
+		if sv == nil {
+			t.Fatalf("Got nil point at index %d", i)
+		} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
+			t.Fatalf("Got incorrect point (%v, %v) at index %d", sv.Time, sv.Value, i)
+		}
+	}
+	
+	sv = <- svchan
 	if sv != nil {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}

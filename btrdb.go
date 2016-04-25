@@ -206,6 +206,59 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []*StandardValue,
 	return asyncerr, nil
 }
 
+func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_time int64) (chan string, error) {
+	var err error
+	var et uint64 = bc.newEchoTag()
+	
+	var seg *capnp.Segment = capnp.NewBuffer(nil)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdDeleteValues = cpint.NewCmdDeleteValues(seg)
+	
+	var segments *infchan
+	var asyncerr chan string
+	
+	req.SetDeleteValues(query)
+	req.SetEchoTag(et)
+	
+	query.SetUuid(uuid)
+	query.SetStartTime(start_time)
+	query.SetEndTime(end_time)
+	
+	segments = newInfChan()
+	bc.outstandinglock.Lock()
+	bc.outstanding[et] = segments
+	bc.outstandinglock.Unlock()
+	
+	bc.connsendlock.Lock()
+	_, err = seg.WriteTo(bc.conn)
+	bc.connsendlock.Unlock()
+	
+	if err != nil {
+		bc.outstandinglock.Lock()
+		delete(bc.outstanding, et)
+		bc.outstandinglock.Unlock()
+		return nil, err
+	}
+	
+	asyncerr = make(chan string)
+	
+	go func () {
+		defer close(asyncerr)
+		
+		for {
+			var rawvalue interface{} = segments.dequeue()
+			if rawvalue == nil {
+				return
+			}
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			asyncerr <- stat.String()
+		}
+	}()
+	
+	return asyncerr, nil
+}
+
 func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan *StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
