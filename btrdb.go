@@ -73,6 +73,8 @@ type BTrDBConnection struct {
 	
 	outstanding map[uint64]*infchan
 	outstandinglock *sync.RWMutex
+	
+	open bool
 }
 
 func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
@@ -91,6 +93,8 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		
 		outstanding: make(map[uint64]*infchan),
 		outstandinglock: &sync.RWMutex{},
+		
+		open: true,
 	}
 	
 	go func() {
@@ -102,7 +106,9 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		for {
 			recvSeg, e = capnp.ReadFromStream(conn, nil)
 			if e != nil {
-				fmt.Printf("Could not read response from BTrDB: %v\n", e)
+				if bc.open {
+					fmt.Printf("Could not read response from BTrDB: %v\n", e)
+				}
 				return
 			}
 			response = cpint.ReadRootResponse(recvSeg)
@@ -127,6 +133,11 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 
 func (bc *BTrDBConnection) newEchoTag() uint64 {
 	return atomic.AddUint64(&bc.echotag, 1)
+}
+
+func (bc *BTrDBConnection) Close() error {
+	bc.open = false
+	return bc.conn.Close()
 }
 
 type StandardValue struct {

@@ -316,4 +316,9 @@ func TestSimpleInsert(t *testing.T) {
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
+	
+	err = bc.Close()
+	if err != nil {
+		t.Fatalf("Error while closing: %v", err)
+	}
 }
