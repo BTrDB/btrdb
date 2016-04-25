@@ -50,10 +50,15 @@ func TestSimpleInsert(t *testing.T) {
 	var uuid uuid.UUID = uuid.NewRandom()
 	var err error
 	var bc *BTrDBConnection
+	var oldversion uint64
+	var newversion uint64
+	var versionchan chan uint64
 	var sv *StandardValue
 	var svchan chan *StandardValue
 	var stv *StatisticalValue
 	var stvchan chan *StatisticalValue
+	var tr *TimeRange
+	var trchan chan *TimeRange
 	var asyncerr chan string
 	var strerr string
 	var i int
@@ -88,7 +93,7 @@ func TestSimpleInsert(t *testing.T) {
 	}
 	
 	/* Standard Values Query */
-	svchan, _, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
+	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,6 +111,8 @@ func TestSimpleInsert(t *testing.T) {
 	if sv != nil {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
+	
+	oldversion = <- versionchan
 	
 	/* Nearest Value Query */
 	svchan, _, asyncerr, err = bc.QueryNearestValue(uuid, 12, true, 0)
@@ -193,7 +200,7 @@ func TestSimpleInsert(t *testing.T) {
 	points = points[:3]
 	
 	/* Standard Values Query (To Verify Deletion) */
-	svchan, _, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
+	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(uuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,6 +217,53 @@ func TestSimpleInsert(t *testing.T) {
 	sv = <- svchan
 	if sv != nil {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
+	newversion = <- versionchan
+	
+	if newversion <= oldversion {
+		t.Fatalf("New version (%v) is less recent than the old version (%v)", newversion, oldversion)
+	}
+	
+	/* Changed Ranges Query, I */
+	trchan, _, asyncerr, err = bc.QueryChangedRanges(uuid, newversion, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	/* Should get back nothing since both ranges are the same. */
+	tr = <- trchan
+	if tr != nil {
+		t.Fatalf("Got extra changed range [%v, %v]", tr.StartTime, tr.EndTime)
+	}
+	
+	strerr = <- asyncerr
+	if "" != strerr {
+		t.Fatalf("Got unexpected error (got %s)", strerr)
+	}
+	
+	/* Changed Ranges Query, II */
+	trchan, _, asyncerr, err = bc.QueryChangedRanges(uuid, oldversion, newversion, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	/* Should get back one changed range. */
+	tr = <- trchan
+	if tr == nil {
+		t.Fatal("Got nil point for changed range")
+	} else if tr.StartTime > 4 || tr.EndTime < 6 {
+		t.Fatalf("Got incorrect changed range [%v, %v]", tr.StartTime, tr.EndTime)
+	}
+	
+	tr = <- trchan
+	if tr != nil {
+		t.Fatalf("Got extra changed range (%v, %v)", tr.StartTime, tr.EndTime)
 	}
 	
 	strerr = <- asyncerr

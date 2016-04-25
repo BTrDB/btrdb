@@ -142,6 +142,11 @@ type StatisticalValue struct {
 	Max float64
 }
 
+type TimeRange struct {
+	StartTime int64
+	EndTime int64
+}
+
 func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []*StandardValue, sync bool) (chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -420,6 +425,90 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 			for i = 0; i < length; i++ {
 				var record cpint.Record = recordlist.At(i)
 				rv <- &StandardValue{Time: record.Time(), Value: record.Value()}
+			}
+		}
+	}()
+	
+	return rv, versionchan, asyncerr, nil
+}
+
+func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan *TimeRange, chan uint64, chan string, error) {
+	var err error
+	var et uint64 = bc.newEchoTag()
+	
+	var seg *capnp.Segment = capnp.NewBuffer(nil)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryChangedRanges = cpint.NewCmdQueryChangedRanges(seg)
+	
+	var segments *infchan
+	var rv chan *TimeRange
+	var versionchan chan uint64
+	var asyncerr chan string
+	var sentversion bool
+	
+	req.SetQueryChangedRanges(query)
+	req.SetEchoTag(et)
+	
+	query.SetUuid(uuid)
+	query.SetFromGeneration(from_generation)
+	query.SetToGeneration(to_generation)
+	query.SetResolution(resolution)
+	
+	segments = newInfChan()
+	bc.outstandinglock.Lock()
+	bc.outstanding[et] = segments
+	bc.outstandinglock.Unlock()
+	
+	bc.connsendlock.Lock()
+	_, err = seg.WriteTo(bc.conn)
+	bc.connsendlock.Unlock()
+	
+	if err != nil {
+		bc.outstandinglock.Lock()
+		delete(bc.outstanding, et)
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err
+	}
+	
+	rv = make(chan *TimeRange)
+	versionchan = make(chan uint64, 1)
+	asyncerr = make(chan string, 1)
+	sentversion = false
+	
+	go func () {
+		defer close(rv)
+		defer close(asyncerr)
+		defer func() {
+			if !sentversion {
+				close(versionchan)
+			}
+		}()
+		
+		for {
+			var rawvalue interface{} = segments.dequeue()
+			if rawvalue == nil {
+				return
+			}
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
+				asyncerr <- stat.String()
+				return
+			}
+			var records cpint.Ranges = response.ChangedRngList()
+			if !sentversion {
+				versionchan <- records.Version()
+				close(versionchan)
+				sentversion = true
+			}
+			
+			var recordlist cpint.ChangedRange_List = records.Values()
+			var length int = recordlist.Len()
+			var i int
+			
+			for i = 0; i < length; i++ {
+				var record cpint.ChangedRange = recordlist.At(i)
+				rv <- &TimeRange{StartTime: record.StartTime(), EndTime: record.EndTime()}
 			}
 		}
 	}()
