@@ -343,6 +343,90 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	return rv, versionchan, asyncerr, nil
 }
 
+func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan *StandardValue, chan uint64, chan string, error) {
+	var err error
+	var et uint64 = bc.newEchoTag()
+	
+	var seg *capnp.Segment = capnp.NewBuffer(nil)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryNearestValue = cpint.NewCmdQueryNearestValue(seg)
+	
+	var segments *infchan
+	var rv chan *StandardValue
+	var versionchan chan uint64
+	var asyncerr chan string
+	var sentversion bool
+	
+	req.SetQueryNearestValue(query)
+	req.SetEchoTag(et)
+	
+	query.SetVersion(version)
+	query.SetUuid(uuid)
+	query.SetTime(time)
+	query.SetBackward(backward)
+	
+	segments = newInfChan()
+	bc.outstandinglock.Lock()
+	bc.outstanding[et] = segments
+	bc.outstandinglock.Unlock()
+	
+	bc.connsendlock.Lock()
+	_, err = seg.WriteTo(bc.conn)
+	bc.connsendlock.Unlock()
+	
+	if err != nil {
+		bc.outstandinglock.Lock()
+		delete(bc.outstanding, et)
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err
+	}
+	
+	rv = make(chan *StandardValue)
+	versionchan = make(chan uint64, 1)
+	asyncerr = make(chan string, 1)
+	sentversion = false
+	
+	go func () {
+		defer close(rv)
+		defer close(asyncerr)
+		defer func() {
+			if !sentversion {
+				close(versionchan)
+			}
+		}()
+		
+		for {
+			var rawvalue interface{} = segments.dequeue()
+			if rawvalue == nil {
+				return
+			}
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
+				asyncerr <- stat.String()
+				return
+			}
+			var records cpint.Records = response.Records()
+			if !sentversion {
+				versionchan <- records.Version()
+				close(versionchan)
+				sentversion = true
+			}
+			
+			var recordlist cpint.Record_List = records.Values()
+			var length int = recordlist.Len()
+			var i int
+			
+			for i = 0; i < length; i++ {
+				var record cpint.Record = recordlist.At(i)
+				rv <- &StandardValue{Time: record.Time(), Value: record.Value()}
+			}
+		}
+	}()
+	
+	return rv, versionchan, asyncerr, nil
+}
+
 func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan *StatisticalValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()

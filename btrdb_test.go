@@ -107,6 +107,24 @@ func TestSimpleInsert(t *testing.T) {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
 	
+	/* Nearest Value Query */
+	svchan, _, asyncerr, err = bc.QueryNearestValue(uuid, 12, true, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	sv = <- svchan
+	if sv == nil {
+		t.Fatal("Got nil point for nearest point")
+	} else if sv.Time != points[2].Time || sv.Value != points[2].Value {
+		t.Fatalf("Got incorrect nearest point (%v, %v)", sv.Time, sv.Value)
+	}
+	
+	sv = <- svchan
+	if sv != nil {
+		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
+	}
+	
 	strerr = <- asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
