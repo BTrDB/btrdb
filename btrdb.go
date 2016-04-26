@@ -1,3 +1,16 @@
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 package btrdb
 
 import (
@@ -66,6 +79,8 @@ func (infc *infchan) close() {
 	infc.lock.Unlock()
 }
 
+// BTrDBConnection abstracts a single connection to a BTrDB. A single
+// BTrDBConnection support multiple concurrent requests to BTrDB.
 type BTrDBConnection struct {
 	echotag uint64
 	conn net.Conn
@@ -77,6 +92,8 @@ type BTrDBConnection struct {
 	open bool
 }
 
+// Creates a connection to the BTrDB at the provided address, and returns a
+// BTrDBConnection to represent it.
 func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 	var conn net.Conn
 	var err error
@@ -135,16 +152,21 @@ func (bc *BTrDBConnection) newEchoTag() uint64 {
 	return atomic.AddUint64(&bc.echotag, 1)
 }
 
+// Releases the resources associated with this BTrDBConnection. It is undefined
+// behavior to call this while there are outstanding requests on the
+// connection.
 func (bc *BTrDBConnection) Close() error {
 	bc.open = false
 	return bc.conn.Close()
 }
 
+// Represents a single data point.
 type StandardValue struct {
 	Time int64
 	Value float64
 }
 
+// Represents statistics over a range of data.
 type StatisticalValue struct {
 	Time int64
 	Count uint64
@@ -153,11 +175,23 @@ type StatisticalValue struct {
 	Max float64
 }
 
+// Represents an interval of time that is closed on the start and open on the
+// end. In other words, represents [StartTime, EndTime).
 type TimeRange struct {
 	StartTime int64
 	EndTime int64
 }
 
+// Inserts the points specified in the points slice into the stream
+// corresponding to the specified UUID. If the sync parameter is true, then
+// the BTrDB will commit the points to disk, before sending an acknowledgment;
+// otherwise, it will return an acknowledgment and an OK will be received
+// immediately, but the data will not be immediately queryable.
+//
+// Returns a channel with the status code of the operation, and an error in
+// case the request could not be sent. When the acknowledgment is received from
+// the BTrDB, the status code will appear on the channel as a string; 'ok' is
+// the value corresponding to success.
 func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, sync bool) (chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -222,6 +256,9 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 	return asyncerr, nil
 }
 
+// Delete values from the specified stream in the specified time range.
+//
+// Return values are the same as in InsertValues.
 func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_time int64) (chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -275,6 +312,17 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	return asyncerr, nil
 }
 
+// Makes a Standard Values Query for data in the specified stream, at the
+// specified version, in the specified time range. A version number of 0
+// means to use the latest version of the stream.
+//
+// Returns three channels and an error. The first channel contains the points
+// satisfying the query. The second channel contains a single value, which is
+// the version of the stream used to satisfy the query. In case BTrDB returns
+// an error code, the third channel will contain a string describing the
+// error (if the operation completes successfully, nothing is sent on this
+// channel). The fourth value returned is an error, used if the request cannot
+// be sent to the database.
 func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -359,6 +407,12 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	return rv, versionchan, asyncerr, nil
 }
 
+// Makes a Nearest Value Query for the nearest point in the specified stream,
+// at the specified version, nearest to the specified time, in the specified
+// direction. A version number of 0 means to use the latest version of the
+// stream.
+//
+// Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -443,6 +497,15 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	return rv, versionchan, asyncerr, nil
 }
 
+// Makes a Version Query for the version corresponding to each of the streams
+// specified by the provided UUIDs.
+//
+// Returns two channels and an error. The first channel contains the version
+// numbers of the streams, in the same order as they were queried. In case
+// BTrDB returns an error code, the third channel will contain a string
+// describing the error (if the operation completes successfully, nothing is
+// sent on this channel). The fourth value returned is an error, used if the
+// request cannot be sent to the database.
 func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -516,6 +579,11 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 	return rv, asyncerr, nil
 }
 
+// Makes a Changed Ranges Query for ranges of time at the specified resolution
+// that correspond to data that changed between the specified versions in the
+// specified stream.
+//
+// Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan TimeRange, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -600,6 +668,19 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	return rv, versionchan, asyncerr, nil
 }
 
+// Makes a Statistical Values Query. Data in the specified stream, at the
+// specified version, in the specified time range, is broken up into time
+// intervals, each 1 << point_width nanoseconds in size. For each time
+// interval, a statistical aggregate of the data in the interval is generated
+// containing the number of data points in the interval, and the minimum, mean,
+// and maximum values of data in the interval. A version number of 0 means to
+// use the latest version of the stream.
+//
+// Should the start and end times not line up with the sizes of the intervals,
+// they are rounded down before making the query. The point_width parameter
+// must be an integer in the interval [0, 62].
+//
+// Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
@@ -685,6 +766,21 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	return rv, versionchan, asyncerr, nil
 }
 
+// Makes a Statistical Values Query. Data in the specified stream, at the
+// specified version, in the specified time range, is broken up into time
+// intervals, of the specified width, in nanoseconds. For each time interval, a
+// statistical aggregate of the data in the interval is generated containing
+// the number of data points in the interval, and the minimum, mean, and
+// maximum values of data in the interval. The endpoints of the intervals are
+// precise up to 1 << depth nanoseconds; the query is more performant for
+// larger values of depth. A version number of 0 means to use the latest
+// version of the stream.
+//
+// Should the start and end times not line up with the sizes of the intervals,
+// they are rounded down before making the query. The depth parameter must
+// be an integer in the interval [0, 62].
+//
+// Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, end_time int64, width uint64, depth uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
