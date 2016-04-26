@@ -93,7 +93,7 @@ type BTrDBConnection struct {
 }
 
 // Creates a connection to the BTrDB at the provided address, and returns a
-// BTrDBConnection to represent it.
+// BTrDBConnection to represent the connection.
 func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 	var conn net.Conn
 	var err error
