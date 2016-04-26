@@ -78,12 +78,13 @@ func TestSimpleInsert(t *testing.T) {
 	var i int
 	var ok bool
 	
-	var points []StandardValue = make([]StandardValue, 5)
-	points[0] = StandardValue{Time: 1, Value: 2.0}
-	points[1] = StandardValue{Time: 4, Value: 7.5}
-	points[2] = StandardValue{Time: 6, Value: 2.5}
-	points[3] = StandardValue{Time: 13, Value: 8.0}
-	points[4] = StandardValue{Time: 15, Value: 6.0}
+	var points []StandardValue = []StandardValue{
+		StandardValue{Time: 1, Value: 2.0},
+		StandardValue{Time: 4, Value: 7.5},
+		StandardValue{Time: 6, Value: 2.5},
+		StandardValue{Time: 13, Value: 8.0},
+		StandardValue{Time: 15, Value: 6.0},
+	}
 	
 	var expstatistical []StatisticalValue = make([]StatisticalValue, 3)
 	expstatistical[0] = StatisticalValue{Time: 0, Count: 1, Min: 2.0, Mean: 2.0, Max: 2.0}

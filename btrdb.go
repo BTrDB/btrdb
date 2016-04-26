@@ -11,6 +11,73 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+// Package btrdb implements bindings to interface with a running instance of
+// the Berkeley Tree Database (BTrDB).
+//
+// The main abstraction provided is a BTrDBConnection, which represents a
+// single connection to a BTrDB.
+//
+// Example usage:
+//  var myuuid uuid.UUID
+//  var err error
+//	var bc *BTrDBConnection
+//  var version uint64
+//  var versionchan chan uint64
+//  var svchan chan StandardValue
+//  var sv StandardValue
+//  var points []StandardValue
+//  var statcode chan string
+//  var strstatcode string
+//  var asyncerr chan string
+//  var i int
+//  var ok bool
+//
+//  bc, err = NewBTrDBConnection("localhost:4410")
+//  if err != nil {
+//  	/* Fatal error */
+//  }
+//
+//  /* UUID of the stream into which to insert/query */
+//  myuuid = uuid.NewRandom()
+//
+//  /* Points to insert */ 
+//  var points []StandardValue = []StandardValue{
+//  	StandardValue{Time: 1, Value: 2.0},
+//  	StandardValue{Time: 4, Value: 7.5},
+//  	StandardValue{Time: 6, Value: 2.5},
+//  	StandardValue{Time: 13, Value: 8.0},
+//  	StandardValue{Time: 15, Value: 6.0},
+//  }
+//
+//  /* Insert */
+//  statcode, err = bc.InsertValues(myuuid, points, true)
+//  strstatcode = <- statcode
+//  if err != nil || "ok" != strstatcode {
+//  	/* Error */
+//  }
+//
+//  /* Standard Values Query */
+//  svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
+//  if err != nil {
+//  	/* Error */
+//  }
+//  
+//  for i = range points {
+//  sv, ok = <- svchan
+//  	if !ok {
+//  		/* Missing a Point */
+//  	} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
+//  		/* Got Incorrect Point */
+//  	}
+//  }
+//
+//  sv, ok = <- svchan
+//  if ok {
+//  	/* Got Extra Point */
+//  }
+//
+//  /* Get the version used to satisfy the query */
+//  version = <- versionchan
 package btrdb
 
 import (
@@ -80,7 +147,7 @@ func (infc *infchan) close() {
 }
 
 // BTrDBConnection abstracts a single connection to a BTrDB. A single
-// BTrDBConnection support multiple concurrent requests to BTrDB.
+// BTrDBConnection supports multiple concurrent requests to BTrDB.
 type BTrDBConnection struct {
 	echotag uint64
 	conn net.Conn
@@ -319,10 +386,11 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 // Returns three channels and an error. The first channel contains the points
 // satisfying the query. The second channel contains a single value, which is
 // the version of the stream used to satisfy the query. In case BTrDB returns
-// an error code, the third channel will contain a string describing the
-// error (if the operation completes successfully, nothing is sent on this
-// channel). The fourth value returned is an error, used if the request cannot
-// be sent to the database.
+// an error code, the third channel will contain a string describing the error.
+// If the operation completes successfully, nothing is sent on this channel; it
+// remains open until all points are consumed from the first channel. The
+// fourth value returned is an error, used if the request cannot be sent to the
+// database.
 func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	var err error
 	var et uint64 = bc.newEchoTag()
