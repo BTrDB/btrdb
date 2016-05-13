@@ -86,7 +86,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
-	cpint "github.com/SoftwareDefinedBuildings/btrdb/cpinterface"
+	cpint "github.com/SoftwareDefinedBuildings/btrdb-go/btrdbcpint"
 	capnp "github.com/glycerine/go-capnproto"
 	uuid "github.com/pborman/uuid"
 )
