@@ -18,21 +18,25 @@
 // single connection to a BTrDB.
 //
 // Example usage:
+//  import (
+//  	btrdb "github.com/SoftwareDefinedBuildings/btrdb-go"
+//  	uuid "github.com/pborman/uuid
+//  )
+//
 //  var myuuid uuid.UUID
 //  var err error
-//	var bc *BTrDBConnection
+//  var bc *btrdb.BTrDBConnection
 //  var version uint64
 //  var versionchan chan uint64
-//  var svchan chan StandardValue
-//  var sv StandardValue
-//  var points []StandardValue
+//  var svchan chan btrdb.StandardValue
+//  var sv btrdb.StandardValue
+//  var points []btrdb.StandardValue
 //  var statcode chan string
 //  var strstatcode string
 //  var asyncerr chan string
 //  var i int
-//  var ok bool
 //
-//  bc, err = NewBTrDBConnection("localhost:4410")
+//  bc, err = btrdb.NewBTrDBConnection("localhost:4410")
 //  if err != nil {
 //  	/* Fatal error */
 //  }
@@ -40,8 +44,8 @@
 //  /* UUID of the stream into which to insert/query */
 //  myuuid = uuid.NewRandom()
 //
-//  /* Points to insert */ 
-//  var points []StandardValue = []StandardValue{
+//  /* Points to insert */
+//  var points []btrdb.StandardValue = []btrdb.StandardValue{
 //  	StandardValue{Time: 1, Value: 2.0},
 //  	StandardValue{Time: 4, Value: 7.5},
 //  	StandardValue{Time: 6, Value: 2.5},
@@ -61,19 +65,9 @@
 //  if err != nil {
 //  	/* Error */
 //  }
-//  
-//  for i = range points {
-//  sv, ok = <- svchan
-//  	if !ok {
-//  		/* Missing a Point */
-//  	} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
-//  		/* Got Incorrect Point */
-//  	}
-//  }
 //
-//  sv, ok = <- svchan
-//  if ok {
-//  	/* Got Extra Point */
+//  for sv = range svchan {
+//  	/* Handle Point */
 //  }
 //
 //  /* Get the version used to satisfy the query */
