@@ -20,7 +20,7 @@
 // Example usage:
 //  var myuuid uuid.UUID
 //  var err error
-//  var bc *BTrDBConnection
+//	var bc *BTrDBConnection
 //  var version uint64
 //  var versionchan chan uint64
 //  var svchan chan StandardValue
@@ -86,6 +86,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	cpint "github.com/SoftwareDefinedBuildings/btrdb/cpinterface"
 	capnp "github.com/glycerine/go-capnproto"
 	uuid "github.com/pborman/uuid"
 )
@@ -183,7 +184,7 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 	go func() {
 		var recvSeg *capnp.Segment
 		var e error
-		var response Response
+		var response cpint.Response
 		var respchan *infchan
 		var et uint64
 		for {
@@ -194,7 +195,7 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 				}
 				return
 			}
-			response = ReadRootResponse(recvSeg)
+			response = cpint.ReadRootResponse(recvSeg)
 			et = response.EchoTag()
 			bc.outstandinglock.RLock()
 			respchan = bc.outstanding[et]
@@ -264,11 +265,11 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 	var numrecs int = len(points)
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdInsertValues = NewCmdInsertValues(seg)
-	var recList Record_List = NewRecordList(seg, numrecs)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdInsertValues = cpint.NewCmdInsertValues(seg)
+	var recList cpint.Record_List = cpint.NewRecordList(seg, numrecs)
 	var pointList capnp.PointerList = capnp.PointerList(recList)
-	var record Record = NewRecord(seg)
+	var record cpint.Record = cpint.NewRecord(seg)
 	
 	var segments *infchan
 	var asyncerr chan string
@@ -313,8 +314,8 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
 		}
 	}()
@@ -330,8 +331,8 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdDeleteValues = NewCmdDeleteValues(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdDeleteValues = cpint.NewCmdDeleteValues(seg)
 	
 	var segments *infchan
 	var asyncerr chan string
@@ -369,8 +370,8 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
 		}
 	}()
@@ -395,8 +396,8 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryStandardValues = NewCmdQueryStandardValues(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryStandardValues = cpint.NewCmdQueryStandardValues(seg)
 	
 	var segments *infchan
 	var rv chan StandardValue
@@ -447,25 +448,25 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records Records = response.Records()
+			var records cpint.Records = response.Records()
 			if !sentversion {
 				versionchan <- records.Version()
 				close(versionchan)
 				sentversion = true
 			}
 			
-			var recordlist Record_List = records.Values()
+			var recordlist cpint.Record_List = records.Values()
 			var length int = recordlist.Len()
 			var i int
 			
 			for i = 0; i < length; i++ {
-				var record Record = recordlist.At(i)
+				var record cpint.Record = recordlist.At(i)
 				rv <- StandardValue{Time: record.Time(), Value: record.Value()}
 			}
 		}
@@ -485,8 +486,8 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryNearestValue = NewCmdQueryNearestValue(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryNearestValue = cpint.NewCmdQueryNearestValue(seg)
 	
 	var segments *infchan
 	var rv chan StandardValue
@@ -537,25 +538,25 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records Records = response.Records()
+			var records cpint.Records = response.Records()
 			if !sentversion {
 				versionchan <- records.Version()
 				close(versionchan)
 				sentversion = true
 			}
 			
-			var recordlist Record_List = records.Values()
+			var recordlist cpint.Record_List = records.Values()
 			var length int = recordlist.Len()
 			var i int
 			
 			for i = 0; i < length; i++ {
-				var record Record = recordlist.At(i)
+				var record cpint.Record = recordlist.At(i)
 				rv <- StandardValue{Time: record.Time(), Value: record.Value()}
 			}
 		}
@@ -579,8 +580,8 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 	var numrecs int = len(uuids)
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryVersion = NewCmdQueryVersion(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryVersion = cpint.NewCmdQueryVersion(seg)
 	var dataList capnp.DataList = seg.NewDataList(numrecs)
 	
 	var segments *infchan
@@ -625,13 +626,13 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records Versions = response.VersionList()
+			var records cpint.Versions = response.VersionList()
 			
 			var recordlist capnp.UInt64List = records.Versions()
 			var length int = recordlist.Len()
@@ -656,8 +657,8 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryChangedRanges = NewCmdQueryChangedRanges(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryChangedRanges = cpint.NewCmdQueryChangedRanges(seg)
 	
 	var segments *infchan
 	var rv chan TimeRange
@@ -708,25 +709,25 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records Ranges = response.ChangedRngList()
+			var records cpint.Ranges = response.ChangedRngList()
 			if !sentversion {
 				versionchan <- records.Version()
 				close(versionchan)
 				sentversion = true
 			}
 			
-			var recordlist ChangedRange_List = records.Values()
+			var recordlist cpint.ChangedRange_List = records.Values()
 			var length int = recordlist.Len()
 			var i int
 			
 			for i = 0; i < length; i++ {
-				var record ChangedRange = recordlist.At(i)
+				var record cpint.ChangedRange = recordlist.At(i)
 				rv <- TimeRange{StartTime: record.StartTime(), EndTime: record.EndTime()}
 			}
 		}
@@ -753,8 +754,8 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryStatisticalValues = NewCmdQueryStatisticalValues(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryStatisticalValues = cpint.NewCmdQueryStatisticalValues(seg)
 	
 	var segments *infchan
 	var rv chan StatisticalValue
@@ -806,25 +807,25 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records StatisticalRecords = response.StatisticalRecords()
+			var records cpint.StatisticalRecords = response.StatisticalRecords()
 			if !sentversion {
 				versionchan <- records.Version()
 				close(versionchan)
 				sentversion = true
 			}
 			
-			var recordlist StatisticalRecord_List = records.Values()
+			var recordlist cpint.StatisticalRecord_List = records.Values()
 			var length int = recordlist.Len()
 			var i int
 			
 			for i = 0; i < length; i++ {
-				var record StatisticalRecord = recordlist.At(i)
+				var record cpint.StatisticalRecord = recordlist.At(i)
 				rv <- StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
 			}
 		}
@@ -853,8 +854,8 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 	var et uint64 = bc.newEchoTag()
 	
 	var seg *capnp.Segment = capnp.NewBuffer(nil)
-	var req Request = NewRootRequest(seg)
-	var query CmdQueryWindowValues = NewCmdQueryWindowValues(seg)
+	var req cpint.Request = cpint.NewRootRequest(seg)
+	var query cpint.CmdQueryWindowValues = cpint.NewCmdQueryWindowValues(seg)
 	
 	var segments *infchan
 	var rv chan StatisticalValue
@@ -907,25 +908,25 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 			if rawvalue == nil {
 				return
 			}
-			var response Response = rawvalue.(Response)
-			var stat StatusCode = response.StatusCode()
-			if stat != STATUSCODE_OK {
+			var response cpint.Response = rawvalue.(cpint.Response)
+			var stat cpint.StatusCode = response.StatusCode()
+			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
 				return
 			}
-			var records StatisticalRecords = response.StatisticalRecords()
+			var records cpint.StatisticalRecords = response.StatisticalRecords()
 			if !sentversion {
 				versionchan <- records.Version()
 				close(versionchan)
 				sentversion = true
 			}
 			
-			var recordlist StatisticalRecord_List = records.Values()
+			var recordlist cpint.StatisticalRecord_List = records.Values()
 			var length int = recordlist.Len()
 			var i int
 			
 			for i = 0; i < length; i++ {
-				var record StatisticalRecord = recordlist.At(i)
+				var record cpint.StatisticalRecord = recordlist.At(i)
 				rv <- StatisticalValue{Time: record.Time(), Count: record.Count(), Min: record.Min(), Mean: record.Mean(), Max: record.Max()}
 			}
 		}
