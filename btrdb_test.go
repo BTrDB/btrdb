@@ -1,29 +1,40 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Copyright (c) 2016 Sam Kumar <samkumar@berkeley.edu>
+// Copyright (c) 2016 Michael P Andersen <m.andersen@berkeley.edu>
+// All rights reserved.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
 //
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package btrdb
 
 import (
 	"math"
 	"testing"
-	
+
 	uuid "github.com/pborman/uuid"
 )
 
 var dbaddr string = "localhost:4410"
 
 func floatEquals(x float64, y float64) bool {
-	return math.Abs(x - y) < 1e-10 * math.Max(math.Abs(x), math.Abs(y))
+	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
 func TestBadStream(t *testing.T) {
@@ -36,7 +47,7 @@ func TestBadStream(t *testing.T) {
 	var asyncerr chan string
 	var strerr string
 	var ok bool
-	
+
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
 		t.Fatal(err)
@@ -45,15 +56,15 @@ func TestBadStream(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	version = <- versionchan
-	_, ok = <- svchan
-	
+
+	version = <-versionchan
+	_, ok = <-svchan
+
 	if version != 0 || ok {
 		t.Fatal("Got something")
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "internalError" != strerr {
 		t.Fatalf("Did not get expected error (got %s)", strerr)
 	}
@@ -77,7 +88,7 @@ func TestSimpleInsert(t *testing.T) {
 	var strerr string
 	var i int
 	var ok bool
-	
+
 	var points []StandardValue = []StandardValue{
 		StandardValue{Time: 1, Value: 2.0},
 		StandardValue{Time: 4, Value: 7.5},
@@ -85,253 +96,252 @@ func TestSimpleInsert(t *testing.T) {
 		StandardValue{Time: 13, Value: 8.0},
 		StandardValue{Time: 15, Value: 6.0},
 	}
-	
+
 	var expstatistical []StatisticalValue = make([]StatisticalValue, 3)
 	expstatistical[0] = StatisticalValue{Time: 0, Count: 1, Min: 2.0, Mean: 2.0, Max: 2.0}
 	expstatistical[1] = StatisticalValue{Time: 4, Count: 2, Min: 2.5, Mean: 5.0, Max: 7.5}
 	expstatistical[2] = StatisticalValue{Time: 12, Count: 2, Min: 6.0, Mean: 7.0, Max: 8.0}
-	
+
 	var expwindow []StatisticalValue = make([]StatisticalValue, 3)
 	expwindow[0] = StatisticalValue{Time: 0, Count: 2, Min: 2.0, Mean: 4.75, Max: 7.5}
 	expwindow[1] = StatisticalValue{Time: 5, Count: 1, Min: 2.5, Mean: 2.5, Max: 2.5}
 	expwindow[2] = StatisticalValue{Time: 10, Count: 1, Min: 8.0, Mean: 8.0, Max: 8.0}
-	
+
 	var uuidslice []uuid.UUID = make([]uuid.UUID, 1)
 	uuidslice[0] = myuuid
-	
+
 	bc, err = NewBTrDBConnection(dbaddr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	/* Insert Points */
 	asyncerr, err = bc.InsertValues(myuuid, points, true)
-	strerr = <- asyncerr
+	strerr = <-asyncerr
 	if err != nil || "ok" != strerr {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
 	}
-	
+
 	/* Standard Values Query */
 	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	for i = range points {
-		sv, ok = <- svchan
+		sv, ok = <-svchan
 		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
 			t.Fatalf("Got incorrect point (%v, %v) at index %d", sv.Time, sv.Value, i)
 		}
 	}
-	
-	sv, ok = <- svchan
+
+	sv, ok = <-svchan
 	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
-	
-	oldversion = <- versionchan
-	
+
+	oldversion = <-versionchan
+
 	/* Version Query, I */
 	versionchan, asyncerr, err = bc.QueryVersion(uuidslice)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	version = <- versionchan
+
+	version = <-versionchan
 	if version != oldversion {
 		t.Fatalf("Version query result (%v) does not match version number from previous query (%v)", version, oldversion)
 	}
-	
-	version = <- versionchan
+
+	version = <-versionchan
 	if version != 0 {
 		t.Fatalf("Got extra version (%v)", version)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	/* Nearest Value Query */
 	svchan, _, asyncerr, err = bc.QueryNearestValue(myuuid, 12, true, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	sv, ok = <- svchan
+
+	sv, ok = <-svchan
 	if !ok {
 		t.Fatal("Got nil point for nearest point")
 	} else if sv.Time != points[2].Time || sv.Value != points[2].Value {
 		t.Fatalf("Got incorrect nearest point (%v, %v)", sv.Time, sv.Value)
 	}
-	
-	sv, ok = <- svchan
+
+	sv, ok = <-svchan
 	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	/* Statistical Values Query */
 	stvchan, _, asyncerr, err = bc.QueryStatisticalValues(myuuid, 0, 16, 2, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	for i = range expstatistical {
-		stv, ok = <- stvchan
+		stv, ok = <-stvchan
 		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if stv.Time != expstatistical[i].Time || stv.Count != expstatistical[i].Count || stv.Min != expstatistical[i].Min || !floatEquals(stv.Mean, expstatistical[i].Mean) || stv.Max != expstatistical[i].Max {
 			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max d= %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
 		}
 	}
-	
-	stv, ok = <- stvchan
+
+	stv, ok = <-stvchan
 	if ok {
 		t.Fatalf("Got extra point (time = %v, count = %v, min = %v, mean = %v, max d= %v)", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
-	
+
 	/* Window Values Query */
 	stvchan, _, asyncerr, err = bc.QueryWindowValues(myuuid, 0, 14, 5, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	for i = range expwindow {
-		stv, ok = <- stvchan
+		stv, ok = <-stvchan
 		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if stv.Time != expwindow[i].Time || stv.Count != expwindow[i].Count || stv.Min != expwindow[i].Min || !floatEquals(stv.Mean, expwindow[i].Mean) || stv.Max != expwindow[i].Max {
 			t.Fatalf("Got incorrect point (time = %v, count = %v, min = %v, mean = %v, max = %v) at index %d", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max, i)
 		}
 	}
-	
-	stv, ok = <- stvchan
+
+	stv, ok = <-stvchan
 	if ok {
 		t.Fatalf("Got extra point (time = %v, count = %v, min = %v, mean = %v, max d= %v)", stv.Time, stv.Count, stv.Min, stv.Mean, stv.Max)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	/* Delete Values */
 	asyncerr, err = bc.DeleteValues(myuuid, 2, 8)
-	strerr = <- asyncerr
+	strerr = <-asyncerr
 	if err != nil || "ok" != strerr {
 		t.Fatalf("Got unexpected error (%v, %s)", err, strerr)
 	}
-	
+
 	points[1] = points[3]
 	points[2] = points[4]
 	points = points[:3]
-	
+
 	/* Standard Values Query (To Verify Deletion) */
 	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	for i = range points {
-		sv, ok = <- svchan
+		sv, ok = <-svchan
 		if !ok {
 			t.Fatalf("Got nil point at index %d", i)
 		} else if sv.Time != points[i].Time || sv.Value != points[i].Value {
 			t.Fatalf("Got incorrect point (%v, %v) at index %d", sv.Time, sv.Value, i)
 		}
 	}
-	
-	sv, ok = <- svchan
+
+	sv, ok = <-svchan
 	if ok {
 		t.Fatalf("Got extra point (%v, %v)", sv.Time, sv.Value)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
-	newversion = <- versionchan
-	
+
+	newversion = <-versionchan
+
 	if newversion <= oldversion {
 		t.Fatalf("New version (%v) is less recent than the old version (%v)", newversion, oldversion)
 	}
-	
+
 	/* Version Query, II */
 	versionchan, asyncerr, err = bc.QueryVersion(uuidslice)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
-	version = <- versionchan
+
+	version = <-versionchan
 	if version != newversion {
 		t.Fatalf("Version query result (%v) does not match version number from previous query (%v)", version, newversion)
 	}
-	
-	version = <- versionchan
+
+	version = <-versionchan
 	if version != 0 {
 		t.Fatalf("Got extra version (%v)", version)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	/* Changed Ranges Query, I */
 	trchan, _, asyncerr, err = bc.QueryChangedRanges(myuuid, newversion, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	/* Should get back nothing since both ranges are the same. */
-	tr, ok = <- trchan
+	tr, ok = <-trchan
 	if ok {
 		t.Fatalf("Got extra changed range [%v, %v]", tr.StartTime, tr.EndTime)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	/* Changed Ranges Query, II */
 	trchan, _, asyncerr, err = bc.QueryChangedRanges(myuuid, oldversion, newversion, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	/* Should get back one changed range. */
-	tr, ok = <- trchan
+	tr, ok = <-trchan
 	if !ok {
 		t.Fatal("Got nil point for changed range")
 	} else if tr.StartTime > 4 || tr.EndTime < 6 {
 		t.Fatalf("Got incorrect changed range [%v, %v]", tr.StartTime, tr.EndTime)
 	}
-	
-	tr, ok = <- trchan
+
+	tr, ok = <-trchan
 	if ok {
 		t.Fatalf("Got extra changed range (%v, %v)", tr.StartTime, tr.EndTime)
 	}
-	
-	strerr = <- asyncerr
+
+	strerr = <-asyncerr
 	if "" != strerr {
 		t.Fatalf("Got unexpected error (got %s)", strerr)
 	}
-	
+
 	err = bc.Close()
 	if err != nil {
 		t.Fatalf("Error while closing: %v", err)
