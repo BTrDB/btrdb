@@ -31,58 +31,59 @@
 // Example usage:
 //  import (
 //  	btrdb "github.com/SoftwareDefinedBuildings/btrdb-go"
-//  	uuid "github.com/pborman/uuid
+//  	uuid "github.com/pborman/uuid"
 //  )
 //
-//  var myuuid uuid.UUID
-//  var err error
-//  var bc *btrdb.BTrDBConnection
-//  var version uint64
-//  var versionchan chan uint64
-//  var svchan chan btrdb.StandardValue
-//  var sv btrdb.StandardValue
-//  var points []btrdb.StandardValue
-//  var statcode chan string
-//  var strstatcode string
-//  var asyncerr chan string
-//  var i int
+//  func main() {
+//  	var myuuid uuid.UUID
+//  	var err error
+//  	var bc *btrdb.BTrDBConnection
+//  	var version uint64
+//  	var versionchan chan uint64
+//  	var svchan chan btrdb.StandardValue
+//  	var sv btrdb.StandardValue
+//  	var points []btrdb.StandardValue
+//  	var statcode chan string
+//  	var strstatcode string
+//  	var asyncerr chan string
 //
-//  bc, err = btrdb.NewBTrDBConnection("localhost:4410")
-//  if err != nil {
-//  	/* Fatal error */
+//  	bc, err = btrdb.NewBTrDBConnection("localhost:4410")
+//  	if err != nil {
+//  		/* Fatal error */
+//  	}
+//
+//  	/* UUID of the stream into which to insert/query */
+//  	myuuid = uuid.NewRandom()
+//
+//  	/* Points to insert */
+//  	points = []btrdb.StandardValue{
+//  		btrdb.StandardValue{Time: 1, Value: 2.0},
+//  		btrdb.StandardValue{Time: 4, Value: 7.5},
+//  		btrdb.StandardValue{Time: 6, Value: 2.5},
+//  		btrdb.StandardValue{Time: 13, Value: 8.0},
+//  		btrdb.StandardValue{Time: 15, Value: 6.0},
+//  	}
+//
+//  	/* Insert */
+//  	statcode, err = bc.InsertValues(myuuid, points, true)
+//  	strstatcode = <- statcode
+//  	if err != nil || "ok" != strstatcode {
+//  		/* Error */
+//  	}
+//
+//  	/* Standard Values Query */
+//  	svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
+//  	if err != nil {
+//  		/* Error */
+//  	}
+//
+//  	for sv = range svchan {
+//  		/* Handle Point */
+//  	}
+//
+//  	/* Get the version used to satisfy the query */
+//  	version = <- versionchan
 //  }
-//
-//  /* UUID of the stream into which to insert/query */
-//  myuuid = uuid.NewRandom()
-//
-//  /* Points to insert */
-//  var points []btrdb.StandardValue = []btrdb.StandardValue{
-//  	StandardValue{Time: 1, Value: 2.0},
-//  	StandardValue{Time: 4, Value: 7.5},
-//  	StandardValue{Time: 6, Value: 2.5},
-//  	StandardValue{Time: 13, Value: 8.0},
-//  	StandardValue{Time: 15, Value: 6.0},
-//  }
-//
-//  /* Insert */
-//  statcode, err = bc.InsertValues(myuuid, points, true)
-//  strstatcode = <- statcode
-//  if err != nil || "ok" != strstatcode {
-//  	/* Error */
-//  }
-//
-//  /* Standard Values Query */
-//  svchan, versionchan, asyncerr, err = bc.QueryStandardValues(myuuid, 0, 16, 0)
-//  if err != nil {
-//  	/* Error */
-//  }
-//
-//  for sv = range svchan {
-//  	/* Handle Point */
-//  }
-//
-//  /* Get the version used to satisfy the query */
-//  version = <- versionchan
 package btrdb
 
 import (
