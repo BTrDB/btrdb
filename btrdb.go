@@ -93,9 +93,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	cpint "github.com/SoftwareDefinedBuildings/btrdb-go/btrdbcpint"
 	capnp "github.com/glycerine/go-capnproto"
 	uuid "github.com/pborman/uuid"
+	cpint "gopkg.in/btrdb.v3/btrdbcpint"
 )
 
 /* An infinite channel abstraction, used internally. */
