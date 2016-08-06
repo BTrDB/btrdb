@@ -30,8 +30,8 @@
 //
 // Example usage:
 //  import (
-//  	btrdb "github.com/SoftwareDefinedBuildings/btrdb-go"
-//  	uuid "github.com/pborman/uuid"
+//  	"gopkg.in/btrdb.v3"
+//  	"github.com/pborman/uuid"
 //  )
 //
 //  func main() {
