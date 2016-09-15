@@ -87,7 +87,6 @@
 package btrdb
 
 import (
-	"container/list"
 	"fmt"
 	"net"
 	"sync"
@@ -98,60 +97,7 @@ import (
 	uuid "github.com/pborman/uuid"
 )
 
-/* An infinite channel abstraction, used internally. */
-
-type infchan struct {
-	lock  *sync.Mutex
-	cond  *sync.Cond
-	queue *list.List
-	open  bool
-}
-
-func newInfChan() *infchan {
-	var mutex *sync.Mutex = &sync.Mutex{}
-	return &infchan{
-		lock:  mutex,
-		cond:  sync.NewCond(mutex),
-		queue: list.New(),
-		open:  true,
-	}
-}
-
-func (infc *infchan) enqueue(item interface{}) {
-	infc.lock.Lock()
-	defer infc.lock.Unlock()
-
-	if !infc.open {
-		panic("Attempting to enqueue into a closed infinite channel")
-	}
-
-	infc.queue.PushBack(item)
-	if infc.queue.Len() == 1 {
-		infc.cond.Signal()
-	}
-}
-
-func (infc *infchan) dequeue() interface{} {
-	infc.lock.Lock()
-
-	defer infc.lock.Unlock()
-	for infc.open && infc.queue.Len() == 0 {
-		infc.cond.Wait()
-	}
-
-	if infc.queue.Len() != 0 {
-		return infc.queue.Remove(infc.queue.Front())
-	} else {
-		return nil
-	}
-}
-
-func (infc *infchan) close() {
-	infc.lock.Lock()
-	infc.open = false
-	infc.cond.Broadcast()
-	infc.lock.Unlock()
-}
+const BUFFER_LEN = 1024
 
 // BTrDBConnection abstracts a single connection to a BTrDB. A single
 // BTrDBConnection supports multiple concurrent requests to BTrDB.
@@ -160,7 +106,7 @@ type BTrDBConnection struct {
 	conn         net.Conn
 	connsendlock *sync.Mutex
 
-	outstanding     map[uint64]*infchan
+	outstanding     map[uint64]chan cpint.Response
 	outstandinglock *sync.RWMutex
 
 	open bool
@@ -182,7 +128,7 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		conn:         conn,
 		connsendlock: &sync.Mutex{},
 
-		outstanding:     make(map[uint64]*infchan),
+		outstanding:     make(map[uint64]chan cpint.Response),
 		outstandinglock: &sync.RWMutex{},
 
 		open: true,
@@ -192,7 +138,7 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		var recvSeg *capnp.Segment
 		var e error
 		var response cpint.Response
-		var respchan *infchan
+		var respchan chan cpint.Response
 		var et uint64
 		for {
 			recvSeg, e = capnp.ReadFromStream(conn, nil)
@@ -208,13 +154,13 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 			respchan = bc.outstanding[et]
 			bc.outstandinglock.RUnlock()
 
-			respchan.enqueue(response)
+			respchan <- response
 
 			if response.Final() {
 				bc.outstandinglock.Lock()
 				delete(bc.outstanding, et)
 				bc.outstandinglock.Unlock()
-				respchan.close()
+				close(respchan)
 			}
 		}
 	}()
@@ -278,7 +224,7 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 	var pointList capnp.PointerList = capnp.PointerList(recList)
 	var record cpint.Record = cpint.NewRecord(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var asyncerr chan string
 
 	var i int
@@ -295,7 +241,7 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 	query.SetValues(recList)
 	query.SetSync(sync)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -317,11 +263,12 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 		defer close(asyncerr)
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
 				return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
 		}
@@ -341,7 +288,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdDeleteValues = cpint.NewCmdDeleteValues(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var asyncerr chan string
 
 	req.SetDeleteValues(query)
@@ -351,7 +298,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	query.SetStartTime(start_time)
 	query.SetEndTime(end_time)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -373,11 +320,12 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 		defer close(asyncerr)
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
 		}
@@ -406,7 +354,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdQueryStandardValues = cpint.NewCmdQueryStandardValues(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan StandardValue
 	var versionchan chan uint64
 	var asyncerr chan string
@@ -420,7 +368,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	query.SetStartTime(start_time)
 	query.SetEndTime(end_time)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -451,11 +399,12 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 		}()
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
@@ -496,7 +445,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdQueryNearestValue = cpint.NewCmdQueryNearestValue(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan StandardValue
 	var versionchan chan uint64
 	var asyncerr chan string
@@ -510,7 +459,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	query.SetTime(time)
 	query.SetBackward(backward)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -541,11 +490,12 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 		}()
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
@@ -591,7 +541,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 	var query cpint.CmdQueryVersion = cpint.NewCmdQueryVersion(seg)
 	var dataList capnp.DataList = seg.NewDataList(numrecs)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan uint64
 	var asyncerr chan string
 
@@ -605,7 +555,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 	}
 	query.SetUuids(dataList)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -629,11 +579,12 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 		defer close(asyncerr)
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
@@ -667,7 +618,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdQueryChangedRanges = cpint.NewCmdQueryChangedRanges(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan TimeRange
 	var versionchan chan uint64
 	var asyncerr chan string
@@ -681,7 +632,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	query.SetToGeneration(to_generation)
 	query.SetResolution(resolution)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -712,11 +663,12 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 		}()
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
@@ -764,7 +716,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdQueryStatisticalValues = cpint.NewCmdQueryStatisticalValues(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan StatisticalValue
 	var versionchan chan uint64
 	var asyncerr chan string
@@ -779,7 +731,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	query.SetEndTime(end_time)
 	query.SetPointWidth(point_width)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -810,11 +762,12 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 		}()
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
@@ -864,7 +817,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 	var req cpint.Request = cpint.NewRootRequest(seg)
 	var query cpint.CmdQueryWindowValues = cpint.NewCmdQueryWindowValues(seg)
 
-	var segments *infchan
+	var segments chan cpint.Response
 	var rv chan StatisticalValue
 	var versionchan chan uint64
 	var asyncerr chan string
@@ -880,7 +833,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 	query.SetWidth(width)
 	query.SetDepth(depth)
 
-	segments = newInfChan()
+	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -911,11 +864,12 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 		}()
 
 		for {
-			var rawvalue interface{} = segments.dequeue()
-			if rawvalue == nil {
-				return
+			var response cpint.Response
+			var ok bool
+			response, ok = <- segments
+			if !ok {
+			  return
 			}
-			var response cpint.Response = rawvalue.(cpint.Response)
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
 				asyncerr <- stat.String()
