@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 )
 
@@ -12,8 +11,8 @@ func TestGetInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got error: %v\n", err)
 	}
-	fmt.Printf("got inf %#v\n", inf)
-	for _, m := range inf.Members {
-		fmt.Printf(" member %#v\n", m)
-	}
+	_ = inf
+	// for _, m := range inf.Members {
+	// 	fmt.Printf(" member %#v\n", m)
+	// }
 }

@@ -1,3 +1,5 @@
+//+build ignore
+
 package tests
 
 import (
@@ -44,6 +46,36 @@ func BenchmarkWriteOMAPTypical(b *testing.B) {
 	}
 }
 
+func TestOmapReturnedError(t *testing.T) {
+	conn, _ := rados.NewConn()
+	conn.ReadDefaultConfigFile()
+	conn.Connect()
+	ioctx, err := conn.OpenIOContext("btrdb")
+	if err != nil {
+		panic(err)
+	}
+	_, err = ioctx.GetAllOmapValues("def.not.exist", "", "", 100)
+	if err != rados.RadosErrorNotFound {
+		t.Fatalf("unexpected error code %v", err)
+	}
+}
+func TestOmapReturnedErrorObjExist(t *testing.T) {
+	conn, _ := rados.NewConn()
+	conn.ReadDefaultConfigFile()
+	conn.Connect()
+	ioctx, err := conn.OpenIOContext("btrdb")
+	if err != nil {
+		panic(err)
+	}
+	err = ioctx.SetOmap("def.exist", map[string][]byte{})
+	if err != nil {
+		panic(err)
+	}
+	_, err = ioctx.GetAllOmapValues("def.exist", "", "", 100)
+	if err != nil {
+		t.Fatalf("unexpected error code %v", err)
+	}
+}
 func BenchmarkReadOMAPTypical(b *testing.B) {
 	conn, _ := rados.NewConn()
 	conn.ReadDefaultConfigFile()

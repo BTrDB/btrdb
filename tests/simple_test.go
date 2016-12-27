@@ -16,7 +16,6 @@ func TestEndpointsFromEnv(t *testing.T) {
 	if len(endpoints) == 0 {
 		t.Fatal("BTRDB_ENDPOINTS not set")
 	}
-	fmt.Printf("%#v %d", endpoints, len(endpoints))
 }
 func TestConnect(t *testing.T) {
 	db, err := btrdb.Connect(btrdb.EndpointsFromEnv()...)
@@ -30,11 +29,15 @@ func TestConnect(t *testing.T) {
 func _connect(t *testing.T) *btrdb.BTrDB {
 	db, err := btrdb.Connect(btrdb.EndpointsFromEnv()...)
 	if err != nil {
-		t.Fatalf("Could not connect: %v", err)
+		if t == nil {
+			panic(err)
+		} else {
+			t.Fatalf("Could not connect: %v", err)
+		}
 	}
 	return db
 }
-func TestInsertQueryRaw(t *testing.T) {
+func TestInsertBeforeCreate(t *testing.T) {
 	db := _connect(t)
 	uu := uuid.NewRandom()
 	values := []*pb.RawPoint{}
@@ -42,6 +45,24 @@ func TestInsertQueryRaw(t *testing.T) {
 		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
 	}
 	err := db.Insert(context.Background(), uu, values)
+	if err == nil {
+		t.Fatalf("Insert before create did not cause error: %s", err.Error())
+	}
+}
+func TestInsertQueryRaw(t *testing.T) {
+	db := _connect(t)
+	uu := uuid.NewRandom()
+
+	name := fmt.Sprintf("test.%x", uu[:])
+	err := db.Create(context.Background(), uu, name, nil)
+	if err != nil {
+		t.Fatalf("Creation error: %v", err)
+	}
+	values := []*pb.RawPoint{}
+	for i := 0; i < 100; i++ {
+		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
+	}
+	err = db.Insert(context.Background(), uu, values)
 	if err != nil {
 		t.Fatalf("Insert error: %s", err.Error())
 	}
@@ -65,11 +86,16 @@ func TestInsertQueryRaw(t *testing.T) {
 func TestInsertQueryWindows(t *testing.T) {
 	db := _connect(t)
 	uu := uuid.NewRandom()
+	name := fmt.Sprintf("test.%x", uu[:])
+	err := db.Create(context.Background(), uu, name, nil)
+	if err != nil {
+		t.Fatalf("Creation error: %v", err)
+	}
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
 		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
 	}
-	err := db.Insert(context.Background(), uu, values)
+	err = db.Insert(context.Background(), uu, values)
 	if err != nil {
 		t.Fatalf("Insert error: %s", err.Error())
 	}
