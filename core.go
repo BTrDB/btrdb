@@ -19,8 +19,10 @@ var ErrorDisconnected = &CodedError{&pb.Status{Code: 421, Msg: "Driver is discon
 //generally the same operation will succeed if attempted once the cluster has recovered.
 var ErrorClusterDegraded = &CodedError{&pb.Status{Code: 419, Msg: "Cluster is degraded"}}
 
+//ErrorWrongArgs is returned from API functions if the parameters are nonsensical
 var ErrorWrongArgs = &CodedError{&pb.Status{Code: 421, Msg: "Invalid Arguments"}}
 
+//BTrDB is the main object you should use to interact with BTrDB.
 type BTrDB struct {
 	//This covers the mash
 	mashwmu    sync.Mutex
@@ -35,6 +37,17 @@ type BTrDB struct {
 
 func newBTrDB() *BTrDB {
 	return &BTrDB{epcache: make(map[uint32]*BTrDBEndpoint)}
+}
+
+//StatPoint represents a statistical summary of a window. The length of that
+//window must be determined from context (e.g the parameters passed to AlignedWindow or Window methods)
+type StatPoint struct {
+	//The time of the start of the window, in nanoseconds since the epoch UTC
+	Time  int64
+	Min   float64
+	Mean  float64
+	Max   float64
+	Count uint64
 }
 
 //Connect takes a list of endpoints and returns a BTrDB handle.
@@ -83,6 +96,8 @@ func (b *BTrDB) Disconnect() error {
 	return gerr
 }
 
+//EndpointForHash is a low level function that returns a single endpoint for an
+//endpoint hash.
 func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*BTrDBEndpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
@@ -110,10 +125,14 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*BTrDBEndpoin
 	b.epmu.Unlock()
 	return nep, nil
 }
+
+//ReadEndpointFor returns the endpoint that should be used to read the given uuid
 func (b *BTrDB) ReadEndpointFor(ctx context.Context, uuid uuid.UUID) (*BTrDBEndpoint, error) {
 	//TODO do rpref
 	return b.EndpointFor(ctx, uuid)
 }
+
+//EndpointFor returns the endpoint that should be used to write the given uuid
 func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*BTrDBEndpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
