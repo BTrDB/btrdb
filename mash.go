@@ -8,6 +8,10 @@ import (
 	pb "gopkg.in/btrdb.v4/grpcinterface"
 )
 
+//The MASH struct (Master Allocation by Stable Hashing) contains information
+//about the cluster and which fraction of the uuid space is being served by
+//which endpoints. Generally you will not need to use this, but it is handy
+//for checking the cluster is healthy.
 type MASH struct {
 	*pb.Mash
 	eps []mashEndpoint
@@ -20,7 +24,7 @@ type mashEndpoint struct {
 	grpc  []string
 }
 
-func (m *MASH) PbEndpointFor(uuid uuid.UUID) *pb.Member {
+func (m *MASH) pbEndpointFor(uuid uuid.UUID) *pb.Member {
 	hsh := int64(murmur.Murmur3(uuid[:]))
 	for _, mbr := range m.GetMembers() {
 		s := mbr.GetStart()
@@ -32,7 +36,9 @@ func (m *MASH) PbEndpointFor(uuid uuid.UUID) *pb.Member {
 	return nil
 }
 
-func (m *MASH) EndpointFor(uuid uuid.UUID) (bool, uint32, []string) {
+//EndpointFor will take a uuid and return the connection details for the
+//endpoint that can service a write to that uuid. This is a low level function.
+func (m *MASH) EndpointFor(uuid uuid.UUID) (found bool, hash uint32, addrs []string) {
 	hsh := int64(murmur.Murmur3(uuid[:]))
 	for _, e := range m.eps {
 		if e.start <= hsh && e.end > hsh {
