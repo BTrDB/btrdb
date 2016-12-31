@@ -37,6 +37,20 @@ func _connect(t *testing.T) *btrdb.BTrDB {
 	}
 	return db
 }
+func _connectMbr(t *testing.T, m *pb.Member) *btrdb.BTrDB {
+	if m.GetGrpcEndpoints() == "" {
+		t.Fatalf("Member GRPC endpoints unpopulated")
+	}
+	db, err := btrdb.Connect(m.GetGrpcEndpoints())
+	if err != nil {
+		if t == nil {
+			panic(err)
+		} else {
+			t.Fatalf("Could not connect: %v", err)
+		}
+	}
+	return db
+}
 func TestInsertBeforeCreate(t *testing.T) {
 	db := _connect(t)
 	uu := uuid.NewRandom()
