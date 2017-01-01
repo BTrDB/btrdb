@@ -37,14 +37,20 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 		return nil, fmt.Errorf("No addresses provided")
 	}
 	for _, a := range addresses {
-		dl, ok := ctx.Deadline()
-		if !ok {
-			return nil, context.DeadlineExceeded
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
 		}
-		tmt := dl.Sub(time.Now())
-		if tmt > 2*time.Second {
+		dl, ok := ctx.Deadline()
+		var tmt time.Duration
+		if ok {
+			tmt = dl.Sub(time.Now())
+			if tmt > 2*time.Second {
+				tmt = 2 * time.Second
+			}
+		} else {
 			tmt = 2 * time.Second
 		}
+
 		conn, err := grpc.Dial(a, grpc.WithInsecure(), grpc.WithTimeout(tmt), grpc.WithBlock())
 		if err != nil {
 			if ctx.Err() != nil {

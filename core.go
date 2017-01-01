@@ -22,6 +22,10 @@ var ErrorClusterDegraded = &CodedError{&pb.Status{Code: 419, Msg: "Cluster is de
 //ErrorWrongArgs is returned from API functions if the parameters are nonsensical
 var ErrorWrongArgs = &CodedError{&pb.Status{Code: 421, Msg: "Invalid Arguments"}}
 
+//ErrorNoSuchStream is returned if an operation is attempted on a stream when
+//it does not exist.
+var ErrorNoSuchStream = &CodedError{&pb.Status{Code: 404, Msg: "No such stream"}}
+
 //BTrDB is the main object you should use to interact with BTrDB.
 type BTrDB struct {
 	//This covers the mash
@@ -65,10 +69,12 @@ func Connect(ctx context.Context, endpoints ...string) (*BTrDB, error) {
 			return nil, ctx.Err()
 		}
 		if err != nil {
+			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
 			continue
 		}
 		mash, err := ep.Info(ctx)
 		if err != nil {
+			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
 			continue
 		}
 		b.activeMash.Store(mash)
@@ -181,6 +187,8 @@ func (b *BTrDB) resyncMash() {
 			b.activeMash.Store(mash)
 			b.epmu.RUnlock()
 			return
+		} else {
+			fmt.Printf("error was %v", err)
 		}
 	}
 	b.epmu.RUnlock()
@@ -189,14 +197,17 @@ func (b *BTrDB) resyncMash() {
 	for _, mbr := range cm.Members {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		ep, err := b.EndpointForHash(ctx, mbr.Hash)
-		cancel()
 		if err != nil {
+			fmt.Printf("got errorb %v", err)
 			continue
 		}
 		mash, err := ep.Info(ctx)
+		cancel()
 		if err == nil {
 			b.activeMash.Store(mash)
 			return
+		} else {
+			fmt.Printf("got errorc %v", err)
 		}
 	}
 	panic("No endpoints reachable!")
@@ -205,8 +216,15 @@ func (b *BTrDB) resyncMash() {
 //This returns true if you should redo your operation (and get new ep)
 //and false if you should return the last value/error you got
 func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
+	if ep == nil {
+		return true
+	}
+	if err == nil {
+		return false
+	}
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
+		fmt.Printf("Got 405 (wrong endpoint)!\n")
 		b.resyncMash()
 		return true
 	}

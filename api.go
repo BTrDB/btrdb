@@ -50,7 +50,7 @@ func (b *BTrDB) StreamFromUUID(uu uuid.UUID) *Stream {
 //later stream operations. Any operation that returns a stream from
 //collection and tags will have ensured the stream exists already.
 func (s *Stream) Exists(ctx context.Context) (bool, error) {
-	ep, err := s.b.EndpointFor(ctx, s.uuid)
+	ep, err := s.b.ReadEndpointFor(ctx, s.uuid)
 	if err != nil {
 		return false, err
 	}
@@ -66,6 +66,57 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 	s.tags = tags
 	s.hasTags = true
 	return true, nil
+}
+
+//Tags returns the tags of the stream. It may require a round trip to the
+//server depending on how the stream was acquired.
+func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
+	if s.hasTags {
+		return s.tags, nil
+	}
+	ex, err := s.Exists(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ex {
+		return nil, ErrorNoSuchStream
+	}
+	return s.tags, nil
+}
+
+//Collection returns the collection of the stream. It may require a round
+//trip to the server depending on how the stream was acquired
+func (s *Stream) Collection(ctx context.Context) (string, error) {
+	if s.hasCollection {
+		return s.collection, nil
+	}
+	ex, err := s.Exists(ctx)
+	if err != nil {
+		return "", err
+	}
+	if !ex {
+		return "", ErrorNoSuchStream
+	}
+	return s.collection, nil
+}
+
+//Version returns the current version of the stream. This is not cached,
+//it queries each time. Take care that you do not intorduce races in your
+//code by assuming this function will always return the same vaue
+func (s *Stream) Version(ctx context.Context) (uint64, error) {
+	ep, err := s.b.ReadEndpointFor(ctx, s.uuid)
+	if err != nil {
+		return 0, err
+	}
+	coll, tags, ver, err := ep.StreamInfo(ctx, s.uuid)
+	if err != nil {
+		return 0, err
+	}
+	s.collection = coll
+	s.hasCollection = true
+	s.tags = tags
+	s.hasTags = true
+	return ver, nil
 }
 
 //InsertTV allows insertion of two equal length arrays, one containing times and
@@ -329,7 +380,7 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 	var ep *Endpoint
 	var err error
 	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
+		ep, err = b.EndpointFor(ctx, uu)
 		if err != nil {
 			continue
 		}
@@ -344,6 +395,7 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 		hasCollection: true,
 		tags:          make(map[string]string),
 		hasTags:       true,
+		b:             b,
 	}
 	for k, v := range tags {
 		rv.tags[k] = v
@@ -401,6 +453,9 @@ func (b *BTrDB) ListAllStreams(ctx context.Context, collection string) ([]*Strea
 			continue
 		}
 		rv, err = ep.ListAllStreams(ctx, collection)
+	}
+	for _, s := range rv {
+		s.b = b
 	}
 	return rv, err
 }
