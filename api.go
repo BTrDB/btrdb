@@ -3,12 +3,9 @@
 // For functions returning value, version and error channels, please pay attention
 // to the following concurrenct pattern:
 // - The value channel must be completely consumed, always.
-// - The version channel need not be consumed if not required. Only one value
-//   will ever be written to the version channel.
-// - The error channel need not be read, but you cannot assume that there
-//   was not an error just because there were values
-// - You can defer reading the error channel until after the value
-//   channel is closed (it will be closed early on error).
+// - The version channel need not be consumed if not required. Only one value will ever be written to the version channel.
+// - The error channel need not be read, but you cannot assume that there  was not an error just because there were values
+// - You can defer reading the error channel until after the value channel is closed (it will be closed early on error).
 // A good pattern is the following:
 //   valchan, errchan = some.Method()
 //   for v := range valchan {
@@ -81,7 +78,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 	if len(times) != len(values) {
 		return ErrorWrongArgs
 	}
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	batchsize := 5000
 	for len(times) > 0 {
@@ -120,7 +117,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 //As a consequence, the insert is not necessarily atomic, but can be used with
 //very large arrays.
 func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	batchsize := 5000
 	for len(vals) > 0 {
@@ -159,7 +156,7 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 //As a consequence, the insert is not necessarily atomic, but can be used with
 //very large size.
 func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, val func(int) float64) error {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	batchsize := 5000
 	fidx := 0
@@ -193,7 +190,7 @@ func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, 
 
 //RawValues reads raw values from BTrDB. The returned RawPoint channel must be fully consumed.
 func (s *Stream) RawValues(ctx context.Context, start int64, end int64, version uint64) (chan RawPoint, chan uint64, chan error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
@@ -221,7 +218,7 @@ func (s *Stream) RawValues(ctx context.Context, start int64, end int64, version 
 //and end are not powers of two, the bottom pointwidth bits will be cleared. Each window will contain statistical summaries of the window. For
 //sections of time that do not contain results, it is possible that no records will be returned.
 func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, pointwidth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
@@ -251,7 +248,7 @@ func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, poi
 //may be appropriate, so a depth of 30 can be specified. This is much faster to execute on the database side.
 //The StatPoint channel MUST be fully consumed.
 func (s *Stream) Windows(ctx context.Context, start int64, end int64, width uint64, depth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
@@ -278,7 +275,7 @@ func (s *Stream) Windows(ctx context.Context, start int64, end int64, width uint
 //multiversioning, so the deleted points can still be accessed on an older version of the stream
 //returns the version of the stream and any error
 func (s *Stream) DeleteRange(ctx context.Context, start int64, end int64) (ver uint64, err error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.EndpointFor(ctx, s.uuid)
 		if err != nil {
@@ -293,7 +290,7 @@ func (s *Stream) DeleteRange(ctx context.Context, start int64, end int64) (ver u
 //will be >= time. If backward is true, the returned point will be <time. The version of the
 //stream used to satisfy the query is returned.
 func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backward bool) (rv RawPoint, ver uint64, err error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
@@ -305,7 +302,7 @@ func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backwa
 }
 
 func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint64, resolution uint8) (crv chan ChangedRange, cver chan uint64, cerr chan error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
@@ -329,7 +326,7 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 }
 
 func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string) (*Stream, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	for b.testEpError(ep, err) {
 		ep, err = b.getAnyEndpoint(ctx)
@@ -359,7 +356,7 @@ func (b *BTrDB) ListAllCollections(ctx context.Context) ([]string, error) {
 }
 
 func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	var rv []string
 	from := ""
@@ -395,7 +392,7 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 
 //ListAllStreams will return all the streams in the named collection
 func (b *BTrDB) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	var rv []*Stream
 	for b.testEpError(ep, err) {
@@ -411,7 +408,7 @@ func (b *BTrDB) ListAllStreams(ctx context.Context, collection string) ([]*Strea
 //ListMatchingStreams will return all streams in a collection that match the specified tags. If no tags are specified this
 //method is equivalent to ListAllStreams()
 func (b *BTrDB) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	var rv []*Stream
 	for b.testEpError(ep, err) {
@@ -428,7 +425,7 @@ func (b *BTrDB) ListMatchingStreams(ctx context.Context, collection string, tags
 //stream was not found. It is an error to omit any tags, even if the stream is uniquely identified by only
 //a subset of the tags. To locate a stream with a unique subset of tags, use ListMatchingStreams.
 func (b *BTrDB) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	var rv *Stream
 	for b.testEpError(ep, err) {
@@ -442,7 +439,7 @@ func (b *BTrDB) LookupStream(ctx context.Context, collection string, tags map[st
 }
 
 func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
-	var ep *BTrDBEndpoint
+	var ep *Endpoint
 	var err error
 	var rv *MASH
 	for b.testEpError(ep, err) {

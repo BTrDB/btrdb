@@ -12,9 +12,9 @@ import (
 	pb "gopkg.in/btrdb.v4/grpcinterface"
 )
 
-//BTrDBEndpoint is a low level connection to a single server. Rather use
-//BTrDB which manages creating and destroying BTrDBEndpoint objects as required
-type BTrDBEndpoint struct {
+//Endpoint is a low level connection to a single server. Rather use
+//BTrDB which manages creating and destroying Endpoint objects as required
+type Endpoint struct {
 	g    pb.BTrDBClient
 	conn *grpc.ClientConn
 }
@@ -30,9 +30,9 @@ type RawPoint struct {
 //ConnectEndpoint is a low level call that connects to a single BTrDB
 //server. It takes multiple arguments, but it is assumed that they are
 //all different addresses for the same server, in decreasing order of
-//priority. It returns a BTrDBEndpoint, which is generally never used directly.
+//priority. It returns a Endpoint, which is generally never used directly.
 //Rather use Connect()
-func ConnectEndpoint(ctx context.Context, addresses ...string) (*BTrDBEndpoint, error) {
+func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error) {
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("No addresses provided")
 	}
@@ -53,25 +53,25 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*BTrDBEndpoint, 
 			continue
 		}
 		client := pb.NewBTrDBClient(conn)
-		rv := &BTrDBEndpoint{g: client, conn: conn}
+		rv := &Endpoint{g: client, conn: conn}
 		return rv, nil
 	}
 	return nil, fmt.Errorf("Endpoint is unreachable on all addresses")
 }
 
 //GetGRPC will return the underlying GRPC client object.
-func (b *BTrDBEndpoint) GetGRPC() pb.BTrDBClient {
+func (b *Endpoint) GetGRPC() pb.BTrDBClient {
 	return b.g
 }
 
 //Disconnect will close the underlying GRPC connection. The endpoint cannot be used
 //after calling this method.
-func (b *BTrDBEndpoint) Disconnect() error {
+func (b *Endpoint) Disconnect() error {
 	return b.conn.Close()
 }
 
 //Insert is a low level function, rather use Stream.Insert()
-func (b *BTrDBEndpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
+func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
 	rv, err := b.g.Insert(ctx, &pb.InsertParams{
 		Uuid:   uu,
 		Sync:   false,
@@ -87,7 +87,7 @@ func (b *BTrDBEndpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.R
 }
 
 //Create is a low level function, rather use BTrDB.Create()
-func (b *BTrDBEndpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string) error {
+func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string) error {
 	taglist := []*pb.Tag{}
 	for k, v := range tags {
 		taglist = append(taglist, &pb.Tag{Key: k, Value: v})
@@ -108,7 +108,7 @@ func (b *BTrDBEndpoint) Create(ctx context.Context, uu uuid.UUID, collection str
 
 //ListAllCollections is a low level function, and in particular will only work
 //with small numbers of collections. Rather use BTrDB.ListAllCollections()
-func (b *BTrDBEndpoint) ListAllCollections(ctx context.Context) ([]string, error) {
+func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 	rv, err := b.g.ListCollections(ctx, &pb.ListCollectionsParams{
 		Prefix:    "",
 		StartWith: "",
@@ -127,7 +127,7 @@ func (b *BTrDBEndpoint) ListAllCollections(ctx context.Context) ([]string, error
 }
 
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()
-func (b *BTrDBEndpoint) ListCollections(ctx context.Context, prefix string, from string, maxnumber uint64) ([]string, error) {
+func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from string, maxnumber uint64) ([]string, error) {
 	if maxnumber > 10000 {
 		return nil, fmt.Errorf("Maxnumber must be <10k")
 	}
@@ -149,7 +149,7 @@ func (b *BTrDBEndpoint) ListCollections(ctx context.Context, prefix string, from
 }
 
 //ListAllStreams is a low level function, rather use BTrDB.ListAllStreams()
-func (b *BTrDBEndpoint) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
+func (b *Endpoint) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
 	rv, err := b.g.ListStreams(ctx, &pb.ListStreamsParams{
 		Collection: collection,
 		Partial:    true,
@@ -169,7 +169,7 @@ func (b *BTrDBEndpoint) ListAllStreams(ctx context.Context, collection string) (
 }
 
 //ListMatchingStreams is a low level function, rather use BTrDB.ListMatchingStreams()
-func (b *BTrDBEndpoint) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
+func (b *Endpoint) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
 	params := &pb.ListStreamsParams{
 		Collection: collection,
 		Partial:    true,
@@ -193,7 +193,7 @@ func (b *BTrDBEndpoint) ListMatchingStreams(ctx context.Context, collection stri
 }
 
 //LookupStream is a low level function, rather use BTrDB.LookupStream()
-func (b *BTrDBEndpoint) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
+func (b *Endpoint) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
 	params := &pb.ListStreamsParams{
 		Collection: collection,
 		Partial:    false,
@@ -217,7 +217,7 @@ func (b *BTrDBEndpoint) LookupStream(ctx context.Context, collection string, tag
 }
 
 //RawValues is a low level function, rather use Stream.RawValues()
-func (b *BTrDBEndpoint) RawValues(ctx context.Context, uu uuid.UUID, start int64, end int64, version uint64) (chan RawPoint, chan uint64, chan error) {
+func (b *Endpoint) RawValues(ctx context.Context, uu uuid.UUID, start int64, end int64, version uint64) (chan RawPoint, chan uint64, chan error) {
 	rv, err := b.g.RawValues(ctx, &pb.RawValuesParams{
 		Uuid:         uu,
 		Start:        start,
@@ -271,7 +271,7 @@ func (b *BTrDBEndpoint) RawValues(ctx context.Context, uu uuid.UUID, start int64
 }
 
 //AlignedWindows is a low level function, rather use Stream.AlignedWindows()
-func (b *BTrDBEndpoint) AlignedWindows(ctx context.Context, uu uuid.UUID, start int64, end int64, pointwidth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
+func (b *Endpoint) AlignedWindows(ctx context.Context, uu uuid.UUID, start int64, end int64, pointwidth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	rv, err := b.g.AlignedWindows(ctx, &pb.AlignedWindowsParams{
 		Uuid:         uu,
 		Start:        start,
@@ -332,7 +332,7 @@ func (b *BTrDBEndpoint) AlignedWindows(ctx context.Context, uu uuid.UUID, start 
 }
 
 //Windows is a low level function, rather use Stream.Windows()
-func (b *BTrDBEndpoint) Windows(ctx context.Context, uu uuid.UUID, start int64, end int64, width uint64, depth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
+func (b *Endpoint) Windows(ctx context.Context, uu uuid.UUID, start int64, end int64, width uint64, depth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	rv, err := b.g.Windows(ctx, &pb.WindowsParams{
 		Uuid:         uu,
 		Start:        start,
@@ -394,7 +394,7 @@ func (b *BTrDBEndpoint) Windows(ctx context.Context, uu uuid.UUID, start int64, 
 }
 
 //DeleteRange is a low level function, rather use Stream.DeleteRange()
-func (b *BTrDBEndpoint) DeleteRange(ctx context.Context, uu uuid.UUID, start int64, end int64) (uint64, error) {
+func (b *Endpoint) DeleteRange(ctx context.Context, uu uuid.UUID, start int64, end int64) (uint64, error) {
 	rv, err := b.g.Delete(ctx, &pb.DeleteParams{
 		Uuid:  uu,
 		Start: start,
@@ -410,7 +410,7 @@ func (b *BTrDBEndpoint) DeleteRange(ctx context.Context, uu uuid.UUID, start int
 }
 
 //Info is a low level function, rather use BTrDB.Info()
-func (b *BTrDBEndpoint) Info(ctx context.Context) (*MASH, error) {
+func (b *Endpoint) Info(ctx context.Context) (*MASH, error) {
 	rv, err := b.g.Info(ctx, &pb.InfoParams{})
 	if err != nil {
 		return nil, err
@@ -424,7 +424,7 @@ func (b *BTrDBEndpoint) Info(ctx context.Context) (*MASH, error) {
 }
 
 //Nearest is a low level function, rather use Stream.Nearest()
-func (b *BTrDBEndpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, version uint64, backward bool) (RawPoint, uint64, error) {
+func (b *Endpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, version uint64, backward bool) (RawPoint, uint64, error) {
 	rv, err := b.g.Nearest(ctx, &pb.NearestParams{
 		Uuid:         uu,
 		Time:         time,
@@ -442,7 +442,7 @@ func (b *BTrDBEndpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, v
 
 //StreamInfo is a low level function, rather use Stream.Tags() Stream.Collection(), Stream.UUID() and Stream.Version() which handle caching
 //where appropriate
-func (b *BTrDBEndpoint) StreamInfo(ctx context.Context, uu uuid.UUID) (collection string, tags map[string]string, version uint64, err error) {
+func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID) (collection string, tags map[string]string, version uint64, err error) {
 	rv, e := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
 		Uuid: uu,
 	})
@@ -470,7 +470,7 @@ type ChangedRange struct {
 }
 
 //Changes is a low level function, rather use BTrDB.Changes()
-func (b *BTrDBEndpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64, toVersion uint64, resolution uint8) (chan ChangedRange, chan uint64, chan error) {
+func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64, toVersion uint64, resolution uint8) (chan ChangedRange, chan uint64, chan error) {
 	rv, err := b.g.Changes(ctx, &pb.ChangesParams{
 		Uuid:       uu,
 		FromMajor:  fromVersion,

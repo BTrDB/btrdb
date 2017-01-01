@@ -32,11 +32,11 @@ type BTrDB struct {
 
 	//This covers the epcache
 	epmu    sync.RWMutex
-	epcache map[uint32]*BTrDBEndpoint
+	epcache map[uint32]*Endpoint
 }
 
 func newBTrDB() *BTrDB {
-	return &BTrDB{epcache: make(map[uint32]*BTrDBEndpoint)}
+	return &BTrDB{epcache: make(map[uint32]*Endpoint)}
 }
 
 //StatPoint represents a statistical summary of a window. The length of that
@@ -98,7 +98,7 @@ func (b *BTrDB) Disconnect() error {
 
 //EndpointForHash is a low level function that returns a single endpoint for an
 //endpoint hash.
-func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*BTrDBEndpoint, error) {
+func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -127,13 +127,13 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*BTrDBEndpoin
 }
 
 //ReadEndpointFor returns the endpoint that should be used to read the given uuid
-func (b *BTrDB) ReadEndpointFor(ctx context.Context, uuid uuid.UUID) (*BTrDBEndpoint, error) {
+func (b *BTrDB) ReadEndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, error) {
 	//TODO do rpref
 	return b.EndpointFor(ctx, uuid)
 }
 
 //EndpointFor returns the endpoint that should be used to write the given uuid
-func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*BTrDBEndpoint, error) {
+func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -159,7 +159,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*BTrDBEndpoint
 	return nep, nil
 }
 
-func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*BTrDBEndpoint, error) {
+func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 	b.epmu.RLock()
 	for _, ep := range b.epcache {
 		b.epmu.RUnlock()
@@ -204,7 +204,7 @@ func (b *BTrDB) resyncMash() {
 
 //This returns true if you should redo your operation (and get new ep)
 //and false if you should return the last value/error you got
-func (b *BTrDB) testEpError(ep *BTrDBEndpoint, err error) bool {
+func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
 		b.resyncMash()
@@ -216,7 +216,7 @@ func (b *BTrDB) testEpError(ep *BTrDBEndpoint, err error) bool {
 //This should invalidate the endpoint if some kind of error occurs.
 //Because some values may have already been delivered, async functions using
 //snoopEpErr will not be able to mask cluster errors from the user
-func (b *BTrDB) snoopEpErr(ep *BTrDBEndpoint, err chan error) chan error {
+func (b *BTrDB) snoopEpErr(ep *Endpoint, err chan error) chan error {
 	rv := make(chan error, 2)
 	go func() {
 		for e := range err {
