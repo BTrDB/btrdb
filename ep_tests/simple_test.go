@@ -18,7 +18,7 @@ func TestEndpointsFromEnv(t *testing.T) {
 	}
 }
 func TestConnect(t *testing.T) {
-	db, err := btrdb.ConnectEndpoint(btrdb.EndpointsFromEnv()...)
+	db, err := btrdb.Connect(context.Background(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		t.Fatalf("Could not connect: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestInsertBeforeCreate(t *testing.T) {
 	uu := uuid.NewRandom()
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
-		values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
+		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
 	}
 	err := db.Insert(context.Background(), uu, values)
 	if err == nil {
@@ -74,7 +74,7 @@ func TestInsertQueryRaw(t *testing.T) {
 	}
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
-		values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
+		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
 	}
 	err = db.Insert(context.Background(), uu, values)
 	if err != nil {

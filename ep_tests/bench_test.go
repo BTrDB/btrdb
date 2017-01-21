@@ -19,7 +19,7 @@ func BenchmarkBigList(b *testing.B) {
 		for s := 0; s < 50; s++ {
 			uu := uuid.NewRandom()
 			name := fmt.Sprintf("test.big.%x.%d", colseed[:], col)
-			err := db.Create(context.Background(), uu, name, btrdb.M{"streamindex": fmt.Sprintf("%d", s)})
+			err := db.Create(context.Background(), uu, name, btrdb.M{"streamindex": fmt.Sprintf("%d", s)}, []byte("an annotation"))
 			fmt.Printf("made col=%d s=%d err=%v\n", col, s, err)
 			if err != nil {
 				b.Fatalf("Creation error: %v", err)
@@ -42,7 +42,7 @@ func BenchmarkCreate(b *testing.B) {
 		uu := uuid.NewRandom()
 
 		name := fmt.Sprintf("test.%x", uu[:])
-		err := db.Create(context.Background(), uu, name, nil)
+		err := db.Create(context.Background(), uu, name, nil, nil)
 		if err != nil {
 			b.Fatalf("Creation error: %v", err)
 		}

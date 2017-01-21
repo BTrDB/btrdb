@@ -50,22 +50,32 @@ func (b *BTrDB) StreamFromUUID(uu uuid.UUID) *Stream {
 //later stream operations. Any operation that returns a stream from
 //collection and tags will have ensured the stream exists already.
 func (s *Stream) Exists(ctx context.Context) (bool, error) {
-	ep, err := s.b.ReadEndpointFor(ctx, s.uuid)
-	if err != nil {
-		return false, err
-	}
-	coll, tags, _, err := ep.StreamInfo(ctx, s.uuid)
-	if err != nil {
-		if ToCodedError(err).Code == 404 {
-			return false, nil
+
+	var ep *Endpoint
+	var err error
+	var coll string
+	var tags map[string]string
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
 		}
-		return false, err
+		coll, tags, _, err = ep.StreamInfo(ctx, s.uuid)
+		if err != nil {
+			if ToCodedError(err).Code == 404 {
+				return false, nil
+			}
+			continue
+		}
 	}
-	s.collection = coll
-	s.hasCollection = true
-	s.tags = tags
-	s.hasTags = true
-	return true, nil
+	if err == nil {
+		s.collection = coll
+		s.hasCollection = true
+		s.tags = tags
+		s.hasTags = true
+		return true, nil
+	}
+	return false, err
 }
 
 //Tags returns the tags of the stream. It may require a round trip to the
@@ -104,19 +114,57 @@ func (s *Stream) Collection(ctx context.Context) (string, error) {
 //it queries each time. Take care that you do not intorduce races in your
 //code by assuming this function will always return the same vaue
 func (s *Stream) Version(ctx context.Context) (uint64, error) {
-	ep, err := s.b.ReadEndpointFor(ctx, s.uuid)
-	if err != nil {
-		return 0, err
+	var ep *Endpoint
+	var err error
+
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		var coll string
+		var tags map[string]string
+		var ver uint64
+		coll, tags, ver, err = ep.StreamInfo(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		s.collection = coll
+		s.hasCollection = true
+		s.tags = tags
+		s.hasTags = true
+		return ver, nil
 	}
-	coll, tags, ver, err := ep.StreamInfo(ctx, s.uuid)
-	if err != nil {
-		return 0, err
+	return 0, err
+}
+
+func (s *Stream) Annotation(ctx context.Context) (ann []byte, ver AnnotationVersion, err error) {
+	var ep *Endpoint
+
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		ann, ver, err = ep.StreamAnnotation(ctx, s.uuid)
 	}
-	s.collection = coll
-	s.hasCollection = true
-	s.tags = tags
-	s.hasTags = true
-	return ver, nil
+	return
+
+}
+
+//SetAnnotation sets an annotation on a BTrDB stream. An annotation is
+//an arbitrary blob
+func (s *Stream) SetAnnotation(ctx context.Context, ann []byte) error {
+	var ep *Endpoint
+	var err error
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.SetStreamAnnotation(ctx, s.uuid, 0, ann)
+	}
+	return err
 }
 
 //InsertTV allows insertion of two equal length arrays, one containing times and
@@ -376,7 +424,7 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 	return rv, cver, errc
 }
 
-func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string) (*Stream, error) {
+func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotation []byte) (*Stream, error) {
 	var ep *Endpoint
 	var err error
 	for b.testEpError(ep, err) {
@@ -384,7 +432,7 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 		if err != nil {
 			continue
 		}
-		err = ep.Create(ctx, uu, collection, tags)
+		err = ep.Create(ctx, uu, collection, tags, annotation)
 	}
 	if err != nil {
 		return nil, err

@@ -79,7 +79,7 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
 		fmt.Sprintf("create error %v", err)
 	}
@@ -127,7 +127,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
 		fmt.Sprintf("create error %v", err)
 	}
@@ -188,7 +188,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
 		fmt.Sprintf("create error %v", err)
 	}
@@ -248,7 +248,7 @@ func TestCreate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for s := 0; s < 10; s++ {
 			uu := uuid.NewRandom()
-			str, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"s": fmt.Sprintf("%d", s)})
+			str, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)
 			if err != nil {
 				t.Fatalf("got create error %v", err)
 			}

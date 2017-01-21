@@ -12,6 +12,11 @@ import (
 	pb "gopkg.in/btrdb.v4/grpcinterface"
 )
 
+//AnnotationVersion is the version of a stream annotation. It begins at 1
+//for a newly created stream and increases by 1 for each SetStreamAnnotation
+//call. An AnnotationVersion of 0 means "any version"
+type AnnotationVersion uint64
+
 //Endpoint is a low level connection to a single server. Rather use
 //BTrDB which manages creating and destroying Endpoint objects as required
 type Endpoint struct {
@@ -93,7 +98,7 @@ func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoi
 }
 
 //Create is a low level function, rather use BTrDB.Create()
-func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string) error {
+func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotation []byte) error {
 	taglist := []*pb.Tag{}
 	for k, v := range tags {
 		taglist = append(taglist, &pb.Tag{Key: k, Value: v})
@@ -102,6 +107,7 @@ func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, 
 		Uuid:       uu,
 		Collection: collection,
 		Tags:       taglist,
+		Annotation: annotation,
 	})
 	if err != nil {
 		return err
@@ -130,6 +136,30 @@ func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("You cannot use ListAllCollections if the number of collections exceeds 1 million. Please use ListCollections")
 	}
 	return rv.Collections, nil
+}
+
+//StreamAnnotation is a low level function, rather use Stream.Annotation()
+func (b *Endpoint) StreamAnnotation(ctx context.Context, uu uuid.UUID) ([]byte, AnnotationVersion, error) {
+	rv, err := b.g.StreamAnnotation(ctx, &pb.StreamAnnotationParams{Uuid: uu})
+	if err != nil {
+		return nil, 0, err
+	}
+	if rv.GetStat() != nil {
+		return nil, 0, &CodedError{rv.GetStat()}
+	}
+	return rv.Annotation, AnnotationVersion(rv.AnnotationVersion), nil
+}
+
+//SetStreamAnnotation is a low level function, rather use Stream.SetAnnotation() or Stream.CompareAndSetAnnotation()
+func (b *Endpoint) SetStreamAnnotation(ctx context.Context, uu uuid.UUID, expected AnnotationVersion, newVal []byte) error {
+	rv, err := b.g.SetStreamAnnotation(ctx, &pb.SetStreamAnnotationParams{Uuid: uu, ExpectedAnnotationVersion: uint64(expected), Annotation: newVal})
+	if err != nil {
+		return err
+	}
+	if rv.GetStat() != nil {
+		return &CodedError{rv.GetStat()}
+	}
+	return nil
 }
 
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()

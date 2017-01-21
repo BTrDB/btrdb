@@ -67,11 +67,15 @@ func TestWrongEndpointCreate(t *testing.T) {
 				//Skip, this member is out
 				continue
 			}
-			if mbr != inf.EndpointFor(uu) {
+			_, hash, addresses := inf.EndpointFor(uu)
+			if mbr.Hash != hash {
 				//This is the WRONG endpoint
-				mdb := _connectMbr(t, mbr)
+				mdb, err := btrdb.ConnectEndpoint(context.Background(), addresses...)
+				if err != nil {
+					t.Fatalf("got connection error: %v", err)
+				}
 				//fmt.Printf("Connected member: %s", mbr.GetGrpcEndpoints())
-				err := mdb.Create(context.Background(), uu, fmt.Sprintf("t%x", uu[:]), nil)
+				err = mdb.Create(context.Background(), uu, fmt.Sprintf("t%x", uu[:]), nil, nil)
 				if err == nil || btrdb.ToCodedError(err).Code != 405 {
 					t.Fatalf("Expected wrong endpoint error, got %v", err)
 				} else {
@@ -135,11 +139,12 @@ func TestWrongEndpointInsert(t *testing.T) {
 				//Skip, this member is out
 				continue
 			}
-			if mbr == inf.EndpointFor(uu) {
+			_, hash, _ := inf.EndpointFor(uu)
+			if mbr.Hash == hash {
 				//This is the RIGHT endpoint
 				mdb := _connectMbr(t, mbr)
 				//fmt.Printf("Connected member: %s", mbr.GetGrpcEndpoints())
-				err := mdb.Create(context.Background(), uu, fmt.Sprintf("t%x", uu[:]), nil)
+				err := mdb.Create(context.Background(), uu, fmt.Sprintf("t%x", uu[:]), nil, nil)
 				if err != nil {
 					t.Fatalf("Unexpected error, got %v", err)
 				}
@@ -155,12 +160,13 @@ func TestWrongEndpointInsert(t *testing.T) {
 				//Skip, this member is out
 				continue
 			}
-			if mbr != inf.EndpointFor(uu) {
+			_, hash, _ := inf.EndpointFor(uu)
+			if mbr.Hash != hash {
 				//This is the WRONG endpoint
 				mdb := _connectMbr(t, mbr)
 				values := []*pb.RawPoint{}
 				for i := 0; i < 100; i++ {
-					values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
+					values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
 				}
 				err := mdb.Insert(context.Background(), uu, values)
 				if err == nil || btrdb.ToCodedError(err).Code != 405 {
