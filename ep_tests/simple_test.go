@@ -27,7 +27,7 @@ func TestConnect(t *testing.T) {
 	}
 }
 func _connect(t *testing.T) *btrdb.Endpoint {
-	db, err := btrdb.ConnectEndpoint(btrdb.EndpointsFromEnv()...)
+	db, err := btrdb.ConnectEndpoint(context.Background(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		if t == nil {
 			panic(err)
@@ -41,7 +41,7 @@ func _connectMbr(t *testing.T, m *pb.Member) *btrdb.Endpoint {
 	if m.GetGrpcEndpoints() == "" {
 		t.Fatalf("Member GRPC endpoints unpopulated")
 	}
-	db, err := btrdb.ConnectEndpoint(m.GetGrpcEndpoints())
+	db, err := btrdb.ConnectEndpoint(context.Background(), m.GetGrpcEndpoints())
 	if err != nil {
 		if t == nil {
 			panic(err)
@@ -56,7 +56,7 @@ func TestInsertBeforeCreate(t *testing.T) {
 	uu := uuid.NewRandom()
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
-		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
+		values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
 	}
 	err := db.Insert(context.Background(), uu, values)
 	if err == nil {
@@ -68,22 +68,22 @@ func TestInsertQueryRaw(t *testing.T) {
 	uu := uuid.NewRandom()
 
 	name := fmt.Sprintf("test.%x", uu[:])
-	err := db.Create(context.Background(), uu, name, nil)
+	err := db.Create(context.Background(), uu, name, nil, nil)
 	if err != nil {
 		t.Fatalf("Creation error: %v", err)
 	}
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
-		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
+		values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
 	}
 	err = db.Insert(context.Background(), uu, values)
 	if err != nil {
 		t.Fatalf("Insert error: %s", err.Error())
 	}
 	time.Sleep(6 * time.Second)
-	vals, errs := db.RawValues(context.Background(), uu, 0, 88, btrdb.LatestVersion)
+	vals, _, errs := db.RawValues(context.Background(), uu, 0, 88, btrdb.LatestVersion)
 	count := 0
-	var lastv *pb.RawPoint
+	var lastv btrdb.RawPoint
 	for v := range vals {
 		count++
 		lastv = v
@@ -101,20 +101,20 @@ func TestInsertQueryWindows(t *testing.T) {
 	db := _connect(t)
 	uu := uuid.NewRandom()
 	name := fmt.Sprintf("test.%x", uu[:])
-	err := db.Create(context.Background(), uu, name, nil)
+	err := db.Create(context.Background(), uu, name, nil, nil)
 	if err != nil {
 		t.Fatalf("Creation error: %v", err)
 	}
 	values := []*pb.RawPoint{}
 	for i := 0; i < 100; i++ {
-		values = append(values, &pb.RawPoint{int64(i), float64(i) * 10.0})
+		values = append(values, &pb.RawPoint{Time: int64(i), Value: float64(i) * 10.0})
 	}
 	err = db.Insert(context.Background(), uu, values)
 	if err != nil {
 		t.Fatalf("Insert error: %s", err.Error())
 	}
 	time.Sleep(6 * time.Second)
-	svals, errs := db.Windows(context.Background(), uu, 0, 90, 10, 0, btrdb.LatestVersion)
+	svals, _, errs := db.Windows(context.Background(), uu, 0, 90, 10, 0, btrdb.LatestVersion)
 	for v := range svals {
 		if v.Count != 10 {
 			t.Fatal("Odd window length")
@@ -124,7 +124,7 @@ func TestInsertQueryWindows(t *testing.T) {
 	if e != nil {
 		t.Fatalf("Read error: %v", e.Error())
 	}
-	svals, errs = db.AlignedWindows(context.Background(), uu, 0, 16, 3, btrdb.LatestVersion)
+	svals, _, errs = db.AlignedWindows(context.Background(), uu, 0, 16, 3, btrdb.LatestVersion)
 	count := 0
 	for v := range svals {
 		count++
