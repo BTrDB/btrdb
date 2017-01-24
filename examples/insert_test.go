@@ -57,7 +57,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	time.Sleep(6 * time.Second)
 
 	//Now we can query it and stuff too
-	//Start = 0, End = 1000, Width = 100ns, Depth = 2^0 (all the way), Version = latest
+	//Start = -1000ns, End = 1000ns, Width = 150ns, Depth = 2^0 (all the way), Version = latest
 	rvchan, ver, errc := stream.Windows(context.TODO(), -1000, 1000, 150, 0, btrdb.LatestVersion)
 	_ = ver //don't use this, that's ok
 	for result := range rvchan {
