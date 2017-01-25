@@ -100,6 +100,22 @@ func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoi
 	return nil
 }
 
+//FaultInject is a debugging function that allows specific low level control of the endpoint.
+//If you have to read the documentation, this is not for you.
+func (b *Endpoint) FaultInject(ctx context.Context, typ uint64, args []byte) ([]byte, error) {
+	rv, err := b.g.FaultInject(ctx, &pb.FaultInjectParams{
+		Type:   typ,
+		Params: args,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if rv.GetStat() != nil {
+		return nil, &CodedError{rv.GetStat()}
+	}
+	return rv.Rv, nil
+}
+
 //Create is a low level function, rather use BTrDB.Create()
 func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotation []byte) error {
 	taglist := []*pb.Tag{}
