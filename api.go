@@ -78,6 +78,12 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 	return false, err
 }
 
+//UUID returns the stream's UUID. This may nor may not exist yet, depending
+//on how the stream object was created
+func (s *Stream) UUID() uuid.UUID {
+	return s.uuid
+}
+
 //Tags returns the tags of the stream. It may require a round trip to the
 //server depending on how the stream was acquired.
 func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
