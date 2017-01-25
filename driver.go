@@ -3,6 +3,7 @@ package btrdb
 //go:generate protoc grpcinterface/btrdb.proto --go_out=plugins=grpc:.
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -31,6 +32,8 @@ type RawPoint struct {
 	//Value. Units are stream-dependent
 	Value float64
 }
+
+var forceEp = errors.New("Not really an error, you should not see this")
 
 //ConnectEndpoint is a low level call that connects to a single BTrDB
 //server. It takes multiple arguments, but it is assumed that they are

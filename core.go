@@ -219,6 +219,9 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 	if ep == nil {
 		return true
 	}
+	if err == forceEp {
+		return true
+	}
 	if err == nil {
 		return false
 	}

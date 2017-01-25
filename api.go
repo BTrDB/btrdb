@@ -78,8 +78,8 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 	return false, err
 }
 
-//UUID returns the stream's UUID. This may nor may not exist yet, depending
-//on how the stream object was created
+//UUID returns the stream's UUID. The stream may nor may not exist yet, depending
+//on how the stream object was obtained. See also Stream.Exists()
 func (s *Stream) UUID() uuid.UUID {
 	return s.uuid
 }
@@ -472,6 +472,7 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 	done := false
 	for !done {
 		var thisrv []string
+		err = forceEp
 		//Loop while errors are EP errors that will go away
 		for b.testEpError(ep, err) {
 			ep, err = b.getAnyEndpoint(ctx)
