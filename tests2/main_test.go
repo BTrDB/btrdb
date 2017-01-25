@@ -1,7 +1,9 @@
 package tests2
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"testing"
 	"time"
@@ -145,6 +147,45 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	}
 	if count == 0 {
 		t.Fatalf("Got empty for different version")
+	}
+}
+func TestAnnotationEmpty(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+
+	uu := uuid.NewRandom()
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	if err != nil {
+		t.Fatalf("create error %v", err)
+	}
+	ann, _, err := stream.Annotation(context.Background())
+	if err != nil {
+		t.Fatalf("get annotation error %v", err)
+	}
+	if len(ann) != 0 {
+		t.Fatalf("annotationnonzero %v %x", len(ann), ann)
+	}
+}
+func TestAnnotation(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+	expectedAnn := make([]byte, 100)
+	rand.Read(expectedAnn)
+	uu := uuid.NewRandom()
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, expectedAnn)
+	if err != nil {
+		t.Fatalf("create error %v", err)
+	}
+	ann, _, err := stream.Annotation(context.Background())
+	if err != nil {
+		t.Fatalf("get annotation error %v", err)
+	}
+	if !bytes.Equal(ann, expectedAnn) {
+		t.Fatalf("annotation mismatch:\n%x\n%x", expectedAnn, ann)
 	}
 }
 func TestListCollections(t *testing.T) {
