@@ -89,7 +89,7 @@ func helperRandomDataCount(start int64, end int64, numpts int64) []btrdb.RawPoin
 
 func helperRawQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, version uint64) ([]btrdb.RawPoint, uint64) {
     rpc, verc, errc := s.RawValues(ctx, start, end, version)
-    rv := make([]btrdb.RawPoint, 16)
+    rv := make([]btrdb.RawPoint, 0)
     for rp := range rpc {
         rv = append(rv, rp)
     }
@@ -104,7 +104,7 @@ func helperRawQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start in
 
 func helperWindowQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, width uint64, depth uint8, version uint64) ([]btrdb.StatPoint, uint64) {
     spc, verc, errc := s.Windows(ctx, start, end, width, depth, version)
-    rv := make([]btrdb.StatPoint, 16)
+    rv := make([]btrdb.StatPoint, 0)
     for sp := range spc {
         rv = append(rv, sp)
     }
@@ -112,6 +112,21 @@ func helperWindowQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start
     err := <-errc
     if err != nil {
         t.Fatalf("window query error: %v", err)
+    }
+
+    return rv, ver
+}
+
+func helperStatisticalQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, pwe uint8, version uint64) ([]btrdb.StatPoint, uint64) {
+    spc, verc, errc := s.AlignedWindows(ctx, start, end, pwe, version)
+    rv := make([]btrdb.StatPoint, 0)
+    for sp := range spc {
+        rv = append(rv, sp)
+    }
+    ver := <-verc
+    err := <-errc
+    if err != nil {
+        t.Fatalf("statistical query error: %v", err)
     }
 
     return rv, ver
@@ -130,6 +145,14 @@ const BTRDB_HIGH int64 = (48 << 56)
 
 func helperStatIsNaN(sp *btrdb.StatPoint) bool {
     return math.IsNaN(sp.Min) && math.IsNaN(sp.Mean) && math.IsNaN(sp.Max)
+}
+
+func helperVersion(t *testing.T, ctx context.Context, s *btrdb.Stream) uint64 {
+    v, err := s.Version(ctx)
+    if err != nil {
+        t.Fatalf("version error: %v", err)
+    }
+    return v
 }
 
 /* Tests */
@@ -358,20 +381,350 @@ func TestInf(t *testing.T) {
         t.Fatalf("Missing or extra statistical points in queried dataset (expected %v, got %v)", len(times) / 2, len(spts))
     }
     for i, sp := range spts {
-        if sp.Time != times[2 * i] {
+        if sp.Time != times[2 * i] || sp.Count != 2 {
             t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v, got t=%v c=%v)", times[2 * i], 2, sp.Time, sp.Count)
         }
     }
     if !math.IsInf(spts[0].Min, -1) || !math.IsNaN(spts[0].Mean) || !math.IsInf(spts[0].Max, 1) {
-        t.Fatal("Queried statistical point is not (-inf, NaN, +inf) as expected")
+        t.Fatal("Queried statistical point is not (-Inf, NaN, +Inf) as expected")
     }
     if spts[1].Min != values[3] || !math.IsInf(spts[1].Mean, 1) || !math.IsInf(spts[1].Max, 1) {
-        t.Fatalf("Queried statistical point is not (%f, +inf, +inf) as expected", values[3])
+        t.Fatalf("Queried statistical point is not (%f, +Inf, +Inf) as expected", values[3])
     }
     if !math.IsInf(spts[2].Min, -1) || !math.IsInf(spts[2].Mean, -1) || spts[2].Max != values[4] {
-        t.Fatalf("Queried statistical point is not (-inf, -inf, %f) as expected", values[4])
+        t.Fatalf("Queried statistical point is not (-Inf, -Inf, %f) as expected", values[4])
     }
     if spts[3].Min != math.Min(values[6], values[7]) || spts[3].Mean != (values[6] + values[7]) / 2 || spts[3].Max != math.Max(values[6], values[7]) {
         t.Fatal("Queried statistical point does not have expected values")
+    }
+}
+
+func TestSpecialValues(t *testing.T) {
+    highest := math.Float64frombits(0x7FEFFFFFFFFFFFFF)
+    lowest := math.Float64frombits(0x7FEFFFFFFFFFFFFF)
+    smallestpos := math.Float64frombits(0x0000000000000001)
+    zeropos := math.Float64frombits(0x0000000000000000)
+    zeroneg := math.Float64frombits(0x8000000000000000)
+    times := []int64{0, 1000, 2000, 3000, 4000, 5000, 6000, 7000}
+    values := []float64{highest, highest, lowest, lowest, smallestpos, zeroneg, zeropos, smallestpos}
+
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsertTV(t, ctx, stream, times, values)
+    pts, _ := helperRawQuery(t, ctx, stream, times[0], times[len(times) - 1] + 1, 0)
+    if len(times) != len(pts) {
+        t.Fatalf("Missing or extra raw points in queried dataset (expected %v, got %v)", len(times), len(pts))
+    }
+    for i, rp := range pts {
+        if rp.Time != times[i] || math.Float64bits(rp.Value) != math.Float64bits(values[i]) {
+            t.Fatal("Inserted and queried datasets do not match")
+        }
+    }
+    spts, _ := helperWindowQuery(t, ctx, stream, 0, 10000, 2000, 0, 0)
+    if len(spts) != (len(times) / 2) {
+        t.Log(spts)
+        t.Fatalf("Missing or extra statistical points in queried dataset (expected %v, got %v)", len(times) / 2, len(spts))
+    }
+    for i, sp := range spts {
+        if sp.Time != times[2 * i] || sp.Count != 2 || sp.Min != math.Min(values[2 * i], values[2 * i + 1]) || sp.Max != math.Max(values[2 * i], values[2 * i + 1]) {
+            t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v min=%v max=%v, got t=%v c=%v min=%v max=%v)", times[2 * i], 2, math.Min(values[2 * i], values[2 * i + 1]), math.Max(values[2 * i], values[2 * i + 1]), sp.Time, sp.Count, sp.Min, sp.Max)
+        }
+    }
+    if !(math.IsInf(spts[0].Mean, 1) || spts[0].Mean == highest) {
+        t.Logf("Mean of (highest, highest) must be +Inf or highest: got %f", spts[0].Mean)
+        t.Fail()
+    }
+    if !(math.IsInf(spts[1].Mean, -1) || spts[1].Mean == lowest) {
+        t.Logf("Mean of (lowest, lowest) must be -Inf or lowest: got %f", spts[1].Mean)
+        t.Fail()
+    }
+    if spts[2].Mean != values[4] / 2.0 {
+        t.Logf("Mean of (val, -0.0): expected %f, got %f", values[4] / 2.0, spts[2].Mean)
+        t.Fail()
+    }
+    if spts[3].Mean != values[7] / 2.0 {
+        t.Logf("Mean of (0.0, val): expected %f, got %f", values[7] / 2.0, spts[3].Mean)
+        t.Fail()
+    }
+}
+
+func TestWindowBoundaryRounding1(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperWindowQuery(t, ctx, stream, 11136, 11647, 64, 0, 0)
+    if len(spts) != 7 {
+        t.Log(spts)
+        t.Fatalf("Expected 7 points: got %d", len(spts))
+    }
+    for i, sp := range spts {
+        if sp.Time != 11136 + (int64(i) * 64) {
+            t.Fail()
+            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+        }
+    }
+}
+
+func TestWindowBoundaryRounding2(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperWindowQuery(t, ctx, stream, 11136, 11584, 64, 0, 0)
+    if len(spts) != 7 {
+        t.Log(spts)
+        t.Fatalf("Expected 7 points: got %d", len(spts))
+    }
+    for i, sp := range spts {
+        if sp.Time != 11136 + (int64(i) * 64) {
+            t.Fail()
+            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+        }
+    }
+}
+
+func TestStatisticalBoundaryRounding1(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperStatisticalQuery(t, ctx, stream, 11136, 11647, 6, 0)
+    if len(spts) != 7 {
+        t.Log(spts)
+        t.Fatalf("Expected 7 points: got %d", len(spts))
+    }
+    for i, sp := range spts {
+        if sp.Time != 11136 + (int64(i) * 64) {
+            t.Fail()
+            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+        }
+    }
+}
+
+func TestStatisticalBoundaryRounding2(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperStatisticalQuery(t, ctx, stream, 11199, 11584, 6, 0)
+    if len(spts) != 7 {
+        t.Log(spts)
+        t.Fatalf("Expected 7 points: got %d", len(spts))
+    }
+    for i, sp := range spts {
+        if sp.Time != 11136 + (int64(i) * 64) {
+            t.Fail()
+            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+        }
+    }
+}
+
+func TestRawBoundaryRounding(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    rpts, _ := helperRawQuery(t, ctx, stream, 10000, 19990, 0)
+    if len(rpts) != 999 {
+        t.Fatalf("Expected 999 points: got %d", len(rpts))
+    }
+    for i, rp := range rpts {
+        if rp.Time != 10000 + (int64(i) * 10) {
+            t.Fail()
+            t.Logf("Queried point %d expected at %v: got %v", i, 10000 + (int64(i) * 10), rp.Time)
+        }
+    }
+}
+
+func TestWindowSmallRange1(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperWindowQuery(t, ctx, stream, 11137, 11200, 64, 0, 0)
+    if len(spts) != 0 {
+        t.Log(spts)
+        t.Fatalf("Expected 0 points: got %d", len(spts))
+    }
+}
+
+func TestWindowSmallRange2(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperWindowQuery(t, ctx, stream, 11137, 11201, 64, 0, 0)
+    if len(spts) != 1 {
+        t.Log(spts)
+        t.Fatalf("Expected 1 point: got %d", len(spts))
+    }
+    if spts[0].Time != 11137 {
+        t.Fatalf("Point is at incorrect time: expected 11137, got %v", spts[0].Time)
+    }
+}
+
+func TestStatisticalSmallRange1(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperStatisticalQuery(t, ctx, stream, 11136, 11199, 6, 0)
+    if len(spts) != 0 {
+        t.Log(spts)
+        t.Fatalf("Expected 0 points: got %d", len(spts))
+    }
+}
+
+func TestStatisticalSmallRange2(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    spts, _ := helperStatisticalQuery(t, ctx, stream, 11199, 11200, 6, 0)
+    if len(spts) != 1 {
+        t.Log(spts)
+        t.Fatalf("Expected 1 point: got %d", len(spts))
+    }
+    if spts[0].Time != 11136 {
+        t.Fatalf("Point is at incorrect time: expected 11136, got %v", spts[0].Time)
+    }
+}
+
+func TestRawSmallRange1(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    rpts, _ := helperRawQuery(t, ctx, stream, 12001, 12010, 0)
+    if len(rpts) != 0 {
+        t.Log(rpts)
+        t.Fatalf("Expected 0 points: got %d", len(rpts))
+    }
+}
+
+func TestRawSmallRange2(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperRandomData(10000, 20000, 10)
+    helperInsert(t, ctx, stream, data)
+    rpts, _ := helperRawQuery(t, ctx, stream, 12000, 12010, 0)
+    if len(rpts) != 1 {
+        t.Log(rpts)
+        t.Fatalf("Expected 1 point: got %d", len(rpts))
+    }
+    if rpts[0].Time != 12000 {
+        t.Fatalf("Point is at incorrect time: expected 12000, got %v", rpts[0].Time)
+    }
+}
+
+func TestWindowNegativeRange(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    _, _, errc := stream.Windows(ctx, CANONICAL_START + 100, CANONICAL_START + 50, 10, 0, 0)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
+        t.Fatalf("Expected \"invalid time range\"; got %v", err)
+    }
+}
+
+func TestWindowInvalidDepth(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    _, _, errc := stream.Windows(ctx, CANONICAL_START + 50, CANONICAL_START + 100, 10, 64, 0)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidPointWidth {
+        t.Fatalf("Expected \"bad point width\"; got %v", err)
+    }
+}
+
+func TestWindowInvalidVersion(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    ver := helperVersion(t, ctx, stream)
+    _, _, errc := stream.Windows(ctx, CANONICAL_START + 50, CANONICAL_START + 100, 10, 61, ver + 1)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchStream {
+        t.Fatalf("Expected \"no such stream\"; got %v", err)
+    }
+}
+
+func TestStatisticalNegativeRange(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    _, _, errc := stream.AlignedWindows(ctx, CANONICAL_START + 100, CANONICAL_START + 50, 3, 0)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
+        t.Fatalf("Expected \"invalid time range\"; got %v", err)
+    }
+}
+
+func TestStatisticalInvalidPointWidth(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    _, _, errc := stream.AlignedWindows(ctx, CANONICAL_START + 50, CANONICAL_START + 100, 64, 0)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidPointWidth {
+        t.Fatalf("Expected \"bad point width\"; got %v", err)
+    }
+}
+
+func TestStatisticalInvalidVersion(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    ver := helperVersion(t, ctx, stream)
+    _, _, errc := stream.AlignedWindows(ctx, CANONICAL_START + 50, CANONICAL_START + 100, 61, ver + 1)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchStream {
+        t.Fatalf("Expected \"no such stream\"; got %v", err)
+    }
+}
+
+func TestRawNegativeRange(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    _, _, errc := stream.RawValues(ctx, CANONICAL_START + 100, CANONICAL_START + 50, 0)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
+        t.Fatalf("Expected \"invalid time range\"; got %v", err)
+    }
+}
+
+func TestRawInvalidVersion(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    ver := helperVersion(t, ctx, stream)
+    _, _, errc := stream.RawValues(ctx, CANONICAL_START + 50, CANONICAL_START + 100, ver + 1)
+    err := <-errc
+    if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchStream {
+        t.Fatalf("Expected \"no such stream\"; got %v", err)
     }
 }
