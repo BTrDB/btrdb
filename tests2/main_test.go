@@ -408,7 +408,8 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	ctx := context.Background()
+	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		t.Fatalf("connection error %v", err)
 	}
@@ -416,15 +417,16 @@ func TestCreate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for s := 0; s < 10; s++ {
 			uu := uuid.NewRandom()
-			str, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)
+			coll := fmt.Sprintf("test.%x", uu[:])
+			str, err := db.Create(ctx, uu, coll, btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)
 			if err != nil {
 				t.Fatalf("got create error %v", err)
 			}
-			ver, err := str.Version(context.Background())
+			ver, err := str.Version(ctx)
 			if err != nil {
 				t.Fatalf("got error querying version %v", err)
 			}
-			data, verc, errc := str.RawValues(context.Background(), 0, 100, btrdb.LatestVersion)
+			data, verc, errc := str.RawValues(ctx, 0, 100, btrdb.LatestVersion)
 			count := 0
 			for d := range data {
 				count++
@@ -440,6 +442,21 @@ func TestCreate(t *testing.T) {
 			}
 			if ver != 10 {
 				t.Fatalf("Expected version 10, got %v", ver)
+			}
+
+			/* Now check if we can query all of the streams */
+			tags, err := str.Tags(ctx)
+			if err != nil {
+				t.Fatalf("got error querying tags: %v", err)
+			}
+
+			s, err := db.LookupStream(ctx, coll, tags)
+			if err != nil {
+				t.Fatalf("got error querying stream: %v", err)
+			}
+
+			if s.UUID().String() != uu.String() {
+				t.Fatalf("UUID of queried stream doesn't match UUID of created stream")
 			}
 		}
 	}
