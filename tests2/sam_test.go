@@ -432,20 +432,16 @@ func TestSpecialValues(t *testing.T) {
         }
     }
     if !(math.IsInf(spts[0].Mean, 1) || spts[0].Mean == highest) {
-        t.Logf("Mean of (highest, highest) must be +Inf or highest: got %f", spts[0].Mean)
-        t.Fail()
+        t.Errorf("Mean of (highest, highest) must be +Inf or highest: got %f", spts[0].Mean)
     }
     if !(math.IsInf(spts[1].Mean, -1) || spts[1].Mean == lowest) {
-        t.Logf("Mean of (lowest, lowest) must be -Inf or lowest: got %f", spts[1].Mean)
-        t.Fail()
+        t.Errorf("Mean of (lowest, lowest) must be -Inf or lowest: got %f", spts[1].Mean)
     }
     if spts[2].Mean != values[4] / 2.0 {
-        t.Logf("Mean of (val, -0.0): expected %f, got %f", values[4] / 2.0, spts[2].Mean)
-        t.Fail()
+        t.Errorf("Mean of (val, -0.0): expected %f, got %f", values[4] / 2.0, spts[2].Mean)
     }
     if spts[3].Mean != values[7] / 2.0 {
-        t.Logf("Mean of (0.0, val): expected %f, got %f", values[7] / 2.0, spts[3].Mean)
-        t.Fail()
+        t.Errorf("Mean of (0.0, val): expected %f, got %f", values[7] / 2.0, spts[3].Mean)
     }
 }
 
@@ -462,8 +458,7 @@ func TestWindowBoundaryRounding1(t *testing.T) {
     }
     for i, sp := range spts {
         if sp.Time != 11136 + (int64(i) * 64) {
-            t.Fail()
-            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+            t.Errorf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
         }
     }
 }
@@ -481,8 +476,7 @@ func TestWindowBoundaryRounding2(t *testing.T) {
     }
     for i, sp := range spts {
         if sp.Time != 11136 + (int64(i) * 64) {
-            t.Fail()
-            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+            t.Errorf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
         }
     }
 }
@@ -500,8 +494,7 @@ func TestStatisticalBoundaryRounding1(t *testing.T) {
     }
     for i, sp := range spts {
         if sp.Time != 11136 + (int64(i) * 64) {
-            t.Fail()
-            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+            t.Errorf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
         }
     }
 }
@@ -519,8 +512,7 @@ func TestStatisticalBoundaryRounding2(t *testing.T) {
     }
     for i, sp := range spts {
         if sp.Time != 11136 + (int64(i) * 64) {
-            t.Fail()
-            t.Logf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
+            t.Errorf("Queried point %d expected at %v: got %v", i, 11136 + (i * 64), sp.Time)
         }
     }
 }
@@ -537,8 +529,7 @@ func TestRawBoundaryRounding(t *testing.T) {
     }
     for i, rp := range rpts {
         if rp.Time != 10000 + (int64(i) * 10) {
-            t.Fail()
-            t.Logf("Queried point %d expected at %v: got %v", i, 10000 + (int64(i) * 10), rp.Time)
+            t.Errorf("Queried point %d expected at %v: got %v", i, 10000 + (int64(i) * 10), rp.Time)
         }
     }
 }
@@ -726,5 +717,227 @@ func TestRawInvalidVersion(t *testing.T) {
     err := <-errc
     if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchStream {
         t.Fatalf("Expected \"no such stream\"; got %v", err)
+    }
+}
+
+func TestClosedChannel(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperInsert(t, ctx, stream, helperCanonicalData())
+    resp, _, _ := stream.RawValues(ctx, CANONICAL_START, CANONICAL_END + 1, 0)
+    close(resp)
+
+    // Check if the bindings still work
+    helperRawQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END + 1, 0)
+}
+
+const BIG_LOW = 0
+const BIG_HIGH = 1485470183000000000
+const BIG_GAP = 11432156527
+
+func helperOOMGen() []btrdb.RawPoint {
+    fmt.Println("Generating data...")
+    return helperRandomData(BIG_LOW, BIG_HIGH, BIG_GAP)
+}
+/* Moving this to separate function helps with garbage collection. */
+func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
+    bigdata := helperOOMGen()
+    fmt.Println("Inserting data...")
+    helperInsert(t, ctx, s, bigdata)
+}
+
+func TestOOM(t *testing.T) {
+    if testing.Short() {
+        t.Skip()
+    }
+
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperOOMInsert(t, ctx, stream)
+
+    fmt.Println("Making queries...")
+
+    const NUM_QUERIES = 2000000
+
+    var chans []chan btrdb.RawPoint = make([]chan btrdb.RawPoint, NUM_QUERIES)
+    var errchans []chan error = make([]chan error, NUM_QUERIES)
+
+    for i := 0; i < NUM_QUERIES; i++ {
+        c, _, ec := stream.RawValues(ctx, BIG_LOW, BIG_HIGH + 1, 0)
+        chans[i] = c
+        errchans[i] = ec
+    }
+
+    fmt.Println("Waiting for a minute...")
+    time.Sleep(time.Minute)
+
+    fmt.Println("Checking if an error happened...")
+    for j, ec := range errchans {
+        select {
+        case err := <-ec:
+            if err != nil {
+                t.Fatalf("Error in query: %v (first resp is %v)", err, <-chans[j])
+            }
+        default:
+        }
+    }
+
+    fmt.Println("Checking if the database is still responsive...")
+    db2 := helperConnect(t, ctx)
+    stream2 := helperCreateDefaultStream(t, ctx, db2, nil, nil)
+    helperInsert(t, ctx, stream2, helperCanonicalData())
+}
+
+func TestContextCancel(t *testing.T) {
+    if testing.Short() {
+        t.Skip()
+    }
+
+    ctx, cancelfunc := context.WithCancel(context.Background())
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    helperOOMInsert(t, ctx, stream)
+
+    fmt.Println("Querying data...")
+
+    c, _, ec := stream.RawValues(ctx, BIG_LOW, BIG_HIGH + 1, 0)
+    go func() {
+        time.Sleep(time.Second)
+        cancelfunc()
+    }()
+
+    var count int64 = 0
+    for _ = range c {
+        count++
+    }
+    err := <-ec
+    if err == nil || btrdb.ToCodedError(err).Code != bte.ContextError {
+        t.Errorf("Expected \"context error\"; got %v", err)
+    }
+
+    if count != (BIG_HIGH - BIG_LOW) / BIG_GAP {
+        t.Logf("Got fewer points than inserted, as expected (inserted %v points; got %v)", (BIG_HIGH - BIG_LOW) / BIG_GAP, count)
+    }
+}
+
+func TestRawCorrect(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperCanonicalData()
+    fmt.Println("Inserting...")
+    helperInsert(t, ctx, stream, data)
+    fmt.Println("Querying...")
+    rpts, _ := helperRawQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END + 1, 0)
+    fmt.Println("Verifying...")
+    if len(rpts) != len(data) {
+        t.Fatalf("Did not receive the same number of points as were inserted: inserted %v, but received %v", len(data), len(rpts))
+    }
+    for i, rp := range rpts {
+        if rp != data[i] {
+            t.Fatalf("Received point at index %d does not match inserted point (inserted %v but received %v)", i, data[i], rp)
+        }
+    }
+}
+
+func helperFloatEquals(x float64, y float64) bool {
+	return math.Abs(x - y) < 1e-14 * math.Max(math.Abs(x), math.Abs(y))
+}
+
+func TestStatisticalCorrect(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperCanonicalData()
+    fmt.Println("Inserting...")
+    helperInsert(t, ctx, stream, data)
+    var pwe uint8
+    for pwe = 48; pwe <= 52; pwe++ {
+        fmt.Printf("Querying pwe=%v...\n", pwe)
+        spts, _ := helperStatisticalQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END + (int64(1) << pwe), pwe, 0)
+        fmt.Printf("Verifying pwe=%v [len=%d]...\n", pwe, len(spts))
+        dataidx := 0
+        for j, sp := range spts {
+            if (sp.Time & ((int64(1) << pwe) - 1)) != 0 {
+                t.Fatalf("Returned statistical point is at time %v, which is not aligned", sp.Time)
+            }
+            if sp.Count == 0 {
+                t.Fatalf("Returned statistical point at index %v has Count == 0", j)
+            }
+            endtime := sp.Time + (int64(1) << pwe)
+            count := uint64(0)
+            min := math.Inf(1)
+            max := math.Inf(-1)
+            sum := 0.0
+            for ; dataidx != len(data) && data[dataidx].Time < endtime; dataidx++ {
+                rp := &data[dataidx]
+                if rp.Time < sp.Time {
+                    t.Fatalf("Returned statistical points skip some inserted points (point at %v but skips to %v)", rp.Time, sp.Time)
+                }
+                min = math.Min(min, rp.Value)
+                sum += rp.Value
+                max = math.Max(max, rp.Value)
+                count++
+            }
+            mean := sum / float64(count)
+            if min != sp.Min || !helperFloatEquals(mean, sp.Mean) || max != sp.Max || count != sp.Count {
+                t.Fatalf("Returned statistical point at index %d doesn't match expected (got %v but expected {%v %v %v %v %v})", j, sp, sp.Time, min, mean, max, count)
+            }
+        }
+        if dataidx != len(data) {
+            t.Fatalf("Unaccounted raw points lie after returned statistical points: %v", data[dataidx:])
+        }
+    }
+}
+
+// We should also test varying the depth, but I don't know exactly how BTrDB
+// does the approximation for nonzero depth, so I don't know how to test for
+// correctness there.
+func TestWindowCorrect(t *testing.T) {
+    ctx := context.Background()
+    db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+    data := helperCanonicalData()
+    fmt.Println("Inserting...")
+    helperInsert(t, ctx, stream, data)
+    var width uint64
+    var widths = []uint64{99999999999990, 100000000000000, 199999999999999, 200000000000000, 220000000000000, 3184713375796179, 76923076923076915, 99999999999999, 1000000000000000000}
+    for _, width = range widths {
+        fmt.Printf("Querying width=%v...\n", width)
+        spts, _ := helperWindowQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END + int64(width), width, 0, 0)
+        fmt.Printf("Verifying width=%v [len=%d]...\n", width, len(spts))
+        dataidx := 0
+        for j, sp := range spts {
+            if (uint64(sp.Time - CANONICAL_START) % width) != 0 {
+                t.Fatalf("Returned statistical point is at time %v, which is not aligned", sp.Time)
+            }
+            if sp.Count == 0 {
+                t.Fatalf("Returned statistical point at index %v has Count == 0", j)
+            }
+            endtime := sp.Time + int64(width)
+            count := uint64(0)
+            min := math.Inf(1)
+            max := math.Inf(-1)
+            sum := 0.0
+            for ; dataidx != len(data) && data[dataidx].Time < endtime; dataidx++ {
+                rp := &data[dataidx]
+                if rp.Time < sp.Time {
+                    t.Fatalf("Returned statistical points skip some inserted points (point at %v but skips to %v)", rp.Time, sp.Time)
+                }
+                min = math.Min(min, rp.Value)
+                sum += rp.Value
+                max = math.Max(max, rp.Value)
+                count++
+            }
+            mean := sum / float64(count)
+            if min != sp.Min || !helperFloatEquals(mean, sp.Mean) || max != sp.Max || count != sp.Count {
+                t.Fatalf("Returned statistical point at index %d doesn't match expected (got %v but expected {%v %v %v %v %v})", j, sp, sp.Time, min, mean, max, count)
+            }
+        }
+        if dataidx != len(data) {
+            t.Fatalf("Unaccounted raw points lie after returned statistical points: %v", data[dataidx:])
+        }
     }
 }
