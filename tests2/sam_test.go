@@ -234,7 +234,6 @@ func TestNearestBackwardExclusive(t *testing.T) {
 
 // Check if the insert range is really inclusive of the earliest time
 func TestEarliestInclusive(t *testing.T) {
-    t.Skip() // Michael is currently working on this
     ctx := context.Background()
     db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
@@ -770,8 +769,8 @@ func TestOOM(t *testing.T) {
         errchans[i] = ec
     }
 
-    fmt.Println("Waiting for a minute...")
-    time.Sleep(time.Minute)
+    fmt.Println("Waiting for 10 seconds...")
+    time.Sleep(10 * time.Second)
 
     fmt.Println("Checking if an error happened...")
     for j, ec := range errchans {
