@@ -64,6 +64,7 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
+			fmt.Printf("endpoint error: err=%v a=%v\n", err, a)
 			continue
 		}
 		client := pb.NewBTrDBClient(conn)
