@@ -78,6 +78,7 @@ func Connect(ctx context.Context, endpoints ...string) (*BTrDB, error) {
 			continue
 		}
 		b.activeMash.Store(mash)
+		ep.Disconnect()
 		break
 	}
 	if b.activeMash.Load() == nil {
