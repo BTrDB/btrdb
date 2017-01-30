@@ -87,6 +87,7 @@
 package btrdb
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -98,6 +99,8 @@ import (
 )
 
 const BUFFER_LEN = 1024
+
+var err_closed = errors.New("Connection closed")
 
 // BTrDBConnection abstracts a single connection to a BTrDB. A single
 // BTrDBConnection supports multiple concurrent requests to BTrDB.
@@ -144,7 +147,15 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 			recvSeg, e = capnp.ReadFromStream(conn, nil)
 			if e != nil {
 				if bc.open {
+					bc.outstandinglock.Lock()
 					fmt.Printf("Could not read response from BTrDB: %v\n", e)
+					bc.open = false
+					conn.Close()
+					for et, respchan = range bc.outstanding {
+						close(respchan)
+						delete(bc.outstanding, et)
+					}
+					bc.outstandinglock.Unlock()
 				}
 				return
 			}
@@ -157,9 +168,6 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 			respchan <- response
 
 			if response.Final() {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				bc.outstandinglock.Unlock()
 				close(respchan)
 			}
 		}
@@ -243,6 +251,10 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -267,7 +279,14 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
@@ -300,6 +319,10 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -324,7 +347,14 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			asyncerr <- stat.String()
@@ -370,6 +400,10 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -403,7 +437,14 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
@@ -461,6 +502,10 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -494,7 +539,14 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
@@ -557,6 +609,10 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -583,7 +639,14 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
@@ -634,6 +697,10 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -667,7 +734,14 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
@@ -733,6 +807,10 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -766,7 +844,14 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
@@ -835,6 +920,10 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
+	if !bc.open {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, err_closed
+	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -868,7 +957,14 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-			  return
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				ok = bc.open
+				bc.outstandinglock.Unlock()
+				if !ok {
+					asyncerr <- err_closed.Error()
+				}
+			  	return
 			}
 			var stat cpint.StatusCode = response.StatusCode()
 			if stat != cpint.STATUSCODE_OK {
