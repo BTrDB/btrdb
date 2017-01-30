@@ -100,7 +100,8 @@ import (
 
 const BUFFER_LEN = 1024
 
-var err_closed = errors.New("Connection closed")
+// Error if the connection to BTrDB is lost
+var ERR_CLOSED = errors.New("Connection closed")
 
 // BTrDBConnection abstracts a single connection to a BTrDB. A single
 // BTrDBConnection supports multiple concurrent requests to BTrDB.
@@ -253,7 +254,7 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, err_closed
+		return nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -284,7 +285,7 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -321,7 +322,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, err_closed
+		return nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -352,7 +353,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -402,7 +403,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, nil, err_closed
+		return nil, nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -442,7 +443,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -504,7 +505,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, nil, err_closed
+		return nil, nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -544,7 +545,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -611,7 +612,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, err_closed
+		return nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -644,7 +645,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -699,7 +700,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, nil, err_closed
+		return nil, nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -739,7 +740,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -809,7 +810,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, nil, err_closed
+		return nil, nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -849,7 +850,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
@@ -922,7 +923,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 	bc.outstandinglock.Lock()
 	if !bc.open {
 		bc.outstandinglock.Unlock()
-		return nil, nil, nil, err_closed
+		return nil, nil, nil, ERR_CLOSED
 	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
@@ -962,7 +963,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 				ok = bc.open
 				bc.outstandinglock.Unlock()
 				if !ok {
-					asyncerr <- err_closed.Error()
+					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
 			}
