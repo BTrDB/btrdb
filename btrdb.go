@@ -113,7 +113,7 @@ type BTrDBConnection struct {
 	outstanding     map[uint64]chan cpint.Response
 	outstandinglock *sync.RWMutex
 
-	open bool
+	open uint32 // pseudo-bool which I can assign atomically
 }
 
 // Creates a connection to the BTrDB at the provided address, and returns a
@@ -135,7 +135,7 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		outstanding:     make(map[uint64]chan cpint.Response),
 		outstandinglock: &sync.RWMutex{},
 
-		open: true,
+		open: 1,
 	}
 
 	go func() {
@@ -147,14 +147,14 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 		for {
 			recvSeg, e = capnp.ReadFromStream(conn, nil)
 			if e != nil {
-				if bc.open {
+				if atomic.LoadUint32(&bc.open) != 0 {
+					atomic.StoreUint32(&bc.open, 0)
+					conn.Close()
 					bc.outstandinglock.Lock()
 					fmt.Printf("Could not read response from BTrDB: %v\n", e)
-					bc.open = false
-					conn.Close()
 					for et, respchan = range bc.outstanding {
-						close(respchan)
 						delete(bc.outstanding, et)
+						close(respchan)
 					}
 					bc.outstandinglock.Unlock()
 				}
@@ -169,6 +169,9 @@ func NewBTrDBConnection(addr string) (*BTrDBConnection, error) {
 			respchan <- response
 
 			if response.Final() {
+				bc.outstandinglock.Lock()
+				delete(bc.outstanding, et)
+				bc.outstandinglock.Unlock()
 				close(respchan)
 			}
 		}
@@ -185,7 +188,7 @@ func (bc *BTrDBConnection) newEchoTag() uint64 {
 // behavior to call this while there are outstanding requests on the
 // connection.
 func (bc *BTrDBConnection) Close() error {
-	bc.open = false
+	atomic.StoreUint32(&bc.open, 0)
 	return bc.conn.Close()
 }
 
@@ -222,6 +225,11 @@ type TimeRange struct {
 // the BTrDB, the status code will appear on the channel as a string; 'ok' is
 // the value corresponding to success.
 func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, sync bool) (chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 	var numrecs int = len(points)
@@ -252,10 +260,6 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -280,11 +284,7 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -301,6 +301,11 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 //
 // Return values are the same as in InsertValues.
 func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_time int64) (chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -320,10 +325,6 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -348,11 +349,7 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -378,6 +375,11 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 // fourth value returned is an error, used if the request cannot be sent to the
 // database.
 func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan StandardValue, chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -401,10 +403,6 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -438,11 +436,7 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -480,6 +474,11 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 //
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan StandardValue, chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -503,10 +502,6 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -540,11 +535,7 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -585,6 +576,11 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 // sent on this channel). The fourth value returned is an error, used if the
 // request cannot be sent to the database.
 func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 	var numrecs int = len(uuids)
@@ -610,10 +606,6 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -640,11 +632,7 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -675,6 +663,11 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 //
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan TimeRange, chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -698,10 +691,6 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -735,11 +724,7 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -784,6 +769,11 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 //
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -808,10 +798,6 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -845,11 +831,7 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
@@ -896,6 +878,11 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 //
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, end_time int64, width uint64, depth uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
+	if atomic.LoadUint32(&bc.open) == 0 {
+		bc.outstandinglock.Unlock()
+		return nil, nil, nil, ERR_CLOSED
+	}
+
 	var err error
 	var et uint64 = bc.newEchoTag()
 
@@ -921,10 +908,6 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 
 	segments = make(chan cpint.Response, BUFFER_LEN)
 	bc.outstandinglock.Lock()
-	if !bc.open {
-		bc.outstandinglock.Unlock()
-		return nil, nil, nil, ERR_CLOSED
-	}
 	bc.outstanding[et] = segments
 	bc.outstandinglock.Unlock()
 
@@ -958,11 +941,7 @@ func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, e
 			var ok bool
 			response, ok = <- segments
 			if !ok {
-				bc.outstandinglock.Lock()
-				delete(bc.outstanding, et)
-				ok = bc.open
-				bc.outstandinglock.Unlock()
-				if !ok {
+				if atomic.LoadUint32(&bc.open) == 0 {
 					asyncerr <- ERR_CLOSED.Error()
 				}
 			  	return
