@@ -226,7 +226,6 @@ type TimeRange struct {
 // the value corresponding to success.
 func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, sync bool) (chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, ERR_CLOSED
 	}
 
@@ -302,7 +301,6 @@ func (bc *BTrDBConnection) InsertValues(uuid uuid.UUID, points []StandardValue, 
 // Return values are the same as in InsertValues.
 func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_time int64) (chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, ERR_CLOSED
 	}
 
@@ -376,7 +374,6 @@ func (bc *BTrDBConnection) DeleteValues(uuid uuid.UUID, start_time int64, end_ti
 // database.
 func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64, end_time int64, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, nil, ERR_CLOSED
 	}
 
@@ -475,7 +472,6 @@ func (bc *BTrDBConnection) QueryStandardValues(uuid uuid.UUID, start_time int64,
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backward bool, version uint64) (chan StandardValue, chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, nil, ERR_CLOSED
 	}
 
@@ -577,7 +573,6 @@ func (bc *BTrDBConnection) QueryNearestValue(uuid uuid.UUID, time int64, backwar
 // request cannot be sent to the database.
 func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, ERR_CLOSED
 	}
 
@@ -664,7 +659,6 @@ func (bc *BTrDBConnection) QueryVersion(uuids []uuid.UUID) (chan uint64, chan st
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation uint64, to_generation uint64, resolution uint8) (chan TimeRange, chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, nil, ERR_CLOSED
 	}
 
@@ -770,7 +764,6 @@ func (bc *BTrDBConnection) QueryChangedRanges(uuid uuid.UUID, from_generation ui
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int64, end_time int64, point_width uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, nil, ERR_CLOSED
 	}
 
@@ -879,7 +872,6 @@ func (bc *BTrDBConnection) QueryStatisticalValues(uuid uuid.UUID, start_time int
 // Return values are the same as in QueryStandardValues.
 func (bc *BTrDBConnection) QueryWindowValues(uuid uuid.UUID, start_time int64, end_time int64, width uint64, depth uint8, version uint64) (chan StatisticalValue, chan uint64, chan string, error) {
 	if atomic.LoadUint32(&bc.open) == 0 {
-		bc.outstandinglock.Unlock()
 		return nil, nil, nil, ERR_CLOSED
 	}
 
