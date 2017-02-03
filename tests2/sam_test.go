@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -947,11 +948,68 @@ func TestWindowCorrect(t *testing.T) {
 func TestListCollectionsPrefix(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	cols, err := db.ListCollections(context.Background(), "psl.")
+	cols, err := db.ListCollections(ctx, "psl.")
 	if err != nil {
 		t.Fatalf("Unexpected list error: %v", err)
 	}
 	for i, c := range cols {
 		fmt.Printf("%d: %s\n", i, c)
+	}
+}
+
+func streamtoleafname(ctx context.Context, s *btrdb.Stream) (string, error) {
+	tags, err := s.Tags(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	kvs := make([]string, len(tags))
+	i := 0
+	for key, value := range tags {
+		kvs[i] = key + "=" + value
+		i++
+	}
+
+	return strings.Join(kvs, ","), nil
+}
+
+func TestPlotterPaths(t *testing.T) {
+	ctx := context.Background()
+	bc := helperConnect(t, ctx)
+
+	collections, err := bc.ListCollections(ctx, "")
+	if err != nil {
+		t.Fatalf("Could not list collections: %v", err)
+	}
+
+	branches := make([]string, 0, len(collections))
+	for _, coll := range collections {
+		/* Get the streams in the collection. */
+		streams, err := bc.ListAllStreams(ctx, coll)
+		if err != nil {
+			t.Fatalf("Could not list streams in collection %s: %v", coll, err)
+		}
+
+		dotidx := strings.IndexByte(coll, '.')
+		if dotidx == -1 {
+			dotidx = len(coll)
+		}
+		pathcoll := strings.Replace(coll[dotidx:], ".", "/", -1)
+
+		for _, stream := range streams {
+			/* Formulate the path for this stream. */
+			pathfin, err := streamtoleafname(ctx, stream)
+			if err != nil {
+				t.Fatalf("Could not get tags for stream: %v", err)
+			}
+			path := pathcoll + "/" + pathfin
+
+			/* Add path to return slice. */
+			branches = append(branches, path)
+		}
+	}
+
+	for j, branch := range branches {
+		fmt.Printf("%d: %s\n", j, branch)
 	}
 }
