@@ -92,6 +92,38 @@ func TestChangedRangeSameVer(t *testing.T) {
 		t.Fatalf("Did not get empty set for changed range on same version")
 	}
 }
+func TestBigInsert(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+
+	uu := uuid.NewRandom()
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	if err != nil {
+		t.Fatalf("create error %v", err)
+	}
+	vals := []btrdb.RawPoint{}
+	for i := 0; i < 10000; i++ {
+		vals = append(vals, btrdb.RawPoint{Time: int64(i), Value: float64(i)})
+	}
+	err = stream.Insert(context.Background(), vals)
+	if err != nil {
+		t.Fatalf("unexpected error %v\n", err)
+	}
+	time.Sleep(8 * time.Second)
+	rvals, _, cerr := stream.RawValues(context.Background(), 0, 10000, btrdb.LatestVersion)
+	rvall := []btrdb.RawPoint{}
+	for v := range rvals {
+		rvall = append(rvall, v)
+	}
+	if e := <-cerr; e != nil {
+		t.Fatalf("unexpected error %v\n", err)
+	}
+	if len(rvall) != 10000 {
+		t.Fatalf("only got %d points, wanted 10000", len(rvall))
+	}
+}
 func TestChangedRangeDiffVer(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
