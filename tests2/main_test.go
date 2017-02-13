@@ -309,14 +309,14 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 	//Now delete it all
 	ver, err := stream.DeleteRange(context.Background(), -100, 200)
 	if err != nil {
-		t.Fatal("delete error %v", err)
+		t.Fatalf("delete error %v", err)
 	}
 	_ = ver
 	//That should be synchronous
 	//now try delete again
 	ver, err = stream.DeleteRange(context.Background(), -100, 200)
 	if err != nil {
-		t.Fatal("delete error %v", err)
+		t.Fatalf("delete error %v", err)
 	}
 	_ = ver
 }

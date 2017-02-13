@@ -322,9 +322,10 @@ func (s *Stream) RawValues(ctx context.Context, start int64, end int64, version 
 }
 
 //AlignedWindows reads power-of-two aligned windows from BTrDB. It is faster than Windows(). Each returned window will be 2^pointwidth nanoseconds
-//long, starting at start. Note that start is inclusive, but end is exclusive. If end <= start+2^pointwidth you will not get any results. If start
-//and end are not powers of two, the bottom pointwidth bits will be cleared. Each window will contain statistical summaries of the window. For
-//sections of time that do not contain results, it is possible that no records will be returned.
+//long, starting at start. Note that start is inclusive, but end is exclusive. That is, results will be returned for all windows that start
+//in the interval [start, end). If end < start+2^pointwidth you will not get any results. If start and end are not powers of two, the bottom
+//pointwidth bits will be cleared. Each window will contain statistical summaries of the window. Statistical points with count == 0 will be
+//omitted.
 func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, pointwidth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	var ep *Endpoint
 	var err error
@@ -350,11 +351,13 @@ func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, poi
 }
 
 //Windows returns arbitrary precision windows from BTrDB. It is slower than AlignedWindows, but still significantly faster than RawValues. Each returned
-//window will be width nanoseconds long. start is inclusive, but end is exclusive (e.g if end <= start+width you will get no results). The depth parameter
-//is an optimization that can be used to speed up queries on fast queries. Each window will be accurate to 2^depth nanoseconds. If depth is zero, the results
-//are accurate to the nanosecond. On a dense stream for large windows, this accuracy may not be required. For example for a window of a day, +- one second
-//may be appropriate, so a depth of 30 can be specified. This is much faster to execute on the database side.
-//The StatPoint channel MUST be fully consumed.
+//window will be width nanoseconds long. start is inclusive, but end is exclusive (e.g if end < start+width you will get no results). That is, results will
+//be returned for all windows that start at a time less than the end timestamp. If (end - start) is not a multiple of width, then end will be decreased to
+//the greatest value less than end such that (end - start) is a multiple of width (i.e., we set end = start + width * floordiv(end - start, width). The depth
+//parameter is an optimization that can be used to speed up queries on fast queries. Each window will be accurate to 2^depth nanoseconds. If depth is zero,
+//the results are accurate to the nanosecond. On a dense stream for large windows, this accuracy may not be required. For example for a window of a day, +- one
+//second may be appropriate, so a depth of 30 can be specified. This is much faster to execute on the database side. The StatPoint channel MUST be fully
+//consumed.
 func (s *Stream) Windows(ctx context.Context, start int64, end int64, width uint64, depth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	var ep *Endpoint
 	var err error

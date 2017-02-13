@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+
 	"github.com/pborman/uuid"
 
 	"github.com/SoftwareDefinedBuildings/btrdb/bte"
@@ -482,6 +485,42 @@ func TestWindowBoundaryRounding2(t *testing.T) {
 	}
 }
 
+func TestWindowBoundaryRounding3(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	data := helperRandomData(-20000, -10000, 10)
+	helperInsert(t, ctx, stream, data)
+	spts, _ := helperWindowQuery(t, ctx, stream, -18864, -18353, 64, 0, 0)
+	if len(spts) != 7 {
+		t.Log(spts)
+		t.Fatalf("Expected 7 points: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != -18864+(int64(i)*64) {
+			t.Errorf("Queried point %d expected at %v: got %v", i, -18864+(i*64), sp.Time)
+		}
+	}
+}
+
+func TestWindowBoundaryRounding4(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	data := helperRandomData(-20000, -10000, 10)
+	helperInsert(t, ctx, stream, data)
+	spts, _ := helperWindowQuery(t, ctx, stream, -18864, -18416, 64, 0, 0)
+	if len(spts) != 7 {
+		t.Log(spts)
+		t.Fatalf("Expected 7 points: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != -18864+(int64(i)*64) {
+			t.Errorf("Queried point %d expected at %v: got %v", i, -18864+(i*64), sp.Time)
+		}
+	}
+}
+
 func TestStatisticalBoundaryRounding1(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
@@ -735,7 +774,7 @@ func TestClosedChannel(t *testing.T) {
 
 const BIG_LOW = 0
 const BIG_HIGH = 1485470183000000000
-const BIG_GAP = 11432156527
+const BIG_GAP = 1143215826527
 
 func helperOOMGen() []btrdb.RawPoint {
 	fmt.Println("Generating data...")
@@ -749,7 +788,7 @@ func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
 	helperInsert(t, ctx, s, bigdata)
 }
 
-func TestOOM(t *testing.T) {
+func TestDeadlock(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
@@ -761,7 +800,7 @@ func TestOOM(t *testing.T) {
 
 	fmt.Println("Making queries...")
 
-	const NUM_QUERIES = 2000000
+	const NUM_QUERIES = 200000
 
 	var chans []chan btrdb.RawPoint = make([]chan btrdb.RawPoint, NUM_QUERIES)
 	var errchans []chan error = make([]chan error, NUM_QUERIES)
@@ -787,9 +826,11 @@ func TestOOM(t *testing.T) {
 	}
 
 	fmt.Println("Checking if the database is still responsive...")
-	db2 := helperConnect(t, ctx)
-	stream2 := helperCreateDefaultStream(t, ctx, db2, nil, nil)
-	helperInsert(t, ctx, stream2, helperCanonicalData())
+	ctx2, cancelfunc2 := context.WithTimeout(ctx, time.Minute)
+	defer cancelfunc2()
+	db2 := helperConnect(t, ctx2)
+	stream2 := helperCreateDefaultStream(t, ctx2, db2, nil, nil)
+	helperInsert(t, ctx2, stream2, helperCanonicalData())
 }
 
 func TestContextCancel(t *testing.T) {
@@ -810,12 +851,12 @@ func TestContextCancel(t *testing.T) {
 		cancelfunc()
 	}()
 
-	var count int64 = 0
+	var count int64
 	for _ = range c {
 		count++
 	}
 	err := <-ec
-	if err == nil || btrdb.ToCodedError(err).Code != bte.ContextError {
+	if err == nil || (btrdb.ToCodedError(err).Code != bte.ContextError && grpc.Code(err) != codes.Canceled) {
 		t.Errorf("Expected \"context error\"; got %v", err)
 	}
 
