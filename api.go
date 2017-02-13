@@ -18,7 +18,6 @@ package btrdb
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/btrdb.v4/grpcinterface"
@@ -226,11 +225,9 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 	var ep *Endpoint
 	var err error
-	fmt.Printf("doing insert, vals len is %d\n", len(vals))
 	batchsize := 5000
 	for len(vals) > 0 {
 		err = forceEp
-		fmt.Printf("vals len is %d\n", len(vals))
 		end := len(vals)
 		if end > batchsize {
 			end = batchsize
@@ -250,14 +247,11 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 				continue
 			}
 			err = ep.Insert(ctx, s.uuid, pbraws)
-			fmt.Printf("actually did insert, with err %v\n", err)
 		}
-		fmt.Printf("finished for loop, err is %v\n", err)
 		if err != nil {
 			return err
 		}
 		vals = vals[end:]
-		fmt.Printf("after truncate val is %v\n", len(vals))
 	}
 	return nil
 }
