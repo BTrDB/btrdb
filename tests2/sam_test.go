@@ -56,24 +56,27 @@ func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu u
 	return stream
 }
 
-func helperWaitAfterInsert() {
-	time.Sleep(12 * time.Second)
+func helperWaitAfterInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
+	err := s.Flush(ctx)
+	if err != nil {
+		t.Fatalf("Error from Flush %v", err)
+	}
 }
 
 func helperInsert(t *testing.T, ctx context.Context, s *btrdb.Stream, data []btrdb.RawPoint) {
 	err := s.Insert(ctx, data)
 	if err != nil {
-		t.Fatalf("insert error %v", err)
+		t.Fatalf("Error from Insert %v", err)
 	}
-	helperWaitAfterInsert()
+	helperWaitAfterInsert(t, ctx, s)
 }
 
 func helperInsertTV(t *testing.T, ctx context.Context, s *btrdb.Stream, times []int64, values []float64) {
 	err := s.InsertTV(ctx, times, values)
 	if err != nil {
-		t.Fatalf("insert error %v", err)
+		t.Fatalf("Error from InsertTV: %v", err)
 	}
-	helperWaitAfterInsert()
+	helperWaitAfterInsert(t, ctx, s)
 }
 
 func helperRandomData(start int64, end int64, gap int64) []btrdb.RawPoint {
