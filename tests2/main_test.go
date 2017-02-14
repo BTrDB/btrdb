@@ -110,7 +110,7 @@ func TestBigInsert(t *testing.T) {
 		t.Fatalf("create error %v", err)
 	}
 	vals := []btrdb.RawPoint{}
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100000; i++ {
 		vals = append(vals, btrdb.RawPoint{Time: int64(i), Value: float64(i)})
 	}
 	err = stream.Insert(context.Background(), vals)
@@ -121,7 +121,7 @@ func TestBigInsert(t *testing.T) {
 	if ferr != nil {
 		t.Fatalf("flush error %v", ferr)
 	}
-	rvals, _, cerr := stream.RawValues(context.Background(), 0, 10000, btrdb.LatestVersion)
+	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
 	rvall := []btrdb.RawPoint{}
 	for v := range rvals {
 		rvall = append(rvall, v)
@@ -129,8 +129,8 @@ func TestBigInsert(t *testing.T) {
 	if e := <-cerr; e != nil {
 		t.Fatalf("unexpected error %v\n", err)
 	}
-	if len(rvall) != 10000 {
-		t.Fatalf("only got %d points, wanted 10000", len(rvall))
+	if len(rvall) != 100000 {
+		t.Fatalf("only got %d points, wanted 100000", len(rvall))
 	}
 }
 func TestChangedRangeDiffVer(t *testing.T) {
@@ -476,7 +476,6 @@ func TestCreate(t *testing.T) {
 	//A couple to make sure we hit all endpoints
 	for i := 0; i < 10; i++ {
 		for s := 0; s < 10; s++ {
-			fmt.Printf("on %d %d\n", i, s)
 			uu := uuid.NewRandom()
 			coll := fmt.Sprintf("test.%x", uu[:])
 			str, err := db.Create(ctx, uu, coll, btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)

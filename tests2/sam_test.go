@@ -944,7 +944,7 @@ func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
 
 func TestDeadlock(t *testing.T) {
 	//TODO reinstate this
-	t.Skip()
+	//	t.Skip()
 	if testing.Short() {
 		t.Skip()
 	}
