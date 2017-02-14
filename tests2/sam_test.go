@@ -195,6 +195,7 @@ func TestNearestForwardInclusive(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
+	fmt.Printf("%v %v\n", data[len(data)-1].Time, CANONICAL_FINAL)
 	rv, _, err := stream.Nearest(ctx, CANONICAL_FINAL, 0, false)
 	if err != nil {
 		t.Fatalf("Unexpected nearest point error: %v", err)
@@ -877,7 +878,7 @@ func TestDeadlock(t *testing.T) {
 
 	fmt.Println("Making queries...")
 
-	const NUM_QUERIES = 200000
+	const NUM_QUERIES = 20000
 
 	var chans []chan btrdb.RawPoint = make([]chan btrdb.RawPoint, NUM_QUERIES)
 	var errchans []chan error = make([]chan error, NUM_QUERIES)
@@ -888,15 +889,15 @@ func TestDeadlock(t *testing.T) {
 		errchans[i] = ec
 	}
 
-	fmt.Println("Waiting for 10 seconds...")
-	time.Sleep(10 * time.Second)
+	fmt.Println("Waiting for 70 seconds...")
+	time.Sleep(70 * time.Second)
 
 	fmt.Println("Checking if an error happened...")
-	for j, ec := range errchans {
+	for _, ec := range errchans {
 		select {
 		case err := <-ec:
-			if err != nil {
-				t.Fatalf("Error in query: %v (first resp is %v)", err, <-chans[j])
+			if err != nil && btrdb.ToCodedError(err).GetCode() != bte.ResourceDepleted {
+				t.Fatalf("Unexpected rror in query: %v (expected \"resource depleted\" or no error)", err)
 			}
 		default:
 		}
