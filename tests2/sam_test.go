@@ -510,6 +510,82 @@ func TestSpecialValues(t *testing.T) {
 	}
 }
 
+func TestEdgeWindow1(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_HIGH-2, BTRDB_HIGH, 2, 0, 0)
+	if len(spts) != 1 {
+		t.Log(spts)
+		t.Fatalf("Expected 1 point: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != BTRDB_HIGH-2 {
+			t.Errorf("Queried point %d expected at %v: got %v", i, BTRDB_HIGH-2, sp.Time)
+		}
+		if sp.Min != pts[0].Value || sp.Mean != pts[0].Value || sp.Max != pts[0].Value {
+			t.Errorf("Queried point has wrong values: got %v, expected Min, Mean, and Max to be %f", sp, pts[0].Value)
+		}
+	}
+}
+
+func TestEdgeWindow2(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	ptc, _, errc := stream.Windows(ctx, BTRDB_HIGH-1, BTRDB_HIGH+3, 2, 0, 0)
+	for pt := range ptc {
+		t.Fail()
+		t.Logf("Expected no points from bad query: got %v", pt)
+	}
+	err := <-errc
+	if err == nil || btrdb.ToCodedError(err).GetCode() != bte.InvalidTimeRange {
+		t.Fatalf("Expected \"invalid time range\"; got %v", err)
+	}
+}
+
+func TestEdgeWindow3(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_LOW, BTRDB_LOW+2, 2, 0, 0)
+	if len(spts) != 1 {
+		t.Log(spts)
+		t.Fatalf("Expected 1 point: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != BTRDB_LOW {
+			t.Errorf("Queried point %d expected at %v: got %v", i, BTRDB_LOW, sp.Time)
+		}
+		if sp.Min != pts[0].Value || sp.Mean != pts[0].Value || sp.Max != pts[0].Value {
+			t.Errorf("Queried point has wrong values: got %v, expected Min, Mean, and Max to be %f", sp, pts[0].Value)
+		}
+	}
+}
+
+func TestEdgeWindow4(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	ptc, _, errc := stream.Windows(ctx, BTRDB_LOW-1, BTRDB_LOW+3, 2, 0, 0)
+	for pt := range ptc {
+		t.Fail()
+		t.Logf("Expected no points from bad query: got %v", pt)
+	}
+	err := <-errc
+	if err == nil || btrdb.ToCodedError(err).GetCode() != bte.InvalidTimeRange {
+		t.Fatalf("Expected \"invalid time range\"; got %v", err)
+	}
+}
+
 func TestWindowBoundaryRounding1(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
