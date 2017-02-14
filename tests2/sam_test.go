@@ -316,7 +316,7 @@ func TestQueryInvalidTimeRange(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
-	_, _, errc := stream.RawValues(ctx, CANONICAL_START-1, CANONICAL_END+1, 0)
+	_, _, errc := stream.RawValues(ctx, BTRDB_LOW-1, BTRDB_HIGH+1, 0)
 	err := <-errc
 	if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
 		t.Fatalf("Expected \"invalid time range\" error: got %v", err)
