@@ -324,6 +324,9 @@ func TestQueryInvalidTimeRange(t *testing.T) {
 }
 
 func TestNaN(t *testing.T) {
+	// Michael actually doesn't want to allow NaNs to be Inserted
+	t.Skip()
+
 	nan1 := math.Float64frombits(0x7FFbadc0ffee7ea5)
 	nan2 := math.Float64frombits(0x7FF5dbb0554c0010)
 	nan3 := math.Float64frombits(0xFFFbabb1edbee71e)
@@ -350,7 +353,7 @@ func TestNaN(t *testing.T) {
 	}
 	for i, sp := range spts {
 		if sp.Time != times[2*i] {
-			t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v, got t=%v c=%v)", times[2*i], 2, sp.Time, sp.Count)
+			t.Fatalf("Queried statistical point has unexpected time or count (expected t=%v c=%v, got t=%v c=%v)", times[2*i], 2, sp.Time, sp.Count)
 		}
 	}
 	if !helperStatIsNaN(&spts[0]) || !helperStatIsNaN(&spts[1]) || !helperStatIsNaN(&spts[2]) {
@@ -362,6 +365,9 @@ func TestNaN(t *testing.T) {
 }
 
 func TestInf(t *testing.T) {
+	// Michael actually doesn't want to allow Infinity to be Inserted
+	t.Skip()
+
 	inf1 := math.Inf(1)
 	inf2 := math.Inf(-1)
 	times := []int64{0, 1000, 2000, 3000, 4000, 5000, 6000, 7000}
@@ -386,7 +392,7 @@ func TestInf(t *testing.T) {
 	}
 	for i, sp := range spts {
 		if sp.Time != times[2*i] || sp.Count != 2 {
-			t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v, got t=%v c=%v)", times[2*i], 2, sp.Time, sp.Count)
+			t.Fatalf("Queried statistical point has unexpected time or count (expected t=%v c=%v, got t=%v c=%v)", times[2*i], 2, sp.Time, sp.Count)
 		}
 	}
 	if !math.IsInf(spts[0].Min, -1) || !math.IsNaN(spts[0].Mean) || !math.IsInf(spts[0].Max, 1) {
@@ -400,6 +406,42 @@ func TestInf(t *testing.T) {
 	}
 	if spts[3].Min != math.Min(values[6], values[7]) || spts[3].Mean != (values[6]+values[7])/2 || spts[3].Max != math.Max(values[6], values[7]) {
 		t.Fatal("Queried statistical point does not have expected values")
+	}
+}
+
+func TestNaNError(t *testing.T) {
+	nan1 := math.Float64frombits(0x7FFbadc0ffee7ea5)
+	nan2 := math.Float64frombits(0x7FF5dbb0554c0010)
+	nan3 := math.Float64frombits(0xFFFbabb1edbee71e)
+	nan4 := math.Float64frombits(0xFFF501aceca571e5)
+	for _, nan := range []float64{nan1, nan2, nan3, nan4} {
+		times := []int64{0, 1000, 2000, 3000}
+		values := []float64{rand.NormFloat64(), rand.NormFloat64(), nan, rand.NormFloat64()}
+
+		ctx := context.Background()
+		db := helperConnect(t, ctx)
+		stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+		err := stream.InsertTV(ctx, times, values)
+		if err == nil || btrdb.ToCodedError(err).Code != bte.BadValue {
+			t.Fatalf("Expected \"bad value\" error: got %v", err)
+		}
+	}
+}
+
+func TestInfError(t *testing.T) {
+	inf1 := math.Inf(1)
+	inf2 := math.Inf(-1)
+	for _, inf := range []float64{inf1, inf2} {
+		times := []int64{0, 1000, 2000, 3000}
+		values := []float64{rand.NormFloat64(), inf, rand.NormFloat64(), rand.NormFloat64()}
+
+		ctx := context.Background()
+		db := helperConnect(t, ctx)
+		stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+		err := stream.InsertTV(ctx, times, values)
+		if err == nil || btrdb.ToCodedError(err).Code != bte.BadValue {
+			t.Fatalf("Expected \"bad value\" error: got %v", err)
+		}
 	}
 }
 
@@ -432,7 +474,7 @@ func TestSpecialValues(t *testing.T) {
 	}
 	for i, sp := range spts {
 		if sp.Time != times[2*i] || sp.Count != 2 || sp.Min != math.Min(values[2*i], values[2*i+1]) || sp.Max != math.Max(values[2*i], values[2*i+1]) {
-			t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v min=%v max=%v, got t=%v c=%v min=%v max=%v)", times[2*i], 2, math.Min(values[2*i], values[2*i+1]), math.Max(values[2*i], values[2*i+1]), sp.Time, sp.Count, sp.Min, sp.Max)
+			t.Fatalf("Queried statistical point has unexpected time or count (expected t=%v c=%v min=%v max=%v, got t=%v c=%v min=%v max=%v)", times[2*i], 2, math.Min(values[2*i], values[2*i+1]), math.Max(values[2*i], values[2*i+1]), sp.Time, sp.Count, sp.Min, sp.Max)
 		}
 	}
 	if !(math.IsInf(spts[0].Mean, 1) || spts[0].Mean == highest) {
@@ -456,6 +498,13 @@ func TestWindowBoundaryRounding1(t *testing.T) {
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, 11136, 11647, 64, 0, 0)
+	/* A window size of 64 is large enough that every window should contain
+	 * some points. In this case, we expect windows at the following start
+	 * times:
+	 * 11136, 11200, 11264, 11328, 11392, 11456, 11520
+	 * Note that the window at 11584 is not included because 11647 is rounded
+	 * down to 11584, which is then treated as an exclusive endpoint.
+	 */
 	if len(spts) != 7 {
 		t.Log(spts)
 		t.Fatalf("Expected 7 points: got %d", len(spts))
@@ -580,6 +629,13 @@ func TestWindowSmallRange1(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
+	/* A window width of 64 is big enough that there is a point in every
+	 * window.
+	 * But the start and end times are close enough that no windows should be
+	 * returned. 11200 is 63 after 11137, so it should be rounded down to
+	 * 11137. The start and end times are then the same, so no windows should
+	 * be returned.
+	 */
 	spts, _ := helperWindowQuery(t, ctx, stream, 11137, 11200, 64, 0, 0)
 	if len(spts) != 0 {
 		t.Log(spts)
@@ -761,6 +817,9 @@ func TestRawInvalidVersion(t *testing.T) {
 }
 
 func TestClosedChannel(t *testing.T) {
+	// The bindings don't support this, and it's not clear they should
+	t.Skip()
+
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
@@ -949,7 +1008,7 @@ func TestWindowCorrect(t *testing.T) {
 	var widths = []uint64{99999999999990, 100000000000000, 199999999999999, 200000000000000, 220000000000000, 3184713375796179, 76923076923076915, 99999999999999, 1000000000000000000}
 	for _, width = range widths {
 		fmt.Printf("Querying width=%v...\n", width)
-		spts, _ := helperWindowQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END+int64(width), width, 0, 0)
+		spts, _ := helperWindowQuery(t, ctx, stream, CANONICAL_START, CANONICAL_FINAL+int64(width), width, 0, 0)
 		fmt.Printf("Verifying width=%v [len=%d]...\n", width, len(spts))
 		dataidx := 0
 		for j, sp := range spts {
