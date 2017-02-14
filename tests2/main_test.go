@@ -60,7 +60,10 @@ func TestChangedRangeSameVer(t *testing.T) {
 		t.Fatalf("got insert error %v", err)
 	}
 	//Let it flush
-	time.Sleep(6 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	vals = make([]btrdb.RawPoint, 100)
 	for i := 300; i < 400; i++ {
 		vals[i-300].Time = int64(i)
@@ -70,7 +73,10 @@ func TestChangedRangeSameVer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert2 error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr = stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	ver, err := stream.Version(context.Background())
 	if err != nil {
 		t.Fatalf("got ver error %v", err)
@@ -111,7 +117,10 @@ func TestBigInsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error %v\n", err)
 	}
-	time.Sleep(8 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	rvals, _, cerr := stream.RawValues(context.Background(), 0, 10000, btrdb.LatestVersion)
 	rvall := []btrdb.RawPoint{}
 	for v := range rvals {
@@ -149,7 +158,10 @@ func TestChangedRangeDiffVer(t *testing.T) {
 		t.Fatalf("got insert error %v", err)
 	}
 	//Let it flush
-	time.Sleep(6 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	vals = make([]btrdb.RawPoint, 100)
 	for i := 300; i < 400; i++ {
 		vals[i-300].Time = int64(i)
@@ -159,7 +171,10 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert2 error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr = stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	ver, err := stream.Version(context.Background())
 	if err != nil {
 		t.Fatalf("got ver error %v", err)
@@ -282,7 +297,7 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 	uu := uuid.NewRandom()
 	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
-		fmt.Sprintf("create error %v", err)
+		t.Fatalf("create error %v", err)
 	}
 	vals := make([]btrdb.RawPoint, 100)
 	for i := 0; i < 100; i++ {
@@ -293,7 +308,10 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	valc, _, errc := stream.RawValues(context.Background(), 0, 98, btrdb.LatestVersion)
 	count := 0
 	for v := range valc {
@@ -341,7 +359,10 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	valc, _, errc := stream.RawValues(context.Background(), 0, 98, btrdb.LatestVersion)
 	count := 0
 	for v := range valc {
@@ -367,7 +388,10 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr = stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	valc, _, errc = stream.RawValues(context.Background(), 0, 98, btrdb.LatestVersion)
 	count = 0
 	for v := range valc {
@@ -402,7 +426,10 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got insert error %v", err)
 	}
-	time.Sleep(6 * time.Second)
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
 	valc, _, errc := stream.RawValues(context.Background(), 0, 98, btrdb.LatestVersion)
 	count := 0
 	for v := range valc {
@@ -449,6 +476,7 @@ func TestCreate(t *testing.T) {
 	//A couple to make sure we hit all endpoints
 	for i := 0; i < 10; i++ {
 		for s := 0; s < 10; s++ {
+			fmt.Printf("on %d %d\n", i, s)
 			uu := uuid.NewRandom()
 			coll := fmt.Sprintf("test.%x", uu[:])
 			str, err := db.Create(ctx, uu, coll, btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)
