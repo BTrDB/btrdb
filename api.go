@@ -218,6 +218,23 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 	return nil
 }
 
+//Flush writes the stream buffers out to persistent storage
+func (s *Stream) Flush(ctx context.Context) error {
+	var ep *Endpoint
+	var err error
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.Flush(ctx, s.uuid)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //Insert inserts the given array of RawPoint values. If the
 //array is larger than appropriate, this function will automatically chunk the inserts.
 //As a consequence, the insert is not necessarily atomic, but can be used with
