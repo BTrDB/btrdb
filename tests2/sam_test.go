@@ -195,6 +195,7 @@ func TestNearestForwardInclusive(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
+	fmt.Printf("%v %v\n", data[len(data)-1].Time, CANONICAL_FINAL)
 	rv, _, err := stream.Nearest(ctx, CANONICAL_FINAL, 0, false)
 	if err != nil {
 		t.Fatalf("Unexpected nearest point error: %v", err)
@@ -506,6 +507,82 @@ func TestSpecialValues(t *testing.T) {
 	}
 	if spts[3].Mean != values[7]/2.0 {
 		t.Errorf("Mean of (0.0, val): expected %f, got %f", values[7]/2.0, spts[3].Mean)
+	}
+}
+
+func TestEdgeWindow1(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_HIGH-2, BTRDB_HIGH, 2, 0, 0)
+	if len(spts) != 1 {
+		t.Log(spts)
+		t.Fatalf("Expected 1 point: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != BTRDB_HIGH-2 {
+			t.Errorf("Queried point %d expected at %v: got %v", i, BTRDB_HIGH-2, sp.Time)
+		}
+		if sp.Min != pts[0].Value || sp.Mean != pts[0].Value || sp.Max != pts[0].Value {
+			t.Errorf("Queried point has wrong values: got %v, expected Min, Mean, and Max to be %f", sp, pts[0].Value)
+		}
+	}
+}
+
+func TestEdgeWindow2(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	ptc, _, errc := stream.Windows(ctx, BTRDB_HIGH-1, BTRDB_HIGH+3, 2, 0, 0)
+	for pt := range ptc {
+		t.Fail()
+		t.Logf("Expected no points from bad query: got %v", pt)
+	}
+	err := <-errc
+	if err == nil || btrdb.ToCodedError(err).GetCode() != bte.InvalidTimeRange {
+		t.Fatalf("Expected \"invalid time range\"; got %v", err)
+	}
+}
+
+func TestEdgeWindow3(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_LOW, BTRDB_LOW+2, 2, 0, 0)
+	if len(spts) != 1 {
+		t.Log(spts)
+		t.Fatalf("Expected 1 point: got %d", len(spts))
+	}
+	for i, sp := range spts {
+		if sp.Time != BTRDB_LOW {
+			t.Errorf("Queried point %d expected at %v: got %v", i, BTRDB_LOW, sp.Time)
+		}
+		if sp.Min != pts[0].Value || sp.Mean != pts[0].Value || sp.Max != pts[0].Value {
+			t.Errorf("Queried point has wrong values: got %v, expected Min, Mean, and Max to be %f", sp, pts[0].Value)
+		}
+	}
+}
+
+func TestEdgeWindow4(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
+	helperInsert(t, ctx, stream, pts)
+	ptc, _, errc := stream.Windows(ctx, BTRDB_LOW-1, BTRDB_LOW+3, 2, 0, 0)
+	for pt := range ptc {
+		t.Fail()
+		t.Logf("Expected no points from bad query: got %v", pt)
+	}
+	err := <-errc
+	if err == nil || btrdb.ToCodedError(err).GetCode() != bte.InvalidTimeRange {
+		t.Fatalf("Expected \"invalid time range\"; got %v", err)
 	}
 }
 
@@ -879,7 +956,7 @@ func TestDeadlock(t *testing.T) {
 
 	fmt.Println("Making queries...")
 
-	const NUM_QUERIES = 200000
+	const NUM_QUERIES = 20000
 
 	var chans []chan btrdb.RawPoint = make([]chan btrdb.RawPoint, NUM_QUERIES)
 	var errchans []chan error = make([]chan error, NUM_QUERIES)
@@ -890,15 +967,15 @@ func TestDeadlock(t *testing.T) {
 		errchans[i] = ec
 	}
 
-	fmt.Println("Waiting for 10 seconds...")
-	time.Sleep(10 * time.Second)
+	fmt.Println("Waiting for 70 seconds...")
+	time.Sleep(70 * time.Second)
 
 	fmt.Println("Checking if an error happened...")
-	for j, ec := range errchans {
+	for _, ec := range errchans {
 		select {
 		case err := <-ec:
-			if err != nil {
-				t.Fatalf("Error in query: %v (first resp is %v)", err, <-chans[j])
+			if err != nil && btrdb.ToCodedError(err).GetCode() != bte.ResourceDepleted {
+				t.Fatalf("Unexpected rror in query: %v (expected \"resource depleted\" or no error)", err)
 			}
 		default:
 		}
