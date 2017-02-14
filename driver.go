@@ -44,6 +44,7 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("No addresses provided")
 	}
+	ep_errors := ""
 	for _, a := range addresses {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -64,13 +65,14 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			fmt.Printf("endpoint error: err=%v a=%v\n", err, a)
+			ep_errors += fmt.Sprintf("endpoint error: err=%v a=%v\n", err, a)
 			continue
 		}
 		client := pb.NewBTrDBClient(conn)
 		rv := &Endpoint{g: client, conn: conn}
 		return rv, nil
 	}
+	fmt.Printf(ep_errors)
 	return nil, fmt.Errorf("Endpoint is unreachable on all addresses")
 }
 
