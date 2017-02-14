@@ -264,6 +264,21 @@ func TestInsertBeforeRange(t *testing.T) {
 	}
 }
 
+// Check if inserting zero points is handled correctly
+func TestInsertNothing(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	err := stream.Insert(ctx, []btrdb.RawPoint{})
+	if err != nil {
+		t.Fatalf("Error inserting zero points: %v", err)
+	}
+	pts, _ := helperRawQuery(t, ctx, stream, BTRDB_LOW, BTRDB_HIGH, 0)
+	if len(pts) != 0 {
+		t.Fatalf("Inserted no points, but got back %v", pts)
+	}
+}
+
 // Check if the insert range is really exclusive of the latest time
 func TestLatestExclusive(t *testing.T) {
 	ctx := context.Background()
