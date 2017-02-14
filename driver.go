@@ -468,6 +468,20 @@ func (b *Endpoint) DeleteRange(ctx context.Context, uu uuid.UUID, start int64, e
 	return rv.VersionMajor, nil
 }
 
+//Flush is a low level function, rather use Stream.Flush()
+func (b *Endpoint) Flush(ctx context.Context, uu uuid.UUID) error {
+	rv, err := b.g.Flush(ctx, &pb.FlushParams{
+		Uuid: uu,
+	})
+	if err != nil {
+		return err
+	}
+	if rv.Stat != nil {
+		return &CodedError{rv.Stat}
+	}
+	return nil
+}
+
 //Info is a low level function, rather use BTrDB.Info()
 func (b *Endpoint) Info(ctx context.Context) (*MASH, error) {
 	rv, err := b.g.Info(ctx, &pb.InfoParams{})
