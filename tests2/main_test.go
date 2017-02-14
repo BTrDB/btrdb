@@ -250,7 +250,7 @@ func TestConnectDeadline(t *testing.T) {
 	//Internally there is a 2 second timeout for a dud endpoint, don't exceed that
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	eps := []string{"192.168.123.123:4410", "192.168.123.124:4410"}
+	eps := []string{"8.8.8.8:4411", "8.8.8.8:4412"}
 	eps = append(eps, btrdb.EndpointsFromEnv()...)
 	db, err := btrdb.Connect(ctx, eps...)
 	if err != context.DeadlineExceeded {

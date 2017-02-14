@@ -102,7 +102,8 @@ func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoi
 }
 
 //FaultInject is a debugging function that allows specific low level control of the endpoint.
-//If you have to read the documentation, this is not for you.
+//If you have to read the documentation, this is not for you. Server must be started with
+//$BTRDB_ENABLE_FAULT_INJECT=YES
 func (b *Endpoint) FaultInject(ctx context.Context, typ uint64, args []byte) ([]byte, error) {
 	rv, err := b.g.FaultInject(ctx, &pb.FaultInjectParams{
 		Type:   typ,

@@ -432,11 +432,11 @@ func TestSpecialValues(t *testing.T) {
 			t.Fatal("Queried statistical point has unexpected time or count (expected t=%v c=%v min=%v max=%v, got t=%v c=%v min=%v max=%v)", times[2*i], 2, math.Min(values[2*i], values[2*i+1]), math.Max(values[2*i], values[2*i+1]), sp.Time, sp.Count, sp.Min, sp.Max)
 		}
 	}
-	if !(math.IsInf(spts[0].Mean, 1) || spts[0].Mean == highest) {
-		t.Errorf("Mean of (highest, highest) must be +Inf or highest: got %f", spts[0].Mean)
+	if !(math.IsInf(spts[0].Mean, 0) || spts[0].Mean == highest) {
+		t.Errorf("Mean of (highest, highest) must be Inf or highest: got %f", spts[0].Mean)
 	}
-	if !(math.IsInf(spts[1].Mean, -1) || spts[1].Mean == lowest) {
-		t.Errorf("Mean of (lowest, lowest) must be -Inf or lowest: got %f", spts[1].Mean)
+	if !(math.IsInf(spts[1].Mean, 0) || spts[1].Mean == lowest) {
+		t.Errorf("Mean of (lowest, lowest) must be Inf or lowest: got %f", spts[1].Mean)
 	}
 	if spts[2].Mean != values[4]/2.0 {
 		t.Errorf("Mean of (val, -0.0): expected %f, got %f", values[4]/2.0, spts[2].Mean)
