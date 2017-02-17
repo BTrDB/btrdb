@@ -1020,7 +1020,9 @@ func TestOOMInsert(t *testing.T) {
 	}
 	swg.Wait()
 
-	dctx, dcancel := context.WithTimeout(ctx, 2*time.Minute)
+	const TIMEOUT = 2 * time.Minute
+
+	start := time.Now()
 
 	fmt.Println("Inserting")
 	var inserted uint64
@@ -1032,7 +1034,6 @@ func TestOOMInsert(t *testing.T) {
 			wg.Add(1)
 			go func(s *btrdb.Stream) {
 				defer wg.Done()
-				var c int64
 				var skip bool
 				var bigdata []btrdb.RawPoint
 				for {
@@ -1040,10 +1041,10 @@ func TestOOMInsert(t *testing.T) {
 						bigdata = <-datachan
 					}
 					skip = false
-					err := s.Insert(dctx, bigdata)
-					if dctx.Err() != nil {
+					if time.Since(start) > TIMEOUT {
 						return
 					}
+					err := s.Insert(ctx, bigdata)
 					if err != nil {
 						if btrdb.ToCodedError(err).Code == bte.ResourceDepleted {
 							skip = true
@@ -1052,14 +1053,13 @@ func TestOOMInsert(t *testing.T) {
 						}
 					}
 					atomic.AddUint64(&inserted, uint64(len(bigdata)))
-					c++
 				}
 			}(stream)
 		}
 	}
 	wg.Wait()
-	dcancel()
-	t.Logf("Inserted %v points in 2 minutes\n", inserted)
+	totalduration := time.Since(start)
+	t.Logf("Inserted %v points in %v\n", inserted, totalduration)
 }
 
 func TestDeadlock(t *testing.T) {
