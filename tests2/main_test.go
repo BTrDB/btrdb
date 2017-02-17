@@ -1,9 +1,7 @@
 package tests2
 
 import (
-	"bytes"
 	"context"
-	"crypto/rand"
 	"fmt"
 	"testing"
 	"time"
@@ -196,6 +194,8 @@ func TestChangedRangeDiffVer(t *testing.T) {
 		t.Fatalf("Got empty for different version")
 	}
 }
+
+/*
 func TestAnnotationEmpty(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -235,6 +235,7 @@ func TestAnnotation(t *testing.T) {
 		t.Fatalf("annotation mismatch:\n%x\n%x", expectedAnn, ann)
 	}
 }
+*/
 func TestListCollections(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -320,7 +321,7 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 	}
 	err = <-errc
 	if err != nil {
-		t.Fatal("got insert error %v", err)
+		t.Fatalf("got insert error %v", err)
 	}
 	if count != 98 {
 		t.Fatalf("Possible insert exclusion problem, got %v values expected %v", count, 98)
@@ -371,7 +372,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	}
 	err = <-errc
 	if err != nil {
-		t.Fatal("got insert error %v", err)
+		t.Fatalf("got insert error %v", err)
 	}
 	if count != 98 {
 		t.Fatalf("Possible insert exclusion problem, got %v values expected %v", count, 98)
@@ -379,7 +380,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	//Now delete it all
 	ver, err := stream.DeleteRange(context.Background(), -100, 200)
 	if err != nil {
-		t.Fatal("delete error %v", err)
+		t.Fatalf("delete error %v", err)
 	}
 	_ = ver
 	//That should be synchronous
@@ -400,7 +401,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	}
 	err = <-errc
 	if err != nil {
-		t.Fatal("got insert error %v", err)
+		t.Fatalf("got insert error %v", err)
 	}
 	if count != 98 {
 		t.Fatalf("Possible insert exclusion problem, got %v values expected %v", count, 98)
@@ -438,7 +439,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 	}
 	err = <-errc
 	if err != nil {
-		t.Fatal("got insert error %v", err)
+		t.Fatalf("got insert error %v", err)
 	}
 	if count != 98 {
 		t.Fatalf("Possible insert exclusion problem, got %v values expected %v", count, 98)
@@ -446,7 +447,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 	//Now delete it all
 	ver, err := stream.DeleteRange(context.Background(), -100, 200)
 	if err != nil {
-		t.Fatal("delete error %v", err)
+		t.Fatalf("delete error %v", err)
 	}
 	_ = ver
 	//That should be synchronous
@@ -459,7 +460,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 	}
 	err = <-errc
 	if err != nil {
-		t.Fatal("Got query error %v", err)
+		t.Fatalf("Got query error %v", err)
 	}
 	if count != 0 {
 		t.Fatal("got unexpected count")
@@ -467,6 +468,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 
 }
 
+/*
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
@@ -504,7 +506,7 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("Expected version 10, got %v", ver)
 			}
 
-			/* Now check if we can query all of the streams */
+			// Now check if we can query all of the streams
 			tags, err := str.Tags(ctx)
 			if err != nil {
 				t.Fatalf("got error querying tags: %v", err)
@@ -521,3 +523,4 @@ func TestCreate(t *testing.T) {
 		}
 	}
 }
+*/

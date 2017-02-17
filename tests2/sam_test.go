@@ -31,7 +31,7 @@ func helperConnect(t *testing.T, ctx context.Context) *btrdb.BTrDB {
 	return db
 }
 
-func helperCreateDefaultStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, tags map[string]string, ann []byte) *btrdb.Stream {
+func helperCreateDefaultStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, tags map[string]string, ann map[string]string) *btrdb.Stream {
 	uu := uuid.NewRandom()
 	coll := helperGetCollection(uu)
 	s := helperCreateStream(t, ctx, db, uu, coll, tags, ann)
@@ -51,7 +51,7 @@ func helperGetCollection(uu uuid.UUID) string {
 	return fmt.Sprintf("test.%x", uu[:])
 }
 
-func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu uuid.UUID, coll string, tags map[string]string, ann []byte) *btrdb.Stream {
+func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu uuid.UUID, coll string, tags map[string]string, ann map[string]string) *btrdb.Stream {
 	stream, err := db.Create(ctx, uu, coll, tags, ann)
 	if err != nil {
 		t.Fatalf("create error %v", err)
@@ -1287,6 +1287,7 @@ func streamtoleafname(ctx context.Context, s *btrdb.Stream) (string, error) {
 	return strings.Join(kvs, ","), nil
 }
 
+/*
 func TestPlotterPaths(t *testing.T) {
 	ctx := context.Background()
 	bc := helperConnect(t, ctx)
@@ -1298,7 +1299,7 @@ func TestPlotterPaths(t *testing.T) {
 
 	branches := make([]string, 0, len(collections))
 	for _, coll := range collections {
-		/* Get the streams in the collection. */
+		// Get the streams in the collection.
 		streams, err := bc.ListAllStreams(ctx, coll)
 		if err != nil {
 			t.Fatalf("Could not list streams in collection %s: %v", coll, err)
@@ -1311,14 +1312,14 @@ func TestPlotterPaths(t *testing.T) {
 		pathcoll := strings.Replace(coll[dotidx:], ".", "/", -1)
 
 		for _, stream := range streams {
-			/* Formulate the path for this stream. */
+			//Formulate the path for this stream.
 			pathfin, err := streamtoleafname(ctx, stream)
 			if err != nil {
 				t.Fatalf("Could not get tags for stream: %v", err)
 			}
 			path := pathcoll + "/" + pathfin
 
-			/* Add path to return slice. */
+			// Add path to return slice.
 			branches = append(branches, path)
 		}
 	}
@@ -1327,3 +1328,4 @@ func TestPlotterPaths(t *testing.T) {
 		fmt.Printf("%d: %s\n", j, branch)
 	}
 }
+*/
