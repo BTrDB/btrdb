@@ -501,7 +501,7 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 	var ep *Endpoint
 	var err error
 	var rv []string
-	from := ""
+	from := prefix
 	//TODO change this to 10000 in future. This 10 just ensures code
 	//coverage during initial alpha
 	maximum := uint64(10)
