@@ -1,7 +1,9 @@
 package tests2
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"testing"
 	"time"
@@ -195,7 +197,6 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	}
 }
 
-/*
 func TestAnnotationEmpty(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -207,7 +208,7 @@ func TestAnnotationEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
-	ann, _, err := stream.Annotation(context.Background())
+	ann, _, err := stream.Annotations(context.Background())
 	if err != nil {
 		t.Fatalf("get annotation error %v", err)
 	}
@@ -223,19 +224,19 @@ func TestAnnotation(t *testing.T) {
 	expectedAnn := make([]byte, 100)
 	rand.Read(expectedAnn)
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, expectedAnn)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, btrdb.M{"ann": string(expectedAnn)})
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
-	ann, _, err := stream.Annotation(context.Background())
+	ann, _, err := stream.Annotations(context.Background())
 	if err != nil {
 		t.Fatalf("get annotation error %v", err)
 	}
-	if !bytes.Equal(ann, expectedAnn) {
+	if !bytes.Equal([]byte(ann["ann"]), expectedAnn) {
 		t.Fatalf("annotation mismatch:\n%x\n%x", expectedAnn, ann)
 	}
 }
-*/
+
 func TestListCollections(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -348,7 +349,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 	uu := uuid.NewRandom()
 	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
-		fmt.Sprintf("create error %v", err)
+		t.Fatalf("create error %v", err)
 	}
 	vals := make([]btrdb.RawPoint, 100)
 	for i := 0; i < 100; i++ {
@@ -415,7 +416,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 	uu := uuid.NewRandom()
 	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
-		fmt.Sprintf("create error %v", err)
+		t.Fatalf("create error %v", err)
 	}
 	vals := make([]btrdb.RawPoint, 100)
 	for i := 0; i < 100; i++ {
@@ -473,26 +474,28 @@ func TestLookupALittle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connection error %v", err)
 	}
-	guu := uuid.NewRandom()
+	guu := []byte(uuid.NewRandom())
 	colprefix := fmt.Sprintf("ntest.%x", guu[:8])
-
+	then := time.Now()
 	for k := 0; k < 20; k++ {
 		for i := 0; i < 50; i++ {
 			uu := uuid.NewRandom()
 			col := fmt.Sprintf("%s.%03d", colprefix, k)
-			str, err := db.Create(ctx, uu, col, btrdb.M{"k": fmt.Sprintf("%d", k), "i": fmt.Sprintf("%d", i)}, nil)
-			if err != nil {
-				t.Fatalf("got create error %v", err)
+			str, cerr := db.Create(ctx, uu, col, btrdb.M{"k": fmt.Sprintf("%d", k), "i": fmt.Sprintf("%d", i)}, nil)
+			if cerr != nil {
+				t.Fatalf("got create error %v", cerr)
 			}
 			_ = str
 		}
 	}
+	delta := time.Now().Sub(then)
+	fmt.Printf("create took %s for %d streams (%s)\n", delta, 20*50, delta/(20*50))
 	rvz, err := db.LookupStreams(ctx, colprefix, true, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 50*20 {
-		t.Fatalf("expected %d streams, got %d", 50*20, len(rvz))
+		t.Fatalf("a expected %d streams, got %d", 50*20, len(rvz))
 	}
 	//There are I streams in this collection
 	rvz, err = db.LookupStreams(ctx, colprefix+".000", false, nil, nil)
@@ -500,7 +503,7 @@ func TestLookupALittle(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 50 {
-		t.Fatalf("expected %d streams, got %d", 50, len(rvz))
+		t.Fatalf("b expected %d streams, got %d", 50, len(rvz))
 	}
 	//There are no collections called exactly .00
 	rvz, err = db.LookupStreams(ctx, colprefix+".00", false, nil, nil)
@@ -508,21 +511,21 @@ func TestLookupALittle(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 0 {
-		t.Fatalf("expected %d streams, got %d", 0, len(rvz))
+		t.Fatalf("c expected %d streams, got %d", 0, len(rvz))
 	}
-	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"i": "23"}, nil)
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.OptKV("i", "23"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 20 {
-		t.Fatalf("expected %d streams, got %d", 20, len(rvz))
+		t.Fatalf("d expected %d streams, got %d", 20, len(rvz))
 	}
-	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"k": "32", "i": "23"}, nil)
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.OptKV("k", "16", "i", "23"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 1 {
-		t.Fatalf("expected %d streams, got %d", 1, len(rvz))
+		t.Fatalf("e expected %d streams, got %d", 1, len(rvz))
 	}
 }
 func TestCreate(t *testing.T) {
@@ -540,7 +543,7 @@ func TestCreate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("got create error %v", err)
 			}
-			ver, err := str.Version(ctx)
+			_, err = str.Version(ctx)
 			if err != nil {
 				t.Fatalf("got error querying version %v", err)
 			}
@@ -551,7 +554,7 @@ func TestCreate(t *testing.T) {
 				_ = d
 			}
 			err = <-errc
-			ver = <-verc
+			ver := <-verc
 			if err != nil {
 				t.Fatalf("got error querying raw values on created but empty stream %v", err)
 			}
@@ -568,12 +571,15 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("got error querying tags: %v", err)
 			}
 
-			s, err := db.LookupStream(ctx, coll, tags)
+			s, err := db.LookupStreams(ctx, coll, false, btrdb.OptKV(tags), nil)
 			if err != nil {
 				t.Fatalf("got error querying stream: %v", err)
 			}
+			if len(s) != 1 {
+				t.Fatalf("expected one stream, got %d", len(s))
+			}
 
-			if s.UUID().String() != uu.String() {
+			if s[0].UUID().String() != uu.String() {
 				t.Fatalf("UUID of queried stream doesn't match UUID of created stream")
 			}
 		}

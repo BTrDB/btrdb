@@ -23,13 +23,27 @@ import (
 	pb "gopkg.in/btrdb.v4/grpcinterface"
 )
 
-//OptKV is a utility function for use in LookupStreams or SetAnnotations that
+//OptKV is a utility function for use in SetAnnotations or LookupStreams that
 //turns a list of arguments into a map[string]*string. Typical use:
 //  OptKV("key","value", //Set or match key=vale
-//        "key2", nil) //Delete or match key2=*
+//        "key2", nil)   //Delete or match key2=*
+//OptKV can also take a single map[string]string and return
+//a map[string]*string, e.g
+//  OptKV(stream.Tags()) //Match exactly this set of tags
 func OptKV(iz ...interface{}) map[string]*string {
+	if len(iz) == 1 {
+		arg, ok := iz[0].(map[string]string)
+		if !ok {
+			panic("bad use of btrdb.OptKV: must have even number of arguments or a single map[string]string")
+		}
+		rv := make(map[string]*string)
+		for k, v := range arg {
+			rv[k] = &v
+		}
+		return rv
+	}
 	if len(iz)%2 != 0 {
-		panic("bad use of btrdb.OptKV: must have even number of arguments")
+		panic("bad use of btrdb.OptKV: must have even number of arguments or a single map[string]string")
 	}
 	rv := make(map[string]*string)
 	for i := 0; i < len(iz)/2; i++ {
@@ -118,7 +132,7 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	err := s.refreshMeta(ctx)
-	if ToCodedError(err).Code == 404 {
+	if err != nil && ToCodedError(err).Code == 404 {
 		return false, nil
 	}
 	if err != nil {
