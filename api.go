@@ -23,6 +23,33 @@ import (
 	pb "gopkg.in/btrdb.v4/grpcinterface"
 )
 
+//OptKV is a utility function for use in LookupStreams or SetAnnotations that
+//turns a list of arguments into a map[string]*string. Typical use:
+//  OptKV("key","value", //Set or match key=vale
+//        "key2", nil) //Delete or match key2=*
+func OptKV(iz ...interface{}) map[string]*string {
+	if len(iz)%2 != 0 {
+		panic("bad use of btrdb.OptKV: must have even number of arguments")
+	}
+	rv := make(map[string]*string)
+	for i := 0; i < len(iz)/2; i++ {
+		key, ok := iz[i*2].(string)
+		if !ok {
+			panic("bad use of btrdb.OptKV: even arguments must be string")
+		}
+		if iz[i*2+1] == nil {
+			rv[key] = nil
+		} else {
+			val, ok := iz[i*2+1].(string)
+			if !ok {
+				panic("bad use of btrdb.OptKV: odd arguments must be string or nil")
+			}
+			rv[key] = &val
+		}
+	}
+	return rv
+}
+
 //Stream is a handle on a Stream in BTrDB. Stream operations should be done through this object.
 type Stream struct {
 	b *BTrDB

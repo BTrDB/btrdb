@@ -1097,9 +1097,48 @@ func TestDeadlock(t *testing.T) {
 		default:
 		}
 	}
+	fmt.Println("killing conn")
+	db.Disconnect()
+	time.Sleep(1 * time.Second)
+	fmt.Println("Checking if the database is still responsive on a different connection")
+	ctx2, cancelfunc2 := context.WithTimeout(ctx, time.Minute)
+	defer cancelfunc2()
+	db2 := helperConnect(t, ctx2)
+	stream2 := helperCreateDefaultStream(t, ctx2, db2, nil, nil)
+	helperInsert(t, ctx2, stream2, helperCanonicalData())
+}
+
+func TestCancelDeadlock(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	helperOOMInsert(t, ctx, stream)
+
+	fmt.Println("Making queries...")
+
+	const NUM_QUERIES = 20000
+
+	var chans []chan btrdb.RawPoint = make([]chan btrdb.RawPoint, NUM_QUERIES)
+	var errchans []chan error = make([]chan error, NUM_QUERIES)
+	ctx, cancel := context.WithCancel(context.Background())
+	for i := 0; i < NUM_QUERIES; i++ {
+		c, _, ec := stream.RawValues(ctx, BIG_LOW, BIG_HIGH+1, 0)
+		chans[i] = c
+		errchans[i] = ec
+	}
+
+	fmt.Println("Waiting for 30 seconds...")
+	time.Sleep(30 * time.Second)
+	fmt.Printf("Ok 30 seconds passed, cancelling\n")
+	cancel()
+	time.Sleep(5 * time.Second)
 
 	fmt.Println("Checking if the database is still responsive...")
-	ctx2, cancelfunc2 := context.WithTimeout(ctx, time.Minute)
+	ctx2, cancelfunc2 := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelfunc2()
 	db2 := helperConnect(t, ctx2)
 	stream2 := helperCreateDefaultStream(t, ctx2, db2, nil, nil)

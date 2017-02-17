@@ -467,7 +467,64 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 
 }
 
-/*
+func TestLookupALittle(t *testing.T) {
+	ctx := context.Background()
+	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("connection error %v", err)
+	}
+	guu := uuid.NewRandom()
+	colprefix := fmt.Sprintf("ntest.%x", guu[:8])
+
+	for k := 0; k < 20; k++ {
+		for i := 0; i < 50; i++ {
+			uu := uuid.NewRandom()
+			col := fmt.Sprintf("%s.%03d", colprefix, k)
+			str, err := db.Create(ctx, uu, col, btrdb.M{"k": fmt.Sprintf("%d", k), "i": fmt.Sprintf("%d", i)}, nil)
+			if err != nil {
+				t.Fatalf("got create error %v", err)
+			}
+			_ = str
+		}
+	}
+	rvz, err := db.LookupStreams(ctx, colprefix, true, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rvz) != 50*20 {
+		t.Fatalf("expected %d streams, got %d", 50*20, len(rvz))
+	}
+	//There are I streams in this collection
+	rvz, err = db.LookupStreams(ctx, colprefix+".000", false, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rvz) != 50 {
+		t.Fatalf("expected %d streams, got %d", 50, len(rvz))
+	}
+	//There are no collections called exactly .00
+	rvz, err = db.LookupStreams(ctx, colprefix+".00", false, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rvz) != 0 {
+		t.Fatalf("expected %d streams, got %d", 0, len(rvz))
+	}
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"i": "23"}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rvz) != 20 {
+		t.Fatalf("expected %d streams, got %d", 20, len(rvz))
+	}
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"k": "32", "i": "23"}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(rvz) != 1 {
+		t.Fatalf("expected %d streams, got %d", 1, len(rvz))
+	}
+}
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
@@ -522,4 +579,3 @@ func TestCreate(t *testing.T) {
 		}
 	}
 }
-*/
