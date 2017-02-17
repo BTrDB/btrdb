@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -956,6 +957,8 @@ func TestOOMInsert(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 	}
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	const NUM_CONNS = 100
 	const NUM_STREAMS_PER_CONN = 100
