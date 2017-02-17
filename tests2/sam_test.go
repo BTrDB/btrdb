@@ -934,8 +934,8 @@ const BIG_HIGH = 1485470183000000000
 const BIG_GAP = 1143215826527
 
 const BIG2_LOW = BTRDB_LOW
-const BIG2_HIGH = 10000
-const BIG2_GAP = 1
+const BIG2_HIGH = BTRDB_LOW + 90000
+const BIG2_GAP = 9
 
 func helperOOMGen() []btrdb.RawPoint {
 	fmt.Println("Generating data...")
@@ -982,10 +982,17 @@ func TestOOMInsert(t *testing.T) {
 		var c int64
 		for {
 			dataslice := helperOOMGen2(c)
+			skipped := 0
 			for _, datachan := range datachans {
 				select {
 				case datachan <- dataslice:
 				default:
+					skipped++
+				}
+			}
+			if skipped == len(datachans) {
+				for _, datachan := range datachans {
+					datachan <- dataslice
 				}
 			}
 			c++
@@ -1026,14 +1033,23 @@ func TestOOMInsert(t *testing.T) {
 			go func(s *btrdb.Stream) {
 				defer wg.Done()
 				var c int64
+				var skip bool
+				var bigdata []btrdb.RawPoint
 				for {
-					bigdata := <-datachan
+					if !skip {
+						bigdata = <-datachan
+					}
+					skip = false
 					err := s.Insert(dctx, bigdata)
 					if dctx.Err() != nil {
 						return
 					}
-					if err != nil && btrdb.ToCodedError(err).Code != bte.ResourceDepleted {
-						t.Fatalf("Got unexpected error %v (only \"Resource Depleted\" is allowed)", err)
+					if err != nil {
+						if btrdb.ToCodedError(err).Code != bte.ResourceDepleted {
+							skip = true
+						} else {
+							t.Fatalf("Got unexpected error %v (only \"Resource Depleted\" is allowed)", err)
+						}
 					}
 					atomic.AddUint64(&inserted, uint64(len(bigdata)))
 					c++
