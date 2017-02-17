@@ -974,14 +974,19 @@ func TestOOMInsert(t *testing.T) {
 	fmt.Println("Creating streams")
 	var swg sync.WaitGroup
 	streams := []*btrdb.Stream{}
+	l := sync.Mutex{}
 	for m := 0; m != len(conns); m++ {
 		swg.Add(1)
 		go func(conn *btrdb.BTrDB) {
-			defer swg.Done()
+			lstreams := []*btrdb.Stream{}
 			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
 				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
-				streams = append(streams, s)
+				lstreams = append(lstreams, s)
 			}
+			l.Lock()
+			streams = append(streams, lstreams...)
+			l.Unlock()
+			fmt.Println("done for a connection")
 		}(conns[m])
 	}
 	swg.Wait()
