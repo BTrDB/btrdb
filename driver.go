@@ -242,10 +242,26 @@ func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from stri
 }
 
 func streamFromLookupResult(lr *pb.StreamDescriptor) *Stream {
-	return nil
+	rv := &Stream{
+		uuid:              lr.Uuid,
+		hasTags:           true,
+		tags:              make(map[string]string),
+		hasAnnotation:     true,
+		annotations:       make(map[string]string),
+		annotationVersion: AnnotationVersion(lr.AnnotationVersion),
+		hasCollection:     true,
+		collection:        lr.Collection,
+	}
+	for _, kv := range lr.Tags {
+		rv.tags[kv.Key] = string(kv.Value)
+	}
+	for _, kv := range lr.Annotations {
+		rv.annotations[kv.Key] = string(kv.Value)
+	}
+	return rv
 }
 
-//LookupStream is a low level function, rather use BTrDB.LookupStream()
+//LookupStreams is a low level function, rather use BTrDB.LookupStreams()
 func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
 	ltags := []*pb.KeyOptValue{}
 	for k, v := range tags {

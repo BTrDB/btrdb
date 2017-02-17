@@ -29,6 +29,8 @@ type Stream struct {
 
 	uuid uuid.UUID
 
+	knownToExist bool
+
 	hasTags bool
 	tags    map[string]string
 
@@ -49,11 +51,7 @@ func (b *BTrDB) StreamFromUUID(uu uuid.UUID) *Stream {
 	}
 }
 
-//Exists returns true if the stream exists. This is essential after using
-//StreamFromUUID as the stream may not exist, causing a 404 error on
-//later stream operations. Any operation that returns a stream from
-//collection and tags will have ensured the stream exists already.
-func (s *Stream) Exists(ctx context.Context) (bool, error) {
+func (s *Stream) refreshMeta(ctx context.Context) error {
 	var ep *Endpoint
 	var aver AnnotationVersion
 	var err error
@@ -67,9 +65,6 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 		}
 		coll, aver, tags, anns, _, err = ep.StreamInfo(ctx, s.uuid, false, true)
 		if err != nil {
-			if ToCodedError(err).Code == 404 {
-				return false, nil
-			}
 			continue
 		}
 	}
@@ -78,12 +73,31 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 		s.hasCollection = true
 		s.tags = tags
 		s.hasTags = true
+		s.knownToExist = true
 		s.annotations = anns
 		s.annotationVersion = aver
 		s.hasAnnotation = true
+		return nil
+	}
+	return err
+}
+
+//Exists returns true if the stream exists. This is essential after using
+//StreamFromUUID as the stream may not exist, causing a 404 error on
+//later stream operations. Any operation that returns a stream from
+//collection and tags will have ensured the stream exists already.
+func (s *Stream) Exists(ctx context.Context) (bool, error) {
+	if s.knownToExist {
 		return true, nil
 	}
-	return false, err
+	err := s.refreshMeta(ctx)
+	if ToCodedError(err).Code == 404 {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 //UUID returns the stream's UUID. The stream may nor may not exist yet, depending
@@ -93,19 +107,41 @@ func (s *Stream) UUID() uuid.UUID {
 }
 
 //Tags returns the tags of the stream. It may require a round trip to the
-//server depending on how the stream was acquired.
+//server depending on how the stream was acquired. Do not modify the resulting
+//map as it is a reference to the internal stream state
 func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
 	if s.hasTags {
 		return s.tags, nil
 	}
-	ex, err := s.Exists(ctx)
+	err := s.refreshMeta(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if !ex {
-		return nil, ErrorNoSuchStream
-	}
 	return s.tags, nil
+}
+
+//Annotations returns the annotations of the stream (and the annotation version).
+//It will always require a round trip to the server. If you are ok with stale
+//data and want a higher performance version, use Stream.CachedAnnotations().
+//Do not modify the resulting map.
+func (s *Stream) Annotations(ctx context.Context) (map[string]string, AnnotationVersion, error) {
+	err := s.refreshMeta(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.annotations, s.annotationVersion, nil
+}
+
+//CachedAnnotations returns the annotations of the stream, reusing previous
+//results if available, otherwise fetching from the server
+func (s *Stream) CachedAnnotations(ctx context.Context) (map[string]string, AnnotationVersion, error) {
+	if !s.hasAnnotation {
+		err := s.refreshMeta(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+	return s.annotations, s.annotationVersion, nil
 }
 
 //Collection returns the collection of the stream. It may require a round
@@ -114,17 +150,14 @@ func (s *Stream) Collection(ctx context.Context) (string, error) {
 	if s.hasCollection {
 		return s.collection, nil
 	}
-	ex, err := s.Exists(ctx)
+	err := s.refreshMeta(ctx)
 	if err != nil {
 		return "", err
-	}
-	if !ex {
-		return "", ErrorNoSuchStream
 	}
 	return s.collection, nil
 }
 
-//Version returns the current version of the stream. This is not cached,
+//Version returns the current data version of the stream. This is not cached,
 //it queries each time. Take care that you do not intorduce races in your
 //code by assuming this function will always return the same vaue
 func (s *Stream) Version(ctx context.Context) (uint64, error) {
@@ -512,4 +545,38 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 		rv, err = ep.Info(ctx)
 	}
 	return rv, err
+}
+
+func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
+	var ep *Endpoint
+	var err error
+	for b.testEpError(ep, err) {
+		ep, err = b.getAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		streamchan, errchan := ep.LookupStreams(ctx, collection, isCollectionPrefix, tags, annotations)
+		return streamchan, b.snoopEpErr(ep, errchan)
+	}
+	if err == nil {
+		panic("Please report this")
+	}
+	rv := make(chan *Stream)
+	close(rv)
+	errc := make(chan error, 1)
+	errc <- err
+	close(errc)
+	return rv, errc
+}
+
+func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) ([]*Stream, error) {
+	rv := []*Stream{}
+	cv, ce := b.StreamingLookupStreams(ctx, collection, isCollectionPrefix, tags, annotations)
+	for s := range cv {
+		rv = append(rv, s)
+	}
+	if err := <-ce; err != nil {
+		return nil, err
+	}
+	return rv, nil
 }

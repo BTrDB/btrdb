@@ -245,10 +245,9 @@ func TestListCollections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected list error: %v", err)
 	}
-	_ = cols
-	// for i, c := range cols {
-	// 	fmt.Printf("%d: %s\n", i, c)
-	// }
+	for i, c := range cols {
+		fmt.Printf("%d: %s\n", i, c)
+	}
 }
 func TestConnectDudEndpoints(t *testing.T) {
 	//Internally there is a 2 second timeout for a dud endpoint, don't exceed that

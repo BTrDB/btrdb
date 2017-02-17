@@ -193,7 +193,6 @@ func (b *BTrDB) resyncMash() {
 		}
 	}
 	b.epmu.RUnlock()
-	//TODO accessing nonexistent map key gives nil right?
 	cm := b.activeMash.Load().(*MASH)
 	for _, mbr := range cm.Members {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
