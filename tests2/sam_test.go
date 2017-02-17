@@ -981,12 +981,14 @@ func TestOOMInsert(t *testing.T) {
 			lstreams := []*btrdb.Stream{}
 			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
 				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
+				fmt.Printf("Created #%v\n", k)
 				lstreams = append(lstreams, s)
 			}
 			l.Lock()
 			streams = append(streams, lstreams...)
 			l.Unlock()
 			fmt.Println("done for a connection")
+			swg.Done()
 		}(conns[m])
 	}
 	swg.Wait()
