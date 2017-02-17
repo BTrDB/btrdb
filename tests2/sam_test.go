@@ -1014,7 +1014,6 @@ func TestOOMInsert(t *testing.T) {
 			l.Lock()
 			streams = append(streams, lstreams...)
 			l.Unlock()
-			fmt.Println("done for a connection")
 			swg.Done()
 		}(conns[m])
 	}
@@ -1026,14 +1025,12 @@ func TestOOMInsert(t *testing.T) {
 
 	fmt.Println("Inserting")
 	var inserted uint64
-	var wg sync.WaitGroup
+	var alive uint32 = 1
 	for j := range conns {
 		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
 			stream := streams[j*NUM_STREAMS_PER_CONN+i]
 			datachan := datachans[j*NUM_STREAMS_PER_CONN+i]
-			wg.Add(1)
 			go func(s *btrdb.Stream) {
-				defer wg.Done()
 				var skip bool
 				var bigdata []btrdb.RawPoint
 				for {
@@ -1041,7 +1038,7 @@ func TestOOMInsert(t *testing.T) {
 						bigdata = <-datachan
 					}
 					skip = false
-					if time.Since(start) > TIMEOUT {
+					if atomic.LoadUint32(&alive) == 0 {
 						return
 					}
 					err := s.Insert(ctx, bigdata)
@@ -1057,9 +1054,10 @@ func TestOOMInsert(t *testing.T) {
 			}(stream)
 		}
 	}
-	wg.Wait()
+	time.Sleep(2 * time.Minute)
+	atomic.StoreUint32(&alive, 0)
 	totalduration := time.Since(start)
-	t.Logf("Inserted %v points in %v\n", inserted, totalduration)
+	t.Logf("Inserted %v points in %v\n", atomic.LoadUint64(&inserted), totalduration)
 }
 
 func TestDeadlock(t *testing.T) {
