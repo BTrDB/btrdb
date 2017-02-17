@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -930,9 +933,17 @@ const BIG_LOW = 0
 const BIG_HIGH = 1485470183000000000
 const BIG_GAP = 1143215826527
 
+const BIG2_LOW = BTRDB_LOW
+const BIG2_HIGH = BTRDB_LOW + 90000
+const BIG2_GAP = 9
+
 func helperOOMGen() []btrdb.RawPoint {
 	fmt.Println("Generating data...")
 	return helperRandomData(BIG_LOW, BIG_HIGH, BIG_GAP)
+}
+
+func helperOOMGen2(iter int64) []btrdb.RawPoint {
+	return helperRandomData(BIG_LOW+iter*(BIG_HIGH-BIG_LOW), BIG_HIGH+iter*(BIG_HIGH-BIG_LOW), BIG_GAP)
 }
 
 /* Moving this to separate function helps with garbage collection. */
@@ -942,9 +953,116 @@ func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
 	helperInsert(t, ctx, s, bigdata)
 }
 
+func TestOOMInsert(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	const NUM_CONNS = 10
+	const NUM_STREAMS_PER_CONN = 100
+
+	ctx := context.Background()
+
+	fmt.Println("Creating connections")
+	conns := []*btrdb.BTrDB{}
+	for i := 0; i != NUM_CONNS; i++ {
+		conns = append(conns, helperConnect(t, ctx))
+	}
+
+	fmt.Println("Creating channels")
+	var datachans []chan []btrdb.RawPoint
+	for _ = range conns {
+		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
+			datachans = append(datachans, make(chan []btrdb.RawPoint, 20))
+		}
+	}
+	go func() {
+		var c int64
+		for {
+			dataslice := helperOOMGen2(c)
+			skipped := 0
+			for _, datachan := range datachans {
+				select {
+				case datachan <- dataslice:
+				default:
+					skipped++
+				}
+			}
+			if skipped == len(datachans) {
+				for _, datachan := range datachans {
+					datachan <- dataslice
+				}
+			}
+			c++
+		}
+	}()
+
+	fmt.Println("Creating streams")
+	var swg sync.WaitGroup
+	streams := []*btrdb.Stream{}
+	l := sync.Mutex{}
+	for m := 0; m != len(conns); m++ {
+		swg.Add(1)
+		go func(conn *btrdb.BTrDB) {
+			lstreams := []*btrdb.Stream{}
+			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
+				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
+				lstreams = append(lstreams, s)
+			}
+			l.Lock()
+			streams = append(streams, lstreams...)
+			l.Unlock()
+			fmt.Println("done for a connection")
+			swg.Done()
+		}(conns[m])
+	}
+	swg.Wait()
+
+	const TIMEOUT = 2 * time.Minute
+
+	start := time.Now()
+
+	fmt.Println("Inserting")
+	var inserted uint64
+	var wg sync.WaitGroup
+	for j := range conns {
+		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
+			stream := streams[j*NUM_STREAMS_PER_CONN+i]
+			datachan := datachans[j*NUM_STREAMS_PER_CONN+i]
+			wg.Add(1)
+			go func(s *btrdb.Stream) {
+				defer wg.Done()
+				var skip bool
+				var bigdata []btrdb.RawPoint
+				for {
+					if !skip {
+						bigdata = <-datachan
+					}
+					skip = false
+					if time.Since(start) > TIMEOUT {
+						return
+					}
+					err := s.Insert(ctx, bigdata)
+					if err != nil {
+						if btrdb.ToCodedError(err).Code == bte.ResourceDepleted {
+							skip = true
+						} else {
+							t.Fatalf("Got unexpected error %v (only \"Resource Depleted\" is allowed)", err)
+						}
+					}
+					atomic.AddUint64(&inserted, uint64(len(bigdata)))
+				}
+			}(stream)
+		}
+	}
+	wg.Wait()
+	totalduration := time.Since(start)
+	t.Logf("Inserted %v points in %v\n", inserted, totalduration)
+}
+
 func TestDeadlock(t *testing.T) {
-	//TODO reinstate this
-	//	t.Skip()
 	if testing.Short() {
 		t.Skip()
 	}
