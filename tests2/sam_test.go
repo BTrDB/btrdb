@@ -942,7 +942,6 @@ func helperOOMGen() []btrdb.RawPoint {
 }
 
 func helperOOMGen2(iter int64) []btrdb.RawPoint {
-	fmt.Println("Generating data...")
 	return helperRandomData(BIG_LOW+iter*BIG_HIGH, BIG_HIGH*(iter+1), BIG_GAP)
 }
 
