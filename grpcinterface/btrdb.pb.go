@@ -5,32 +5,29 @@
 /*
 Package grpcinterface is a generated protocol buffer package.
 
-Version 4.0
+Version 4.2
 
 It is generated from these files:
 	grpcinterface/btrdb.proto
 
 It has these top-level messages:
-	FlushParams
-	FlushResponse
-	FaultInjectParams
-	FaultInjectResponse
-	StreamInfoParams
-	StreamAnnotationParams
-	SetStreamAnnotationParams
-	SetStreamAnnotationResponse
-	StreamInfoResponse
-	StreamAnnotationResponse
-	CreateParams
-	CreateResponse
-	ListCollectionsParams
-	ListCollectionsResponse
 	RawValuesParams
 	RawValuesResponse
 	AlignedWindowsParams
 	AlignedWindowsResponse
 	WindowsParams
 	WindowsResponse
+	StreamInfoParams
+	StreamInfoResponse
+	StreamDescriptor
+	SetStreamAnnotationsParams
+	SetStreamAnnotationsResponse
+	CreateParams
+	CreateResponse
+	ListCollectionsParams
+	ListCollectionsResponse
+	LookupStreamsParams
+	LookupStreamsResponse
 	NearestParams
 	NearestResponse
 	ChangesParams
@@ -41,16 +38,21 @@ It has these top-level messages:
 	DeleteResponse
 	InfoParams
 	InfoResponse
+	FaultInjectParams
+	FaultInjectResponse
+	FlushParams
+	FlushResponse
+	ObliterateParams
+	ObliterateResponse
 	RawPoint
 	StatPoint
 	ChangedRange
 	Status
 	Mash
 	Member
-	ListStreamsParams
-	Tag
-	ListStreamsResponse
-	StreamListing
+	KeyOptValue
+	OptValue
+	KeyValue
 */
 package grpcinterface
 
@@ -74,366 +76,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type FlushParams struct {
-	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-}
-
-func (m *FlushParams) Reset()                    { *m = FlushParams{} }
-func (m *FlushParams) String() string            { return proto.CompactTextString(m) }
-func (*FlushParams) ProtoMessage()               {}
-func (*FlushParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-func (m *FlushParams) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-type FlushResponse struct {
-	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-}
-
-func (m *FlushResponse) Reset()                    { *m = FlushResponse{} }
-func (m *FlushResponse) String() string            { return proto.CompactTextString(m) }
-func (*FlushResponse) ProtoMessage()               {}
-func (*FlushResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *FlushResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-type FaultInjectParams struct {
-	Type   uint64 `protobuf:"varint,1,opt,name=type" json:"type,omitempty"`
-	Params []byte `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
-}
-
-func (m *FaultInjectParams) Reset()                    { *m = FaultInjectParams{} }
-func (m *FaultInjectParams) String() string            { return proto.CompactTextString(m) }
-func (*FaultInjectParams) ProtoMessage()               {}
-func (*FaultInjectParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *FaultInjectParams) GetType() uint64 {
-	if m != nil {
-		return m.Type
-	}
-	return 0
-}
-
-func (m *FaultInjectParams) GetParams() []byte {
-	if m != nil {
-		return m.Params
-	}
-	return nil
-}
-
-type FaultInjectResponse struct {
-	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-	Rv   []byte  `protobuf:"bytes,2,opt,name=rv,proto3" json:"rv,omitempty"`
-}
-
-func (m *FaultInjectResponse) Reset()                    { *m = FaultInjectResponse{} }
-func (m *FaultInjectResponse) String() string            { return proto.CompactTextString(m) }
-func (*FaultInjectResponse) ProtoMessage()               {}
-func (*FaultInjectResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *FaultInjectResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-func (m *FaultInjectResponse) GetRv() []byte {
-	if m != nil {
-		return m.Rv
-	}
-	return nil
-}
-
-type StreamInfoParams struct {
-	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-}
-
-func (m *StreamInfoParams) Reset()                    { *m = StreamInfoParams{} }
-func (m *StreamInfoParams) String() string            { return proto.CompactTextString(m) }
-func (*StreamInfoParams) ProtoMessage()               {}
-func (*StreamInfoParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
-
-func (m *StreamInfoParams) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-type StreamAnnotationParams struct {
-	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-}
-
-func (m *StreamAnnotationParams) Reset()                    { *m = StreamAnnotationParams{} }
-func (m *StreamAnnotationParams) String() string            { return proto.CompactTextString(m) }
-func (*StreamAnnotationParams) ProtoMessage()               {}
-func (*StreamAnnotationParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
-
-func (m *StreamAnnotationParams) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-type SetStreamAnnotationParams struct {
-	Uuid                      []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	ExpectedAnnotationVersion uint64 `protobuf:"varint,2,opt,name=expectedAnnotationVersion" json:"expectedAnnotationVersion,omitempty"`
-	Annotation                []byte `protobuf:"bytes,3,opt,name=annotation,proto3" json:"annotation,omitempty"`
-}
-
-func (m *SetStreamAnnotationParams) Reset()                    { *m = SetStreamAnnotationParams{} }
-func (m *SetStreamAnnotationParams) String() string            { return proto.CompactTextString(m) }
-func (*SetStreamAnnotationParams) ProtoMessage()               {}
-func (*SetStreamAnnotationParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *SetStreamAnnotationParams) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-func (m *SetStreamAnnotationParams) GetExpectedAnnotationVersion() uint64 {
-	if m != nil {
-		return m.ExpectedAnnotationVersion
-	}
-	return 0
-}
-
-func (m *SetStreamAnnotationParams) GetAnnotation() []byte {
-	if m != nil {
-		return m.Annotation
-	}
-	return nil
-}
-
-type SetStreamAnnotationResponse struct {
-	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-}
-
-func (m *SetStreamAnnotationResponse) Reset()                    { *m = SetStreamAnnotationResponse{} }
-func (m *SetStreamAnnotationResponse) String() string            { return proto.CompactTextString(m) }
-func (*SetStreamAnnotationResponse) ProtoMessage()               {}
-func (*SetStreamAnnotationResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *SetStreamAnnotationResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-type StreamInfoResponse struct {
-	Stat         *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-	Uuid         []byte  `protobuf:"bytes,2,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	VersionMajor uint64  `protobuf:"varint,3,opt,name=versionMajor" json:"versionMajor,omitempty"`
-	VersionMinor uint64  `protobuf:"varint,4,opt,name=versionMinor" json:"versionMinor,omitempty"`
-	Collection   string  `protobuf:"bytes,5,opt,name=collection" json:"collection,omitempty"`
-	Tags         []*Tag  `protobuf:"bytes,6,rep,name=tags" json:"tags,omitempty"`
-}
-
-func (m *StreamInfoResponse) Reset()                    { *m = StreamInfoResponse{} }
-func (m *StreamInfoResponse) String() string            { return proto.CompactTextString(m) }
-func (*StreamInfoResponse) ProtoMessage()               {}
-func (*StreamInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
-
-func (m *StreamInfoResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-func (m *StreamInfoResponse) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-func (m *StreamInfoResponse) GetVersionMajor() uint64 {
-	if m != nil {
-		return m.VersionMajor
-	}
-	return 0
-}
-
-func (m *StreamInfoResponse) GetVersionMinor() uint64 {
-	if m != nil {
-		return m.VersionMinor
-	}
-	return 0
-}
-
-func (m *StreamInfoResponse) GetCollection() string {
-	if m != nil {
-		return m.Collection
-	}
-	return ""
-}
-
-func (m *StreamInfoResponse) GetTags() []*Tag {
-	if m != nil {
-		return m.Tags
-	}
-	return nil
-}
-
-type StreamAnnotationResponse struct {
-	Stat              *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-	AnnotationVersion uint64  `protobuf:"varint,2,opt,name=annotationVersion" json:"annotationVersion,omitempty"`
-	Annotation        []byte  `protobuf:"bytes,3,opt,name=annotation,proto3" json:"annotation,omitempty"`
-}
-
-func (m *StreamAnnotationResponse) Reset()                    { *m = StreamAnnotationResponse{} }
-func (m *StreamAnnotationResponse) String() string            { return proto.CompactTextString(m) }
-func (*StreamAnnotationResponse) ProtoMessage()               {}
-func (*StreamAnnotationResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
-
-func (m *StreamAnnotationResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-func (m *StreamAnnotationResponse) GetAnnotationVersion() uint64 {
-	if m != nil {
-		return m.AnnotationVersion
-	}
-	return 0
-}
-
-func (m *StreamAnnotationResponse) GetAnnotation() []byte {
-	if m != nil {
-		return m.Annotation
-	}
-	return nil
-}
-
-type CreateParams struct {
-	Uuid       []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	Collection string `protobuf:"bytes,2,opt,name=collection" json:"collection,omitempty"`
-	Tags       []*Tag `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
-	Annotation []byte `protobuf:"bytes,4,opt,name=annotation,proto3" json:"annotation,omitempty"`
-}
-
-func (m *CreateParams) Reset()                    { *m = CreateParams{} }
-func (m *CreateParams) String() string            { return proto.CompactTextString(m) }
-func (*CreateParams) ProtoMessage()               {}
-func (*CreateParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
-
-func (m *CreateParams) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-func (m *CreateParams) GetCollection() string {
-	if m != nil {
-		return m.Collection
-	}
-	return ""
-}
-
-func (m *CreateParams) GetTags() []*Tag {
-	if m != nil {
-		return m.Tags
-	}
-	return nil
-}
-
-func (m *CreateParams) GetAnnotation() []byte {
-	if m != nil {
-		return m.Annotation
-	}
-	return nil
-}
-
-type CreateResponse struct {
-	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-}
-
-func (m *CreateResponse) Reset()                    { *m = CreateResponse{} }
-func (m *CreateResponse) String() string            { return proto.CompactTextString(m) }
-func (*CreateResponse) ProtoMessage()               {}
-func (*CreateResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
-
-func (m *CreateResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-type ListCollectionsParams struct {
-	Prefix    string `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
-	StartWith string `protobuf:"bytes,2,opt,name=startWith" json:"startWith,omitempty"`
-	Number    uint64 `protobuf:"varint,3,opt,name=number" json:"number,omitempty"`
-}
-
-func (m *ListCollectionsParams) Reset()                    { *m = ListCollectionsParams{} }
-func (m *ListCollectionsParams) String() string            { return proto.CompactTextString(m) }
-func (*ListCollectionsParams) ProtoMessage()               {}
-func (*ListCollectionsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
-
-func (m *ListCollectionsParams) GetPrefix() string {
-	if m != nil {
-		return m.Prefix
-	}
-	return ""
-}
-
-func (m *ListCollectionsParams) GetStartWith() string {
-	if m != nil {
-		return m.StartWith
-	}
-	return ""
-}
-
-func (m *ListCollectionsParams) GetNumber() uint64 {
-	if m != nil {
-		return m.Number
-	}
-	return 0
-}
-
-type ListCollectionsResponse struct {
-	Stat        *Status  `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-	Collections []string `protobuf:"bytes,2,rep,name=collections" json:"collections,omitempty"`
-}
-
-func (m *ListCollectionsResponse) Reset()                    { *m = ListCollectionsResponse{} }
-func (m *ListCollectionsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListCollectionsResponse) ProtoMessage()               {}
-func (*ListCollectionsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
-
-func (m *ListCollectionsResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
-	return nil
-}
-
-func (m *ListCollectionsResponse) GetCollections() []string {
-	if m != nil {
-		return m.Collections
-	}
-	return nil
-}
-
 type RawValuesParams struct {
 	Uuid         []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	Start        int64  `protobuf:"fixed64,2,opt,name=start" json:"start,omitempty"`
@@ -444,7 +86,7 @@ type RawValuesParams struct {
 func (m *RawValuesParams) Reset()                    { *m = RawValuesParams{} }
 func (m *RawValuesParams) String() string            { return proto.CompactTextString(m) }
 func (*RawValuesParams) ProtoMessage()               {}
-func (*RawValuesParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+func (*RawValuesParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *RawValuesParams) GetUuid() []byte {
 	if m != nil {
@@ -484,7 +126,7 @@ type RawValuesResponse struct {
 func (m *RawValuesResponse) Reset()                    { *m = RawValuesResponse{} }
 func (m *RawValuesResponse) String() string            { return proto.CompactTextString(m) }
 func (*RawValuesResponse) ProtoMessage()               {}
-func (*RawValuesResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
+func (*RawValuesResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *RawValuesResponse) GetStat() *Status {
 	if m != nil {
@@ -525,7 +167,7 @@ type AlignedWindowsParams struct {
 func (m *AlignedWindowsParams) Reset()                    { *m = AlignedWindowsParams{} }
 func (m *AlignedWindowsParams) String() string            { return proto.CompactTextString(m) }
 func (*AlignedWindowsParams) ProtoMessage()               {}
-func (*AlignedWindowsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
+func (*AlignedWindowsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *AlignedWindowsParams) GetUuid() []byte {
 	if m != nil {
@@ -572,7 +214,7 @@ type AlignedWindowsResponse struct {
 func (m *AlignedWindowsResponse) Reset()                    { *m = AlignedWindowsResponse{} }
 func (m *AlignedWindowsResponse) String() string            { return proto.CompactTextString(m) }
 func (*AlignedWindowsResponse) ProtoMessage()               {}
-func (*AlignedWindowsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
+func (*AlignedWindowsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *AlignedWindowsResponse) GetStat() *Status {
 	if m != nil {
@@ -614,7 +256,7 @@ type WindowsParams struct {
 func (m *WindowsParams) Reset()                    { *m = WindowsParams{} }
 func (m *WindowsParams) String() string            { return proto.CompactTextString(m) }
 func (*WindowsParams) ProtoMessage()               {}
-func (*WindowsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
+func (*WindowsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *WindowsParams) GetUuid() []byte {
 	if m != nil {
@@ -668,7 +310,7 @@ type WindowsResponse struct {
 func (m *WindowsResponse) Reset()                    { *m = WindowsResponse{} }
 func (m *WindowsResponse) String() string            { return proto.CompactTextString(m) }
 func (*WindowsResponse) ProtoMessage()               {}
-func (*WindowsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{19} }
+func (*WindowsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *WindowsResponse) GetStat() *Status {
 	if m != nil {
@@ -698,6 +340,350 @@ func (m *WindowsResponse) GetValues() []*StatPoint {
 	return nil
 }
 
+type StreamInfoParams struct {
+	Uuid           []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	OmitVersion    bool   `protobuf:"varint,2,opt,name=omitVersion" json:"omitVersion,omitempty"`
+	OmitDescriptor bool   `protobuf:"varint,3,opt,name=omitDescriptor" json:"omitDescriptor,omitempty"`
+}
+
+func (m *StreamInfoParams) Reset()                    { *m = StreamInfoParams{} }
+func (m *StreamInfoParams) String() string            { return proto.CompactTextString(m) }
+func (*StreamInfoParams) ProtoMessage()               {}
+func (*StreamInfoParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *StreamInfoParams) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+func (m *StreamInfoParams) GetOmitVersion() bool {
+	if m != nil {
+		return m.OmitVersion
+	}
+	return false
+}
+
+func (m *StreamInfoParams) GetOmitDescriptor() bool {
+	if m != nil {
+		return m.OmitDescriptor
+	}
+	return false
+}
+
+type StreamInfoResponse struct {
+	Stat         *Status           `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	VersionMajor uint64            `protobuf:"varint,2,opt,name=versionMajor" json:"versionMajor,omitempty"`
+	VersionMinor uint64            `protobuf:"varint,3,opt,name=versionMinor" json:"versionMinor,omitempty"`
+	Descriptor_  *StreamDescriptor `protobuf:"bytes,4,opt,name=descriptor" json:"descriptor,omitempty"`
+}
+
+func (m *StreamInfoResponse) Reset()                    { *m = StreamInfoResponse{} }
+func (m *StreamInfoResponse) String() string            { return proto.CompactTextString(m) }
+func (*StreamInfoResponse) ProtoMessage()               {}
+func (*StreamInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *StreamInfoResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+func (m *StreamInfoResponse) GetVersionMajor() uint64 {
+	if m != nil {
+		return m.VersionMajor
+	}
+	return 0
+}
+
+func (m *StreamInfoResponse) GetVersionMinor() uint64 {
+	if m != nil {
+		return m.VersionMinor
+	}
+	return 0
+}
+
+func (m *StreamInfoResponse) GetDescriptor_() *StreamDescriptor {
+	if m != nil {
+		return m.Descriptor_
+	}
+	return nil
+}
+
+type StreamDescriptor struct {
+	Uuid              []byte      `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	Collection        string      `protobuf:"bytes,2,opt,name=collection" json:"collection,omitempty"`
+	Tags              []*KeyValue `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
+	Annotations       []*KeyValue `protobuf:"bytes,4,rep,name=annotations" json:"annotations,omitempty"`
+	AnnotationVersion uint64      `protobuf:"varint,5,opt,name=annotationVersion" json:"annotationVersion,omitempty"`
+}
+
+func (m *StreamDescriptor) Reset()                    { *m = StreamDescriptor{} }
+func (m *StreamDescriptor) String() string            { return proto.CompactTextString(m) }
+func (*StreamDescriptor) ProtoMessage()               {}
+func (*StreamDescriptor) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *StreamDescriptor) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+func (m *StreamDescriptor) GetCollection() string {
+	if m != nil {
+		return m.Collection
+	}
+	return ""
+}
+
+func (m *StreamDescriptor) GetTags() []*KeyValue {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *StreamDescriptor) GetAnnotations() []*KeyValue {
+	if m != nil {
+		return m.Annotations
+	}
+	return nil
+}
+
+func (m *StreamDescriptor) GetAnnotationVersion() uint64 {
+	if m != nil {
+		return m.AnnotationVersion
+	}
+	return 0
+}
+
+type SetStreamAnnotationsParams struct {
+	Uuid                      []byte         `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	ExpectedAnnotationVersion uint64         `protobuf:"varint,2,opt,name=expectedAnnotationVersion" json:"expectedAnnotationVersion,omitempty"`
+	Annotations               []*KeyOptValue `protobuf:"bytes,3,rep,name=annotations" json:"annotations,omitempty"`
+}
+
+func (m *SetStreamAnnotationsParams) Reset()                    { *m = SetStreamAnnotationsParams{} }
+func (m *SetStreamAnnotationsParams) String() string            { return proto.CompactTextString(m) }
+func (*SetStreamAnnotationsParams) ProtoMessage()               {}
+func (*SetStreamAnnotationsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *SetStreamAnnotationsParams) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+func (m *SetStreamAnnotationsParams) GetExpectedAnnotationVersion() uint64 {
+	if m != nil {
+		return m.ExpectedAnnotationVersion
+	}
+	return 0
+}
+
+func (m *SetStreamAnnotationsParams) GetAnnotations() []*KeyOptValue {
+	if m != nil {
+		return m.Annotations
+	}
+	return nil
+}
+
+type SetStreamAnnotationsResponse struct {
+	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+}
+
+func (m *SetStreamAnnotationsResponse) Reset()                    { *m = SetStreamAnnotationsResponse{} }
+func (m *SetStreamAnnotationsResponse) String() string            { return proto.CompactTextString(m) }
+func (*SetStreamAnnotationsResponse) ProtoMessage()               {}
+func (*SetStreamAnnotationsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+func (m *SetStreamAnnotationsResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+type CreateParams struct {
+	Uuid        []byte      `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	Collection  string      `protobuf:"bytes,2,opt,name=collection" json:"collection,omitempty"`
+	Tags        []*KeyValue `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
+	Annotations []*KeyValue `protobuf:"bytes,4,rep,name=annotations" json:"annotations,omitempty"`
+}
+
+func (m *CreateParams) Reset()                    { *m = CreateParams{} }
+func (m *CreateParams) String() string            { return proto.CompactTextString(m) }
+func (*CreateParams) ProtoMessage()               {}
+func (*CreateParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+
+func (m *CreateParams) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+func (m *CreateParams) GetCollection() string {
+	if m != nil {
+		return m.Collection
+	}
+	return ""
+}
+
+func (m *CreateParams) GetTags() []*KeyValue {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *CreateParams) GetAnnotations() []*KeyValue {
+	if m != nil {
+		return m.Annotations
+	}
+	return nil
+}
+
+type CreateResponse struct {
+	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+}
+
+func (m *CreateResponse) Reset()                    { *m = CreateResponse{} }
+func (m *CreateResponse) String() string            { return proto.CompactTextString(m) }
+func (*CreateResponse) ProtoMessage()               {}
+func (*CreateResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+
+func (m *CreateResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+type ListCollectionsParams struct {
+	Prefix    string `protobuf:"bytes,1,opt,name=prefix" json:"prefix,omitempty"`
+	StartWith string `protobuf:"bytes,2,opt,name=startWith" json:"startWith,omitempty"`
+	Limit     uint64 `protobuf:"varint,3,opt,name=limit" json:"limit,omitempty"`
+}
+
+func (m *ListCollectionsParams) Reset()                    { *m = ListCollectionsParams{} }
+func (m *ListCollectionsParams) String() string            { return proto.CompactTextString(m) }
+func (*ListCollectionsParams) ProtoMessage()               {}
+func (*ListCollectionsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+
+func (m *ListCollectionsParams) GetPrefix() string {
+	if m != nil {
+		return m.Prefix
+	}
+	return ""
+}
+
+func (m *ListCollectionsParams) GetStartWith() string {
+	if m != nil {
+		return m.StartWith
+	}
+	return ""
+}
+
+func (m *ListCollectionsParams) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+type ListCollectionsResponse struct {
+	Stat        *Status  `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	Collections []string `protobuf:"bytes,2,rep,name=collections" json:"collections,omitempty"`
+}
+
+func (m *ListCollectionsResponse) Reset()                    { *m = ListCollectionsResponse{} }
+func (m *ListCollectionsResponse) String() string            { return proto.CompactTextString(m) }
+func (*ListCollectionsResponse) ProtoMessage()               {}
+func (*ListCollectionsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+
+func (m *ListCollectionsResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+func (m *ListCollectionsResponse) GetCollections() []string {
+	if m != nil {
+		return m.Collections
+	}
+	return nil
+}
+
+type LookupStreamsParams struct {
+	Collection         string         `protobuf:"bytes,1,opt,name=collection" json:"collection,omitempty"`
+	IsCollectionPrefix bool           `protobuf:"varint,2,opt,name=isCollectionPrefix" json:"isCollectionPrefix,omitempty"`
+	Tags               []*KeyOptValue `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
+	Annotations        []*KeyOptValue `protobuf:"bytes,4,rep,name=annotations" json:"annotations,omitempty"`
+}
+
+func (m *LookupStreamsParams) Reset()                    { *m = LookupStreamsParams{} }
+func (m *LookupStreamsParams) String() string            { return proto.CompactTextString(m) }
+func (*LookupStreamsParams) ProtoMessage()               {}
+func (*LookupStreamsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
+
+func (m *LookupStreamsParams) GetCollection() string {
+	if m != nil {
+		return m.Collection
+	}
+	return ""
+}
+
+func (m *LookupStreamsParams) GetIsCollectionPrefix() bool {
+	if m != nil {
+		return m.IsCollectionPrefix
+	}
+	return false
+}
+
+func (m *LookupStreamsParams) GetTags() []*KeyOptValue {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
+
+func (m *LookupStreamsParams) GetAnnotations() []*KeyOptValue {
+	if m != nil {
+		return m.Annotations
+	}
+	return nil
+}
+
+type LookupStreamsResponse struct {
+	Stat    *Status             `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	Results []*StreamDescriptor `protobuf:"bytes,2,rep,name=results" json:"results,omitempty"`
+}
+
+func (m *LookupStreamsResponse) Reset()                    { *m = LookupStreamsResponse{} }
+func (m *LookupStreamsResponse) String() string            { return proto.CompactTextString(m) }
+func (*LookupStreamsResponse) ProtoMessage()               {}
+func (*LookupStreamsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
+
+func (m *LookupStreamsResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+func (m *LookupStreamsResponse) GetResults() []*StreamDescriptor {
+	if m != nil {
+		return m.Results
+	}
+	return nil
+}
+
 type NearestParams struct {
 	Uuid         []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	Time         int64  `protobuf:"fixed64,2,opt,name=time" json:"time,omitempty"`
@@ -708,7 +694,7 @@ type NearestParams struct {
 func (m *NearestParams) Reset()                    { *m = NearestParams{} }
 func (m *NearestParams) String() string            { return proto.CompactTextString(m) }
 func (*NearestParams) ProtoMessage()               {}
-func (*NearestParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{20} }
+func (*NearestParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
 
 func (m *NearestParams) GetUuid() []byte {
 	if m != nil {
@@ -748,7 +734,7 @@ type NearestResponse struct {
 func (m *NearestResponse) Reset()                    { *m = NearestResponse{} }
 func (m *NearestResponse) String() string            { return proto.CompactTextString(m) }
 func (*NearestResponse) ProtoMessage()               {}
-func (*NearestResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{21} }
+func (*NearestResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
 
 func (m *NearestResponse) GetStat() *Status {
 	if m != nil {
@@ -788,7 +774,7 @@ type ChangesParams struct {
 func (m *ChangesParams) Reset()                    { *m = ChangesParams{} }
 func (m *ChangesParams) String() string            { return proto.CompactTextString(m) }
 func (*ChangesParams) ProtoMessage()               {}
-func (*ChangesParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{22} }
+func (*ChangesParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{19} }
 
 func (m *ChangesParams) GetUuid() []byte {
 	if m != nil {
@@ -828,7 +814,7 @@ type ChangesResponse struct {
 func (m *ChangesResponse) Reset()                    { *m = ChangesResponse{} }
 func (m *ChangesResponse) String() string            { return proto.CompactTextString(m) }
 func (*ChangesResponse) ProtoMessage()               {}
-func (*ChangesResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{23} }
+func (*ChangesResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{20} }
 
 func (m *ChangesResponse) GetStat() *Status {
 	if m != nil {
@@ -867,7 +853,7 @@ type InsertParams struct {
 func (m *InsertParams) Reset()                    { *m = InsertParams{} }
 func (m *InsertParams) String() string            { return proto.CompactTextString(m) }
 func (*InsertParams) ProtoMessage()               {}
-func (*InsertParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{24} }
+func (*InsertParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{21} }
 
 func (m *InsertParams) GetUuid() []byte {
 	if m != nil {
@@ -899,7 +885,7 @@ type InsertResponse struct {
 func (m *InsertResponse) Reset()                    { *m = InsertResponse{} }
 func (m *InsertResponse) String() string            { return proto.CompactTextString(m) }
 func (*InsertResponse) ProtoMessage()               {}
-func (*InsertResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{25} }
+func (*InsertResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{22} }
 
 func (m *InsertResponse) GetStat() *Status {
 	if m != nil {
@@ -931,7 +917,7 @@ type DeleteParams struct {
 func (m *DeleteParams) Reset()                    { *m = DeleteParams{} }
 func (m *DeleteParams) String() string            { return proto.CompactTextString(m) }
 func (*DeleteParams) ProtoMessage()               {}
-func (*DeleteParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{26} }
+func (*DeleteParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{23} }
 
 func (m *DeleteParams) GetUuid() []byte {
 	if m != nil {
@@ -963,7 +949,7 @@ type DeleteResponse struct {
 func (m *DeleteResponse) Reset()                    { *m = DeleteResponse{} }
 func (m *DeleteResponse) String() string            { return proto.CompactTextString(m) }
 func (*DeleteResponse) ProtoMessage()               {}
-func (*DeleteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{27} }
+func (*DeleteResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{24} }
 
 func (m *DeleteResponse) GetStat() *Status {
 	if m != nil {
@@ -992,7 +978,7 @@ type InfoParams struct {
 func (m *InfoParams) Reset()                    { *m = InfoParams{} }
 func (m *InfoParams) String() string            { return proto.CompactTextString(m) }
 func (*InfoParams) ProtoMessage()               {}
-func (*InfoParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{28} }
+func (*InfoParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{25} }
 
 type InfoResponse struct {
 	Stat         *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
@@ -1005,7 +991,7 @@ type InfoResponse struct {
 func (m *InfoResponse) Reset()                    { *m = InfoResponse{} }
 func (m *InfoResponse) String() string            { return proto.CompactTextString(m) }
 func (*InfoResponse) ProtoMessage()               {}
-func (*InfoResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{29} }
+func (*InfoResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{26} }
 
 func (m *InfoResponse) GetStat() *Status {
 	if m != nil {
@@ -1042,6 +1028,118 @@ func (m *InfoResponse) GetBuild() string {
 	return ""
 }
 
+type FaultInjectParams struct {
+	Type   uint64 `protobuf:"varint,1,opt,name=type" json:"type,omitempty"`
+	Params []byte `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+}
+
+func (m *FaultInjectParams) Reset()                    { *m = FaultInjectParams{} }
+func (m *FaultInjectParams) String() string            { return proto.CompactTextString(m) }
+func (*FaultInjectParams) ProtoMessage()               {}
+func (*FaultInjectParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{27} }
+
+func (m *FaultInjectParams) GetType() uint64 {
+	if m != nil {
+		return m.Type
+	}
+	return 0
+}
+
+func (m *FaultInjectParams) GetParams() []byte {
+	if m != nil {
+		return m.Params
+	}
+	return nil
+}
+
+type FaultInjectResponse struct {
+	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	Rv   []byte  `protobuf:"bytes,2,opt,name=rv,proto3" json:"rv,omitempty"`
+}
+
+func (m *FaultInjectResponse) Reset()                    { *m = FaultInjectResponse{} }
+func (m *FaultInjectResponse) String() string            { return proto.CompactTextString(m) }
+func (*FaultInjectResponse) ProtoMessage()               {}
+func (*FaultInjectResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{28} }
+
+func (m *FaultInjectResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+func (m *FaultInjectResponse) GetRv() []byte {
+	if m != nil {
+		return m.Rv
+	}
+	return nil
+}
+
+type FlushParams struct {
+	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+}
+
+func (m *FlushParams) Reset()                    { *m = FlushParams{} }
+func (m *FlushParams) String() string            { return proto.CompactTextString(m) }
+func (*FlushParams) ProtoMessage()               {}
+func (*FlushParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{29} }
+
+func (m *FlushParams) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+type FlushResponse struct {
+	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+}
+
+func (m *FlushResponse) Reset()                    { *m = FlushResponse{} }
+func (m *FlushResponse) String() string            { return proto.CompactTextString(m) }
+func (*FlushResponse) ProtoMessage()               {}
+func (*FlushResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{30} }
+
+func (m *FlushResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
+type ObliterateParams struct {
+	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+}
+
+func (m *ObliterateParams) Reset()                    { *m = ObliterateParams{} }
+func (m *ObliterateParams) String() string            { return proto.CompactTextString(m) }
+func (*ObliterateParams) ProtoMessage()               {}
+func (*ObliterateParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{31} }
+
+func (m *ObliterateParams) GetUuid() []byte {
+	if m != nil {
+		return m.Uuid
+	}
+	return nil
+}
+
+type ObliterateResponse struct {
+	Stat *Status `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+}
+
+func (m *ObliterateResponse) Reset()                    { *m = ObliterateResponse{} }
+func (m *ObliterateResponse) String() string            { return proto.CompactTextString(m) }
+func (*ObliterateResponse) ProtoMessage()               {}
+func (*ObliterateResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{32} }
+
+func (m *ObliterateResponse) GetStat() *Status {
+	if m != nil {
+		return m.Stat
+	}
+	return nil
+}
+
 type RawPoint struct {
 	Time  int64   `protobuf:"fixed64,1,opt,name=time" json:"time,omitempty"`
 	Value float64 `protobuf:"fixed64,2,opt,name=value" json:"value,omitempty"`
@@ -1050,7 +1148,7 @@ type RawPoint struct {
 func (m *RawPoint) Reset()                    { *m = RawPoint{} }
 func (m *RawPoint) String() string            { return proto.CompactTextString(m) }
 func (*RawPoint) ProtoMessage()               {}
-func (*RawPoint) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{30} }
+func (*RawPoint) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{33} }
 
 func (m *RawPoint) GetTime() int64 {
 	if m != nil {
@@ -1077,7 +1175,7 @@ type StatPoint struct {
 func (m *StatPoint) Reset()                    { *m = StatPoint{} }
 func (m *StatPoint) String() string            { return proto.CompactTextString(m) }
 func (*StatPoint) ProtoMessage()               {}
-func (*StatPoint) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{31} }
+func (*StatPoint) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{34} }
 
 func (m *StatPoint) GetTime() int64 {
 	if m != nil {
@@ -1122,7 +1220,7 @@ type ChangedRange struct {
 func (m *ChangedRange) Reset()                    { *m = ChangedRange{} }
 func (m *ChangedRange) String() string            { return proto.CompactTextString(m) }
 func (*ChangedRange) ProtoMessage()               {}
-func (*ChangedRange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{32} }
+func (*ChangedRange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{35} }
 
 func (m *ChangedRange) GetStart() int64 {
 	if m != nil {
@@ -1147,7 +1245,7 @@ type Status struct {
 func (m *Status) Reset()                    { *m = Status{} }
 func (m *Status) String() string            { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()               {}
-func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{33} }
+func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{36} }
 
 func (m *Status) GetCode() uint32 {
 	if m != nil {
@@ -1183,7 +1281,7 @@ type Mash struct {
 func (m *Mash) Reset()                    { *m = Mash{} }
 func (m *Mash) String() string            { return proto.CompactTextString(m) }
 func (*Mash) ProtoMessage()               {}
-func (*Mash) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{34} }
+func (*Mash) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{37} }
 
 func (m *Mash) GetRevision() int64 {
 	if m != nil {
@@ -1251,7 +1349,7 @@ type Member struct {
 func (m *Member) Reset()                    { *m = Member{} }
 func (m *Member) String() string            { return proto.CompactTextString(m) }
 func (*Member) ProtoMessage()               {}
-func (*Member) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{35} }
+func (*Member) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{38} }
 
 func (m *Member) GetHash() uint32 {
 	if m != nil {
@@ -1330,139 +1428,88 @@ func (m *Member) GetGrpcEndpoints() string {
 	return ""
 }
 
-type ListStreamsParams struct {
-	Collection string `protobuf:"bytes,1,opt,name=collection" json:"collection,omitempty"`
-	Partial    bool   `protobuf:"varint,2,opt,name=partial" json:"partial,omitempty"`
-	Tags       []*Tag `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
+type KeyOptValue struct {
+	Key string    `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
+	Val *OptValue `protobuf:"bytes,2,opt,name=val" json:"val,omitempty"`
 }
 
-func (m *ListStreamsParams) Reset()                    { *m = ListStreamsParams{} }
-func (m *ListStreamsParams) String() string            { return proto.CompactTextString(m) }
-func (*ListStreamsParams) ProtoMessage()               {}
-func (*ListStreamsParams) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{36} }
+func (m *KeyOptValue) Reset()                    { *m = KeyOptValue{} }
+func (m *KeyOptValue) String() string            { return proto.CompactTextString(m) }
+func (*KeyOptValue) ProtoMessage()               {}
+func (*KeyOptValue) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{39} }
 
-func (m *ListStreamsParams) GetCollection() string {
-	if m != nil {
-		return m.Collection
-	}
-	return ""
-}
-
-func (m *ListStreamsParams) GetPartial() bool {
-	if m != nil {
-		return m.Partial
-	}
-	return false
-}
-
-func (m *ListStreamsParams) GetTags() []*Tag {
-	if m != nil {
-		return m.Tags
-	}
-	return nil
-}
-
-type Tag struct {
-	Key   string `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	Value string `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
-}
-
-func (m *Tag) Reset()                    { *m = Tag{} }
-func (m *Tag) String() string            { return proto.CompactTextString(m) }
-func (*Tag) ProtoMessage()               {}
-func (*Tag) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{37} }
-
-func (m *Tag) GetKey() string {
+func (m *KeyOptValue) GetKey() string {
 	if m != nil {
 		return m.Key
 	}
 	return ""
 }
 
-func (m *Tag) GetValue() string {
+func (m *KeyOptValue) GetVal() *OptValue {
+	if m != nil {
+		return m.Val
+	}
+	return nil
+}
+
+type OptValue struct {
+	Value []byte `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *OptValue) Reset()                    { *m = OptValue{} }
+func (m *OptValue) String() string            { return proto.CompactTextString(m) }
+func (*OptValue) ProtoMessage()               {}
+func (*OptValue) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{40} }
+
+func (m *OptValue) GetValue() []byte {
 	if m != nil {
 		return m.Value
 	}
-	return ""
-}
-
-type ListStreamsResponse struct {
-	Stat           *Status          `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
-	Collection     string           `protobuf:"bytes,2,opt,name=collection" json:"collection,omitempty"`
-	StreamListings []*StreamListing `protobuf:"bytes,3,rep,name=streamListings" json:"streamListings,omitempty"`
-}
-
-func (m *ListStreamsResponse) Reset()                    { *m = ListStreamsResponse{} }
-func (m *ListStreamsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListStreamsResponse) ProtoMessage()               {}
-func (*ListStreamsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{38} }
-
-func (m *ListStreamsResponse) GetStat() *Status {
-	if m != nil {
-		return m.Stat
-	}
 	return nil
 }
 
-func (m *ListStreamsResponse) GetCollection() string {
+type KeyValue struct {
+	Key   string `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
+	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *KeyValue) Reset()                    { *m = KeyValue{} }
+func (m *KeyValue) String() string            { return proto.CompactTextString(m) }
+func (*KeyValue) ProtoMessage()               {}
+func (*KeyValue) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{41} }
+
+func (m *KeyValue) GetKey() string {
 	if m != nil {
-		return m.Collection
+		return m.Key
 	}
 	return ""
 }
 
-func (m *ListStreamsResponse) GetStreamListings() []*StreamListing {
+func (m *KeyValue) GetValue() []byte {
 	if m != nil {
-		return m.StreamListings
-	}
-	return nil
-}
-
-type StreamListing struct {
-	Uuid []byte `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	Tags []*Tag `protobuf:"bytes,2,rep,name=tags" json:"tags,omitempty"`
-}
-
-func (m *StreamListing) Reset()                    { *m = StreamListing{} }
-func (m *StreamListing) String() string            { return proto.CompactTextString(m) }
-func (*StreamListing) ProtoMessage()               {}
-func (*StreamListing) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{39} }
-
-func (m *StreamListing) GetUuid() []byte {
-	if m != nil {
-		return m.Uuid
-	}
-	return nil
-}
-
-func (m *StreamListing) GetTags() []*Tag {
-	if m != nil {
-		return m.Tags
+		return m.Value
 	}
 	return nil
 }
 
 func init() {
-	proto.RegisterType((*FlushParams)(nil), "grpcinterface.FlushParams")
-	proto.RegisterType((*FlushResponse)(nil), "grpcinterface.FlushResponse")
-	proto.RegisterType((*FaultInjectParams)(nil), "grpcinterface.FaultInjectParams")
-	proto.RegisterType((*FaultInjectResponse)(nil), "grpcinterface.FaultInjectResponse")
-	proto.RegisterType((*StreamInfoParams)(nil), "grpcinterface.StreamInfoParams")
-	proto.RegisterType((*StreamAnnotationParams)(nil), "grpcinterface.StreamAnnotationParams")
-	proto.RegisterType((*SetStreamAnnotationParams)(nil), "grpcinterface.SetStreamAnnotationParams")
-	proto.RegisterType((*SetStreamAnnotationResponse)(nil), "grpcinterface.SetStreamAnnotationResponse")
-	proto.RegisterType((*StreamInfoResponse)(nil), "grpcinterface.StreamInfoResponse")
-	proto.RegisterType((*StreamAnnotationResponse)(nil), "grpcinterface.StreamAnnotationResponse")
-	proto.RegisterType((*CreateParams)(nil), "grpcinterface.CreateParams")
-	proto.RegisterType((*CreateResponse)(nil), "grpcinterface.CreateResponse")
-	proto.RegisterType((*ListCollectionsParams)(nil), "grpcinterface.ListCollectionsParams")
-	proto.RegisterType((*ListCollectionsResponse)(nil), "grpcinterface.ListCollectionsResponse")
 	proto.RegisterType((*RawValuesParams)(nil), "grpcinterface.RawValuesParams")
 	proto.RegisterType((*RawValuesResponse)(nil), "grpcinterface.RawValuesResponse")
 	proto.RegisterType((*AlignedWindowsParams)(nil), "grpcinterface.AlignedWindowsParams")
 	proto.RegisterType((*AlignedWindowsResponse)(nil), "grpcinterface.AlignedWindowsResponse")
 	proto.RegisterType((*WindowsParams)(nil), "grpcinterface.WindowsParams")
 	proto.RegisterType((*WindowsResponse)(nil), "grpcinterface.WindowsResponse")
+	proto.RegisterType((*StreamInfoParams)(nil), "grpcinterface.StreamInfoParams")
+	proto.RegisterType((*StreamInfoResponse)(nil), "grpcinterface.StreamInfoResponse")
+	proto.RegisterType((*StreamDescriptor)(nil), "grpcinterface.StreamDescriptor")
+	proto.RegisterType((*SetStreamAnnotationsParams)(nil), "grpcinterface.SetStreamAnnotationsParams")
+	proto.RegisterType((*SetStreamAnnotationsResponse)(nil), "grpcinterface.SetStreamAnnotationsResponse")
+	proto.RegisterType((*CreateParams)(nil), "grpcinterface.CreateParams")
+	proto.RegisterType((*CreateResponse)(nil), "grpcinterface.CreateResponse")
+	proto.RegisterType((*ListCollectionsParams)(nil), "grpcinterface.ListCollectionsParams")
+	proto.RegisterType((*ListCollectionsResponse)(nil), "grpcinterface.ListCollectionsResponse")
+	proto.RegisterType((*LookupStreamsParams)(nil), "grpcinterface.LookupStreamsParams")
+	proto.RegisterType((*LookupStreamsResponse)(nil), "grpcinterface.LookupStreamsResponse")
 	proto.RegisterType((*NearestParams)(nil), "grpcinterface.NearestParams")
 	proto.RegisterType((*NearestResponse)(nil), "grpcinterface.NearestResponse")
 	proto.RegisterType((*ChangesParams)(nil), "grpcinterface.ChangesParams")
@@ -1473,16 +1520,21 @@ func init() {
 	proto.RegisterType((*DeleteResponse)(nil), "grpcinterface.DeleteResponse")
 	proto.RegisterType((*InfoParams)(nil), "grpcinterface.InfoParams")
 	proto.RegisterType((*InfoResponse)(nil), "grpcinterface.InfoResponse")
+	proto.RegisterType((*FaultInjectParams)(nil), "grpcinterface.FaultInjectParams")
+	proto.RegisterType((*FaultInjectResponse)(nil), "grpcinterface.FaultInjectResponse")
+	proto.RegisterType((*FlushParams)(nil), "grpcinterface.FlushParams")
+	proto.RegisterType((*FlushResponse)(nil), "grpcinterface.FlushResponse")
+	proto.RegisterType((*ObliterateParams)(nil), "grpcinterface.ObliterateParams")
+	proto.RegisterType((*ObliterateResponse)(nil), "grpcinterface.ObliterateResponse")
 	proto.RegisterType((*RawPoint)(nil), "grpcinterface.RawPoint")
 	proto.RegisterType((*StatPoint)(nil), "grpcinterface.StatPoint")
 	proto.RegisterType((*ChangedRange)(nil), "grpcinterface.ChangedRange")
 	proto.RegisterType((*Status)(nil), "grpcinterface.Status")
 	proto.RegisterType((*Mash)(nil), "grpcinterface.Mash")
 	proto.RegisterType((*Member)(nil), "grpcinterface.Member")
-	proto.RegisterType((*ListStreamsParams)(nil), "grpcinterface.ListStreamsParams")
-	proto.RegisterType((*Tag)(nil), "grpcinterface.Tag")
-	proto.RegisterType((*ListStreamsResponse)(nil), "grpcinterface.ListStreamsResponse")
-	proto.RegisterType((*StreamListing)(nil), "grpcinterface.StreamListing")
+	proto.RegisterType((*KeyOptValue)(nil), "grpcinterface.KeyOptValue")
+	proto.RegisterType((*OptValue)(nil), "grpcinterface.OptValue")
+	proto.RegisterType((*KeyValue)(nil), "grpcinterface.KeyValue")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1500,11 +1552,10 @@ type BTrDBClient interface {
 	AlignedWindows(ctx context.Context, in *AlignedWindowsParams, opts ...grpc.CallOption) (BTrDB_AlignedWindowsClient, error)
 	Windows(ctx context.Context, in *WindowsParams, opts ...grpc.CallOption) (BTrDB_WindowsClient, error)
 	StreamInfo(ctx context.Context, in *StreamInfoParams, opts ...grpc.CallOption) (*StreamInfoResponse, error)
-	StreamAnnotation(ctx context.Context, in *StreamAnnotationParams, opts ...grpc.CallOption) (*StreamAnnotationResponse, error)
-	SetStreamAnnotation(ctx context.Context, in *SetStreamAnnotationParams, opts ...grpc.CallOption) (*SetStreamAnnotationResponse, error)
+	SetStreamAnnotations(ctx context.Context, in *SetStreamAnnotationsParams, opts ...grpc.CallOption) (*SetStreamAnnotationsResponse, error)
 	Create(ctx context.Context, in *CreateParams, opts ...grpc.CallOption) (*CreateResponse, error)
 	ListCollections(ctx context.Context, in *ListCollectionsParams, opts ...grpc.CallOption) (*ListCollectionsResponse, error)
-	ListStreams(ctx context.Context, in *ListStreamsParams, opts ...grpc.CallOption) (*ListStreamsResponse, error)
+	LookupStreams(ctx context.Context, in *LookupStreamsParams, opts ...grpc.CallOption) (BTrDB_LookupStreamsClient, error)
 	Nearest(ctx context.Context, in *NearestParams, opts ...grpc.CallOption) (*NearestResponse, error)
 	Changes(ctx context.Context, in *ChangesParams, opts ...grpc.CallOption) (BTrDB_ChangesClient, error)
 	Insert(ctx context.Context, in *InsertParams, opts ...grpc.CallOption) (*InsertResponse, error)
@@ -1512,6 +1563,7 @@ type BTrDBClient interface {
 	Info(ctx context.Context, in *InfoParams, opts ...grpc.CallOption) (*InfoResponse, error)
 	FaultInject(ctx context.Context, in *FaultInjectParams, opts ...grpc.CallOption) (*FaultInjectResponse, error)
 	Flush(ctx context.Context, in *FlushParams, opts ...grpc.CallOption) (*FlushResponse, error)
+	Obliterate(ctx context.Context, in *ObliterateParams, opts ...grpc.CallOption) (*ObliterateResponse, error)
 }
 
 type bTrDBClient struct {
@@ -1627,18 +1679,9 @@ func (c *bTrDBClient) StreamInfo(ctx context.Context, in *StreamInfoParams, opts
 	return out, nil
 }
 
-func (c *bTrDBClient) StreamAnnotation(ctx context.Context, in *StreamAnnotationParams, opts ...grpc.CallOption) (*StreamAnnotationResponse, error) {
-	out := new(StreamAnnotationResponse)
-	err := grpc.Invoke(ctx, "/grpcinterface.BTrDB/StreamAnnotation", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *bTrDBClient) SetStreamAnnotation(ctx context.Context, in *SetStreamAnnotationParams, opts ...grpc.CallOption) (*SetStreamAnnotationResponse, error) {
-	out := new(SetStreamAnnotationResponse)
-	err := grpc.Invoke(ctx, "/grpcinterface.BTrDB/SetStreamAnnotation", in, out, c.cc, opts...)
+func (c *bTrDBClient) SetStreamAnnotations(ctx context.Context, in *SetStreamAnnotationsParams, opts ...grpc.CallOption) (*SetStreamAnnotationsResponse, error) {
+	out := new(SetStreamAnnotationsResponse)
+	err := grpc.Invoke(ctx, "/grpcinterface.BTrDB/SetStreamAnnotations", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1663,13 +1706,36 @@ func (c *bTrDBClient) ListCollections(ctx context.Context, in *ListCollectionsPa
 	return out, nil
 }
 
-func (c *bTrDBClient) ListStreams(ctx context.Context, in *ListStreamsParams, opts ...grpc.CallOption) (*ListStreamsResponse, error) {
-	out := new(ListStreamsResponse)
-	err := grpc.Invoke(ctx, "/grpcinterface.BTrDB/ListStreams", in, out, c.cc, opts...)
+func (c *bTrDBClient) LookupStreams(ctx context.Context, in *LookupStreamsParams, opts ...grpc.CallOption) (BTrDB_LookupStreamsClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_BTrDB_serviceDesc.Streams[3], c.cc, "/grpcinterface.BTrDB/LookupStreams", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &bTrDBLookupStreamsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type BTrDB_LookupStreamsClient interface {
+	Recv() (*LookupStreamsResponse, error)
+	grpc.ClientStream
+}
+
+type bTrDBLookupStreamsClient struct {
+	grpc.ClientStream
+}
+
+func (x *bTrDBLookupStreamsClient) Recv() (*LookupStreamsResponse, error) {
+	m := new(LookupStreamsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *bTrDBClient) Nearest(ctx context.Context, in *NearestParams, opts ...grpc.CallOption) (*NearestResponse, error) {
@@ -1682,7 +1748,7 @@ func (c *bTrDBClient) Nearest(ctx context.Context, in *NearestParams, opts ...gr
 }
 
 func (c *bTrDBClient) Changes(ctx context.Context, in *ChangesParams, opts ...grpc.CallOption) (BTrDB_ChangesClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_BTrDB_serviceDesc.Streams[3], c.cc, "/grpcinterface.BTrDB/Changes", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_BTrDB_serviceDesc.Streams[4], c.cc, "/grpcinterface.BTrDB/Changes", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1758,6 +1824,15 @@ func (c *bTrDBClient) Flush(ctx context.Context, in *FlushParams, opts ...grpc.C
 	return out, nil
 }
 
+func (c *bTrDBClient) Obliterate(ctx context.Context, in *ObliterateParams, opts ...grpc.CallOption) (*ObliterateResponse, error) {
+	out := new(ObliterateResponse)
+	err := grpc.Invoke(ctx, "/grpcinterface.BTrDB/Obliterate", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for BTrDB service
 
 type BTrDBServer interface {
@@ -1765,11 +1840,10 @@ type BTrDBServer interface {
 	AlignedWindows(*AlignedWindowsParams, BTrDB_AlignedWindowsServer) error
 	Windows(*WindowsParams, BTrDB_WindowsServer) error
 	StreamInfo(context.Context, *StreamInfoParams) (*StreamInfoResponse, error)
-	StreamAnnotation(context.Context, *StreamAnnotationParams) (*StreamAnnotationResponse, error)
-	SetStreamAnnotation(context.Context, *SetStreamAnnotationParams) (*SetStreamAnnotationResponse, error)
+	SetStreamAnnotations(context.Context, *SetStreamAnnotationsParams) (*SetStreamAnnotationsResponse, error)
 	Create(context.Context, *CreateParams) (*CreateResponse, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResponse, error)
-	ListStreams(context.Context, *ListStreamsParams) (*ListStreamsResponse, error)
+	LookupStreams(*LookupStreamsParams, BTrDB_LookupStreamsServer) error
 	Nearest(context.Context, *NearestParams) (*NearestResponse, error)
 	Changes(*ChangesParams, BTrDB_ChangesServer) error
 	Insert(context.Context, *InsertParams) (*InsertResponse, error)
@@ -1777,6 +1851,7 @@ type BTrDBServer interface {
 	Info(context.Context, *InfoParams) (*InfoResponse, error)
 	FaultInject(context.Context, *FaultInjectParams) (*FaultInjectResponse, error)
 	Flush(context.Context, *FlushParams) (*FlushResponse, error)
+	Obliterate(context.Context, *ObliterateParams) (*ObliterateResponse, error)
 }
 
 func RegisterBTrDBServer(s *grpc.Server, srv BTrDBServer) {
@@ -1864,38 +1939,20 @@ func _BTrDB_StreamInfo_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BTrDB_StreamAnnotation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StreamAnnotationParams)
+func _BTrDB_SetStreamAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetStreamAnnotationsParams)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BTrDBServer).StreamAnnotation(ctx, in)
+		return srv.(BTrDBServer).SetStreamAnnotations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/grpcinterface.BTrDB/StreamAnnotation",
+		FullMethod: "/grpcinterface.BTrDB/SetStreamAnnotations",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BTrDBServer).StreamAnnotation(ctx, req.(*StreamAnnotationParams))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BTrDB_SetStreamAnnotation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetStreamAnnotationParams)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BTrDBServer).SetStreamAnnotation(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpcinterface.BTrDB/SetStreamAnnotation",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BTrDBServer).SetStreamAnnotation(ctx, req.(*SetStreamAnnotationParams))
+		return srv.(BTrDBServer).SetStreamAnnotations(ctx, req.(*SetStreamAnnotationsParams))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1936,22 +1993,25 @@ func _BTrDB_ListCollections_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BTrDB_ListStreams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListStreamsParams)
-	if err := dec(in); err != nil {
-		return nil, err
+func _BTrDB_LookupStreams_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(LookupStreamsParams)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(BTrDBServer).ListStreams(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/grpcinterface.BTrDB/ListStreams",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BTrDBServer).ListStreams(ctx, req.(*ListStreamsParams))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(BTrDBServer).LookupStreams(m, &bTrDBLookupStreamsServer{stream})
+}
+
+type BTrDB_LookupStreamsServer interface {
+	Send(*LookupStreamsResponse) error
+	grpc.ServerStream
+}
+
+type bTrDBLookupStreamsServer struct {
+	grpc.ServerStream
+}
+
+func (x *bTrDBLookupStreamsServer) Send(m *LookupStreamsResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _BTrDB_Nearest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -2083,6 +2143,24 @@ func _BTrDB_Flush_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BTrDB_Obliterate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObliterateParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BTrDBServer).Obliterate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpcinterface.BTrDB/Obliterate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BTrDBServer).Obliterate(ctx, req.(*ObliterateParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _BTrDB_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "grpcinterface.BTrDB",
 	HandlerType: (*BTrDBServer)(nil),
@@ -2092,12 +2170,8 @@ var _BTrDB_serviceDesc = grpc.ServiceDesc{
 			Handler:    _BTrDB_StreamInfo_Handler,
 		},
 		{
-			MethodName: "StreamAnnotation",
-			Handler:    _BTrDB_StreamAnnotation_Handler,
-		},
-		{
-			MethodName: "SetStreamAnnotation",
-			Handler:    _BTrDB_SetStreamAnnotation_Handler,
+			MethodName: "SetStreamAnnotations",
+			Handler:    _BTrDB_SetStreamAnnotations_Handler,
 		},
 		{
 			MethodName: "Create",
@@ -2106,10 +2180,6 @@ var _BTrDB_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListCollections",
 			Handler:    _BTrDB_ListCollections_Handler,
-		},
-		{
-			MethodName: "ListStreams",
-			Handler:    _BTrDB_ListStreams_Handler,
 		},
 		{
 			MethodName: "Nearest",
@@ -2135,6 +2205,10 @@ var _BTrDB_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Flush",
 			Handler:    _BTrDB_Flush_Handler,
 		},
+		{
+			MethodName: "Obliterate",
+			Handler:    _BTrDB_Obliterate_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -2153,6 +2227,11 @@ var _BTrDB_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
+			StreamName:    "LookupStreams",
+			Handler:       _BTrDB_LookupStreams_Handler,
+			ServerStreams: true,
+		},
+		{
 			StreamName:    "Changes",
 			Handler:       _BTrDB_Changes_Handler,
 			ServerStreams: true,
@@ -2164,105 +2243,111 @@ var _BTrDB_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("grpcinterface/btrdb.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 1593 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xd4, 0x59, 0xcd, 0x6f, 0x1b, 0x45,
-	0x14, 0xd7, 0xda, 0x1b, 0x3b, 0x7e, 0x89, 0xf3, 0x31, 0x49, 0x53, 0xc7, 0x0d, 0x25, 0x5d, 0xda,
-	0x34, 0xa0, 0x7e, 0x29, 0x45, 0x1c, 0x00, 0x81, 0xda, 0x86, 0x42, 0x80, 0x42, 0x34, 0xa9, 0x9a,
-	0x1b, 0x68, 0xec, 0x9d, 0xd8, 0xdb, 0xda, 0xb3, 0x66, 0x77, 0x36, 0x1f, 0xe2, 0xc8, 0x0d, 0x89,
-	0x13, 0x12, 0x07, 0xb8, 0xf7, 0x1f, 0x40, 0x02, 0x71, 0x40, 0xe2, 0x7f, 0xe1, 0xc8, 0x3f, 0x81,
-	0xe6, 0xed, 0xec, 0xf7, 0xc6, 0x89, 0x2c, 0xd4, 0x88, 0x8b, 0x35, 0xef, 0xcd, 0x9b, 0xf7, 0xf1,
-	0x7b, 0x33, 0x6f, 0xdf, 0x8c, 0x61, 0xb5, 0xe7, 0x8d, 0xba, 0x8e, 0x90, 0xdc, 0x3b, 0x60, 0x5d,
-	0x7e, 0xb7, 0x23, 0x3d, 0xbb, 0x73, 0x67, 0xe4, 0xb9, 0xd2, 0x25, 0xcd, 0xcc, 0x94, 0x75, 0x0d,
-	0x66, 0x1e, 0x0f, 0x02, 0xbf, 0xbf, 0xcb, 0x3c, 0x36, 0xf4, 0x09, 0x01, 0x33, 0x08, 0x1c, 0xbb,
-	0x65, 0xac, 0x1b, 0x9b, 0xb3, 0x14, 0xc7, 0xd6, 0xbb, 0xd0, 0x44, 0x11, 0xca, 0xfd, 0x91, 0x2b,
-	0x7c, 0x4e, 0xde, 0x04, 0xd3, 0x97, 0x4c, 0xa2, 0xd0, 0xcc, 0xd6, 0xa5, 0x3b, 0x19, 0x8d, 0x77,
-	0xf6, 0x24, 0x93, 0x81, 0x4f, 0x51, 0xc4, 0xfa, 0x10, 0x16, 0x1f, 0xb3, 0x60, 0x20, 0x77, 0xc4,
-	0x73, 0xde, 0x95, 0x89, 0x11, 0x79, 0x32, 0xe2, 0xb8, 0xde, 0xa4, 0x38, 0x26, 0x2b, 0x50, 0x1b,
-	0xe1, 0x6c, 0xab, 0x82, 0xa6, 0x35, 0x65, 0xed, 0xc2, 0x52, 0x4a, 0xc1, 0x04, 0x2e, 0x90, 0x39,
-	0xa8, 0x78, 0x87, 0x5a, 0x6b, 0xc5, 0x3b, 0xb4, 0x36, 0x60, 0x61, 0x4f, 0x7a, 0x9c, 0x0d, 0x77,
-	0xc4, 0x81, 0x3b, 0x26, 0xec, 0x5b, 0xb0, 0x12, 0xca, 0x3d, 0x10, 0xc2, 0x95, 0x4c, 0x3a, 0xae,
-	0x18, 0x23, 0xfd, 0x83, 0x01, 0xab, 0x7b, 0x5c, 0x9e, 0x7f, 0x05, 0x79, 0x1f, 0x56, 0xf9, 0xf1,
-	0x88, 0x77, 0x25, 0xb7, 0x13, 0xf9, 0x67, 0xdc, 0xf3, 0x1d, 0x57, 0xa0, 0xbb, 0x26, 0x3d, 0x5d,
-	0x80, 0x5c, 0x05, 0x60, 0x31, 0xb3, 0x55, 0x45, 0xbd, 0x29, 0x8e, 0xf5, 0x09, 0x5c, 0x29, 0x71,
-	0x67, 0x92, 0x14, 0xfe, 0x6d, 0x00, 0x49, 0x00, 0x9b, 0x24, 0x03, 0x51, 0xf4, 0x95, 0x54, 0xf4,
-	0x16, 0xcc, 0x1e, 0x86, 0xa1, 0x3c, 0x61, 0xcf, 0x5d, 0x0f, 0x23, 0x30, 0x69, 0x86, 0x97, 0x96,
-	0x71, 0x84, 0xeb, 0xb5, 0xcc, 0xac, 0x8c, 0xe2, 0x29, 0x1c, 0xba, 0xee, 0x60, 0xc0, 0xbb, 0x88,
-	0xc3, 0xd4, 0xba, 0xb1, 0xd9, 0xa0, 0x29, 0x0e, 0xd9, 0x00, 0x53, 0xb2, 0x9e, 0xdf, 0xaa, 0xad,
-	0x57, 0x37, 0x67, 0xb6, 0x48, 0xce, 0xcd, 0xa7, 0xac, 0x47, 0x71, 0xde, 0xfa, 0xd1, 0x80, 0xd6,
-	0x7f, 0x80, 0x16, 0xb9, 0x05, 0x8b, 0xec, 0x94, 0x6c, 0x16, 0x27, 0xce, 0xcc, 0xe2, 0xf7, 0x06,
-	0xcc, 0x3e, 0xf2, 0x38, 0x93, 0x7c, 0xcc, 0x46, 0xca, 0x42, 0x50, 0x39, 0x15, 0x82, 0xea, 0x78,
-	0x08, 0x72, 0xce, 0x98, 0x05, 0x67, 0xde, 0x83, 0xb9, 0xd0, 0x97, 0x49, 0x76, 0x11, 0x87, 0x4b,
-	0x9f, 0x3b, 0xbe, 0x7c, 0x14, 0xbb, 0xe5, 0xeb, 0x88, 0xd4, 0xc1, 0xf7, 0xf8, 0x81, 0x73, 0x8c,
-	0x5a, 0x1a, 0x54, 0x53, 0x64, 0x0d, 0x1a, 0xbe, 0x64, 0x9e, 0xdc, 0x77, 0x64, 0x5f, 0x07, 0x95,
-	0x30, 0xd4, 0x2a, 0x11, 0x0c, 0x3b, 0x3c, 0xda, 0x38, 0x9a, 0xb2, 0x0e, 0xe0, 0x72, 0xce, 0xcc,
-	0x24, 0x49, 0x5c, 0x87, 0x99, 0x04, 0x3f, 0x55, 0x91, 0xaa, 0x9b, 0x0d, 0x9a, 0x66, 0x59, 0xdf,
-	0xc0, 0x3c, 0x65, 0x47, 0xcf, 0xd8, 0x20, 0xe0, 0xfe, 0x98, 0xd4, 0x2c, 0xc3, 0x14, 0xfa, 0x8c,
-	0x01, 0x2c, 0xd0, 0x90, 0x20, 0x0b, 0x50, 0xe5, 0xc2, 0x46, 0xcf, 0x17, 0xa8, 0x1a, 0x16, 0x4e,
-	0x83, 0x59, 0x3c, 0x0d, 0xd6, 0xef, 0x06, 0x2c, 0xc6, 0x36, 0x27, 0x89, 0x2a, 0x6f, 0xa4, 0x72,
-	0x8e, 0x23, 0x57, 0x2d, 0x39, 0x72, 0x77, 0xa1, 0x76, 0x88, 0x4e, 0xb4, 0x4c, 0xdc, 0x51, 0x97,
-	0x73, 0x46, 0x29, 0x3b, 0xda, 0x75, 0x1d, 0x21, 0xa9, 0x16, 0xb3, 0x7e, 0x32, 0x60, 0xf9, 0xc1,
-	0xc0, 0xe9, 0x09, 0x6e, 0xef, 0x3b, 0xc2, 0x76, 0x8f, 0x5e, 0x11, 0x64, 0x6a, 0x47, 0x8f, 0x94,
-	0x27, 0xfb, 0x8e, 0x2d, 0xfb, 0x58, 0x1c, 0x9a, 0x34, 0xc5, 0xb1, 0xfe, 0x34, 0x60, 0x25, 0xeb,
-	0xd8, 0x45, 0xe2, 0x7a, 0x2f, 0x87, 0x6b, 0xab, 0xc4, 0x68, 0x16, 0xd8, 0x5f, 0x0c, 0x68, 0xbe,
-	0x5a, 0x44, 0x97, 0x61, 0xea, 0x28, 0x06, 0xd3, 0xa4, 0x21, 0xa1, 0xb8, 0x36, 0x1f, 0xc9, 0x7e,
-	0xab, 0x86, 0x10, 0x87, 0x84, 0xf5, 0x9b, 0x01, 0xf3, 0xff, 0x4b, 0x58, 0x8f, 0xa0, 0xf9, 0x05,
-	0x67, 0x1e, 0xf7, 0xe5, 0x18, 0x54, 0x55, 0x13, 0xe3, 0x0c, 0xb9, 0x06, 0x15, 0xc7, 0xe7, 0xfa,
-	0xa8, 0xb5, 0x61, 0xba, 0xc3, 0xba, 0x2f, 0x8e, 0x98, 0x67, 0x23, 0xc2, 0xd3, 0x34, 0xa6, 0xad,
-	0x5f, 0x0d, 0x98, 0xd7, 0x96, 0x2f, 0x12, 0xb1, 0xdb, 0x30, 0x85, 0x48, 0xa0, 0x7f, 0x63, 0xce,
-	0x77, 0x28, 0x65, 0x7d, 0x0b, 0xcd, 0x47, 0x7d, 0x26, 0x7a, 0x63, 0x2b, 0xe1, 0x1a, 0x34, 0x0e,
-	0x3c, 0x77, 0x98, 0x76, 0x2c, 0x61, 0x90, 0x16, 0xd4, 0xa5, 0x9b, 0xc6, 0x2c, 0x22, 0xd5, 0x11,
-	0xf6, 0xb8, 0xef, 0x0e, 0x82, 0xf8, 0xa3, 0xd4, 0xa4, 0x29, 0x8e, 0xf5, 0x87, 0x01, 0xf3, 0xda,
-	0xfa, 0x45, 0x42, 0x76, 0x1f, 0x6a, 0x1e, 0x3a, 0xa1, 0x37, 0xd9, 0x95, 0x9c, 0xd1, 0xd0, 0x45,
-	0x9b, 0xaa, 0x5f, 0xaa, 0x45, 0xad, 0x1e, 0xcc, 0xee, 0x08, 0x9f, 0x7b, 0x67, 0x6c, 0x33, 0xff,
-	0x44, 0x74, 0xd1, 0xb1, 0x69, 0x8a, 0xe3, 0x54, 0x01, 0xae, 0x9e, 0xaf, 0x00, 0x7f, 0x67, 0xc0,
-	0x5c, 0x68, 0xe9, 0x02, 0x31, 0xb2, 0x3e, 0x85, 0xd9, 0x6d, 0x3e, 0xe0, 0x63, 0x7b, 0x99, 0x73,
-	0xd6, 0x2a, 0x8c, 0x28, 0x54, 0x76, 0x91, 0x11, 0xcd, 0x02, 0x24, 0x97, 0x08, 0xeb, 0x2f, 0x43,
-	0xe5, 0x73, 0xb2, 0x16, 0xf9, 0x26, 0x98, 0x43, 0xe6, 0x87, 0x8d, 0xce, 0xcc, 0xd6, 0x52, 0x4e,
-	0xf4, 0x09, 0xf3, 0xfb, 0x14, 0x05, 0x94, 0x5b, 0x43, 0xe5, 0x5f, 0xd4, 0x5a, 0x56, 0xf1, 0x44,
-	0x64, 0x78, 0x28, 0xa3, 0xfc, 0x8b, 0x64, 0x4c, 0x2d, 0x93, 0xe2, 0x29, 0xa0, 0x3b, 0x81, 0x33,
-	0xb0, 0x75, 0xcb, 0x1c, 0x12, 0xd6, 0xdb, 0x30, 0x1d, 0x6d, 0x9e, 0xb8, 0xc0, 0x19, 0xa9, 0x02,
-	0xb7, 0x1c, 0x55, 0x06, 0xe5, 0xa7, 0x11, 0x15, 0x80, 0x21, 0x34, 0xe2, 0x22, 0x5a, 0xba, 0x6c,
-	0x01, 0xaa, 0x43, 0x47, 0xe8, 0x45, 0x6a, 0xa8, 0xa4, 0x86, 0x9c, 0x85, 0xee, 0x1b, 0x14, 0xc7,
-	0x28, 0xc5, 0x8e, 0xd1, 0x5b, 0x25, 0xc5, 0x8e, 0x95, 0xb9, 0xae, 0x1b, 0x08, 0x89, 0x4e, 0xd6,
-	0x68, 0x48, 0x58, 0xef, 0xc0, 0x6c, 0xfa, 0x38, 0x25, 0x7b, 0xc6, 0x28, 0xd9, 0x33, 0x95, 0x64,
-	0xcf, 0xec, 0x43, 0x2d, 0xc4, 0x5c, 0x59, 0xef, 0xba, 0x76, 0xe8, 0x63, 0x93, 0xe2, 0x18, 0xad,
-	0xfb, 0x3d, 0xdd, 0x69, 0xaa, 0x61, 0x9c, 0x93, 0xea, 0x19, 0x39, 0xb1, 0xfe, 0x31, 0xc0, 0x54,
-	0xa4, 0xaa, 0xed, 0x1e, 0x3f, 0x74, 0x10, 0x74, 0xa5, 0xbb, 0x4a, 0x63, 0x5a, 0x75, 0xac, 0x03,
-	0xce, 0x6c, 0xee, 0x69, 0x13, 0x9a, 0x22, 0x1b, 0x30, 0x17, 0x8e, 0x68, 0xb4, 0xb2, 0x8a, 0x2b,
-	0x73, 0x5c, 0xd5, 0x93, 0x4a, 0x57, 0xb2, 0xc1, 0x3e, 0x77, 0x7a, 0x7d, 0x89, 0x28, 0x55, 0x69,
-	0x9a, 0xa5, 0x8a, 0x68, 0x9f, 0xb3, 0x81, 0xec, 0x9f, 0x20, 0x5e, 0xd3, 0x34, 0x22, 0x95, 0x5f,
-	0x81, 0x18, 0xb2, 0xd1, 0x88, 0xdb, 0xf8, 0x89, 0x36, 0x68, 0x4c, 0x93, 0xbb, 0x50, 0x1f, 0x72,
-	0xd5, 0x3b, 0xfb, 0xad, 0x3a, 0x56, 0x93, 0xfc, 0x3e, 0x7d, 0x82, 0xb3, 0x34, 0x92, 0xb2, 0x5e,
-	0x56, 0xa0, 0x16, 0xf2, 0x14, 0x8e, 0x7d, 0x85, 0x90, 0xc6, 0xb1, 0xaf, 0x31, 0x10, 0xae, 0xcd,
-	0x05, 0xd3, 0xdf, 0xc6, 0x06, 0x8d, 0x69, 0x75, 0x15, 0x0f, 0x46, 0x18, 0xdf, 0x34, 0xad, 0x04,
-	0x23, 0x45, 0x3b, 0x42, 0x7f, 0x05, 0x2b, 0x8e, 0x50, 0x11, 0x70, 0xc1, 0x3a, 0x03, 0x6e, 0x47,
-	0x11, 0x68, 0x32, 0xc9, 0x71, 0x0d, 0xe3, 0xce, 0xe6, 0xb8, 0x8e, 0x3c, 0xec, 0x61, 0x56, 0xa0,
-	0x76, 0x14, 0x02, 0x34, 0x8d, 0x4c, 0x4d, 0x29, 0x94, 0x3d, 0xce, 0xec, 0x5d, 0x8f, 0x1f, 0x70,
-	0x8f, 0x8b, 0x2e, 0x6f, 0x35, 0x10, 0x87, 0x1c, 0x97, 0x5c, 0x87, 0x66, 0x5f, 0xca, 0xd1, 0x47,
-	0xc2, 0xc6, 0x36, 0xd1, 0x6f, 0x01, 0x86, 0x90, 0x65, 0x2a, 0x29, 0x85, 0x51, 0x22, 0x35, 0x13,
-	0x4a, 0x65, 0x98, 0x56, 0x00, 0x8b, 0xea, 0x2e, 0x12, 0xde, 0x2a, 0xa3, 0x6f, 0x63, 0xf6, 0xb2,
-	0x66, 0x14, 0x2e, 0x6b, 0x2d, 0xa8, 0x8f, 0x98, 0x27, 0x1d, 0x36, 0xd0, 0x25, 0x3f, 0x22, 0xcf,
-	0x7b, 0x8d, 0xb3, 0x6e, 0x43, 0xf5, 0x29, 0xeb, 0x29, 0x6c, 0x5e, 0xf0, 0x13, 0x6d, 0x41, 0x0d,
-	0xb3, 0x87, 0xb7, 0x11, 0x1d, 0xde, 0x97, 0x06, 0x2c, 0xa5, 0xdc, 0x9c, 0xa4, 0x78, 0x9d, 0x75,
-	0x01, 0xdd, 0x86, 0x39, 0x1f, 0xb5, 0x2b, 0x3b, 0x8e, 0x88, 0x63, 0x58, 0x2b, 0x28, 0x4d, 0x09,
-	0xd1, 0xdc, 0x1a, 0xeb, 0x33, 0x68, 0x66, 0x04, 0x4a, 0xbf, 0x1f, 0x11, 0x48, 0x95, 0xf1, 0x20,
-	0x6d, 0xfd, 0x0c, 0x30, 0xf5, 0xf0, 0xa9, 0xb7, 0xfd, 0x90, 0x7c, 0x09, 0x8d, 0xf8, 0x56, 0x45,
-	0xae, 0x16, 0xbf, 0xa4, 0xe9, 0x3b, 0x5e, 0x7b, 0xfd, 0xb4, 0xf9, 0x08, 0xb6, 0x7b, 0x06, 0xf9,
-	0x0a, 0xe6, 0xb2, 0x77, 0x0a, 0xf2, 0x46, 0x6e, 0x55, 0xd9, 0x5d, 0xa8, 0x7d, 0x63, 0xac, 0x50,
-	0x4a, 0xff, 0x0e, 0xd4, 0x23, 0xc5, 0x79, 0x00, 0xb3, 0x1a, 0xaf, 0x96, 0xcf, 0xa6, 0x54, 0xed,
-	0x02, 0x24, 0x2f, 0x3b, 0xe4, 0xf5, 0xd2, 0x74, 0x24, 0x1f, 0xb8, 0xf6, 0xb5, 0x53, 0x05, 0xe2,
-	0x5d, 0xd3, 0x89, 0x1e, 0xd7, 0x92, 0x57, 0x14, 0x72, 0xa3, 0x74, 0x59, 0xfe, 0x8d, 0xac, 0x7d,
-	0xf3, 0x0c, 0xb1, 0xd8, 0xc6, 0x0b, 0x58, 0x2a, 0x79, 0xda, 0x22, 0x9b, 0xf9, 0xf5, 0xa7, 0xbd,
-	0xc6, 0xb5, 0xdf, 0x3a, 0x5b, 0x32, 0x36, 0xb6, 0x0d, 0xb5, 0xf0, 0xd1, 0x83, 0x14, 0x5a, 0xba,
-	0xd4, 0xbb, 0x4c, 0xfb, 0xb5, 0xd2, 0xc9, 0x58, 0xcb, 0xd7, 0x30, 0x9f, 0x7b, 0x96, 0x20, 0xd7,
-	0x73, 0x2b, 0x4a, 0x5f, 0x47, 0xda, 0x1b, 0xe3, 0xa5, 0x62, 0x03, 0x7b, 0x30, 0x93, 0x3a, 0xc4,
-	0x64, 0xbd, 0x64, 0x59, 0xa6, 0x0e, 0xb5, 0xad, 0xd3, 0x25, 0x62, 0xa5, 0x1f, 0x43, 0x5d, 0xdf,
-	0x46, 0x0a, 0x3b, 0x2d, 0x73, 0x3f, 0x2a, 0xec, 0xb4, 0xfc, 0x1d, 0x66, 0x07, 0xea, 0xba, 0x47,
-	0x2f, 0x28, 0xca, 0xdc, 0x1c, 0x0a, 0x8a, 0x72, 0x9d, 0xfd, 0x3d, 0x43, 0xe5, 0x23, 0xec, 0x64,
-	0x0b, 0xf9, 0x48, 0xb7, 0xd2, 0x85, 0x7c, 0xe4, 0xba, 0xdf, 0x6d, 0xa8, 0x85, 0xdd, 0x63, 0x41,
-	0x4b, 0xba, 0x43, 0x2d, 0x68, 0xc9, 0x75, 0x9c, 0x1f, 0x80, 0x89, 0x07, 0x67, 0xb5, 0x60, 0x2c,
-	0x3e, 0x32, 0x57, 0x4a, 0xa6, 0xd2, 0x49, 0x4b, 0xbd, 0x6d, 0x17, 0x92, 0x56, 0x78, 0x38, 0x2f,
-	0x24, 0xad, 0xec, 0x65, 0xfc, 0x01, 0x4c, 0xe1, 0x6b, 0x3d, 0x69, 0xe7, 0x85, 0x93, 0x67, 0xfe,
-	0xf6, 0x5a, 0xd9, 0x5c, 0xa4, 0xa2, 0x53, 0xc3, 0x7f, 0x0a, 0xee, 0xff, 0x1b, 0x00, 0x00, 0xff,
-	0xff, 0x6a, 0x4e, 0x25, 0x60, 0x46, 0x18, 0x00, 0x00,
+	// 1691 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xd4, 0x59, 0x4b, 0x6f, 0x1b, 0x47,
+	0x12, 0xc6, 0x90, 0x23, 0x3e, 0x8a, 0xa4, 0x24, 0xb7, 0x65, 0x9b, 0xa6, 0xb5, 0x5a, 0xba, 0xd7,
+	0xeb, 0x95, 0xe1, 0x5d, 0xd9, 0x90, 0x17, 0x0b, 0x78, 0xd7, 0x58, 0x43, 0xb6, 0xd6, 0x0b, 0x39,
+	0x76, 0x2c, 0xb4, 0x02, 0xeb, 0x10, 0x20, 0x41, 0x93, 0xd3, 0x12, 0xc7, 0x1e, 0xce, 0x4c, 0x66,
+	0x9a, 0x7a, 0x20, 0xc8, 0x29, 0x3f, 0x21, 0x40, 0x2e, 0xb9, 0xe7, 0x10, 0xe4, 0x16, 0x20, 0x41,
+	0x0e, 0x01, 0x72, 0xcc, 0x3d, 0xd7, 0xfc, 0x83, 0xfc, 0x89, 0xa0, 0x1f, 0xf3, 0x1e, 0xd2, 0x02,
+	0x0f, 0x56, 0x72, 0x21, 0xba, 0xaa, 0xab, 0xbb, 0x1e, 0x5d, 0x5d, 0xfd, 0xd5, 0x10, 0xae, 0x1e,
+	0x06, 0xfe, 0xd0, 0x76, 0x39, 0x0b, 0x0e, 0xe8, 0x90, 0xdd, 0x19, 0xf0, 0xc0, 0x1a, 0x6c, 0xf8,
+	0x81, 0xc7, 0x3d, 0xd4, 0xc9, 0x4c, 0xe1, 0x8f, 0x60, 0x89, 0xd0, 0xe3, 0x97, 0xd4, 0x99, 0xb0,
+	0x70, 0x97, 0x06, 0x74, 0x1c, 0x22, 0x04, 0xe6, 0x64, 0x62, 0x5b, 0x5d, 0xa3, 0x6f, 0xac, 0xb7,
+	0x89, 0x1c, 0xa3, 0x15, 0x58, 0x08, 0x39, 0x0d, 0x78, 0xb7, 0xd2, 0x37, 0xd6, 0x97, 0x89, 0x22,
+	0xd0, 0x32, 0x54, 0x99, 0x6b, 0x75, 0xab, 0x92, 0x27, 0x86, 0x08, 0x43, 0xfb, 0x88, 0x05, 0xa1,
+	0xed, 0xb9, 0xcf, 0xe9, 0x2b, 0x2f, 0xe8, 0x9a, 0x7d, 0x63, 0xdd, 0x24, 0x19, 0x1e, 0xfe, 0xce,
+	0x80, 0x0b, 0xb1, 0x4e, 0xc2, 0x42, 0xdf, 0x73, 0x43, 0x86, 0x6e, 0x81, 0x19, 0x72, 0xca, 0xa5,
+	0xd6, 0xd6, 0xe6, 0xa5, 0x8d, 0x8c, 0x99, 0x1b, 0x7b, 0x9c, 0xf2, 0x49, 0x48, 0xa4, 0x48, 0x41,
+	0x49, 0xa5, 0xa8, 0x24, 0x2d, 0x63, 0xbb, 0x5e, 0x20, 0x6d, 0x4c, 0xc9, 0x08, 0x1e, 0xba, 0x03,
+	0xb5, 0x23, 0x69, 0x44, 0xd7, 0xec, 0x57, 0xd7, 0x5b, 0x9b, 0x57, 0x72, 0x4a, 0x09, 0x3d, 0xde,
+	0xf5, 0x6c, 0x97, 0x13, 0x2d, 0x86, 0x3f, 0x37, 0x60, 0x65, 0xcb, 0xb1, 0x0f, 0x5d, 0x66, 0xed,
+	0xdb, 0xae, 0xe5, 0x1d, 0xbf, 0xa5, 0x90, 0xa1, 0x35, 0x00, 0x5f, 0x58, 0xb2, 0x6f, 0x5b, 0x7c,
+	0xd4, 0x5d, 0xe8, 0x1b, 0xeb, 0x1d, 0x92, 0xe2, 0xe0, 0x1f, 0x0c, 0xb8, 0x9c, 0x35, 0xec, 0x3c,
+	0xe3, 0x7a, 0x37, 0x17, 0xd7, 0x6e, 0x89, 0xd2, 0x6c, 0x60, 0xbf, 0x30, 0xa0, 0xf3, 0x76, 0x23,
+	0xba, 0x02, 0x0b, 0xc7, 0x71, 0x30, 0x4d, 0xa2, 0x08, 0xc1, 0xb5, 0x98, 0xcf, 0x47, 0xdd, 0x9a,
+	0x0c, 0xb1, 0x22, 0xf0, 0xb7, 0x06, 0x2c, 0xfd, 0x21, 0xc3, 0xea, 0xc3, 0xf2, 0x1e, 0x0f, 0x18,
+	0x1d, 0xef, 0xb8, 0x07, 0xde, 0x8c, 0xc0, 0xf6, 0xa1, 0xe5, 0x8d, 0x6d, 0xfe, 0x52, 0x69, 0x93,
+	0x06, 0x36, 0x48, 0x9a, 0x85, 0x6e, 0xc2, 0xa2, 0x20, 0xb7, 0x59, 0x38, 0x0c, 0x6c, 0x9f, 0x6b,
+	0x0b, 0x1b, 0x24, 0xc7, 0xc5, 0x3f, 0x19, 0x80, 0x12, 0x95, 0xe7, 0x19, 0xad, 0x87, 0x00, 0x56,
+	0x62, 0xad, 0x29, 0x15, 0xff, 0xb9, 0xa0, 0x58, 0x58, 0x9a, 0x98, 0x4f, 0x52, 0x4b, 0xf0, 0x2f,
+	0x46, 0x14, 0xbd, 0x44, 0xa0, 0x34, 0x7a, 0x6b, 0x00, 0x43, 0xcf, 0x71, 0xd8, 0x90, 0x47, 0xc1,
+	0x6b, 0x92, 0x14, 0x07, 0xdd, 0x06, 0x93, 0xd3, 0xc3, 0xb0, 0x5b, 0x2d, 0x2d, 0x32, 0xef, 0xb0,
+	0x53, 0x59, 0x09, 0x89, 0x14, 0x42, 0xf7, 0xa1, 0x45, 0x5d, 0xd7, 0xe3, 0x54, 0x2c, 0x9d, 0x56,
+	0x98, 0xe2, 0x35, 0x69, 0x59, 0xf4, 0x77, 0xb8, 0x90, 0x90, 0xd1, 0x59, 0xaa, 0xf4, 0x2e, 0x4e,
+	0xe0, 0xaf, 0x0d, 0xe8, 0xed, 0x31, 0xae, 0x3c, 0xdc, 0x4a, 0xb6, 0x99, 0x91, 0x26, 0x0f, 0xe0,
+	0x2a, 0x3b, 0xf1, 0xd9, 0x90, 0x33, 0x6b, 0xab, 0xa0, 0x48, 0x9d, 0xd3, 0x74, 0x01, 0xf4, 0x20,
+	0xeb, 0x99, 0x8a, 0x46, 0xaf, 0xe8, 0xd9, 0x0b, 0x9f, 0x17, 0x9d, 0xc3, 0x3b, 0xb0, 0x5a, 0x66,
+	0xed, 0x1c, 0x19, 0x86, 0xbf, 0x32, 0xa0, 0xfd, 0x38, 0x60, 0x94, 0xb3, 0x19, 0xbe, 0xfe, 0x4e,
+	0x0e, 0x15, 0xff, 0x07, 0x16, 0x95, 0xad, 0xf3, 0x78, 0x3a, 0x84, 0x4b, 0xcf, 0xec, 0x90, 0x3f,
+	0x8e, 0xcd, 0x8e, 0x4e, 0xf7, 0x32, 0xd4, 0xfc, 0x80, 0x1d, 0xd8, 0x27, 0x72, 0x97, 0x26, 0xd1,
+	0x14, 0x5a, 0x85, 0xa6, 0x2c, 0xaa, 0xfb, 0x36, 0x1f, 0x69, 0xa7, 0x13, 0x86, 0xa8, 0x8e, 0x8e,
+	0x3d, 0xb6, 0xb9, 0xbe, 0x6f, 0x8a, 0xc0, 0x07, 0x70, 0x25, 0xa7, 0x64, 0x9e, 0x6b, 0xdf, 0x87,
+	0x56, 0x12, 0xdd, 0xb0, 0x5b, 0xe9, 0x57, 0xd7, 0x9b, 0x24, 0xcd, 0xc2, 0x3f, 0x1b, 0x70, 0xf1,
+	0x99, 0xe7, 0xbd, 0x9e, 0xf8, 0x2a, 0x0b, 0x22, 0x5f, 0xb2, 0x27, 0x65, 0x14, 0x4e, 0x6a, 0x03,
+	0x90, 0x1d, 0x26, 0xd6, 0xed, 0x2a, 0xbf, 0x55, 0x8d, 0x2b, 0x99, 0x41, 0x1b, 0x99, 0x93, 0x9d,
+	0x95, 0xa0, 0xea, 0x70, 0x1f, 0x94, 0x1d, 0xee, 0x99, 0xf3, 0xfa, 0x13, 0xb8, 0x94, 0x71, 0x6a,
+	0x9e, 0xd8, 0xdd, 0x87, 0x7a, 0xc0, 0xc2, 0x89, 0xc3, 0x55, 0xdc, 0xce, 0x50, 0xe7, 0x22, 0x79,
+	0x7c, 0x0c, 0x9d, 0x77, 0x19, 0x0d, 0x58, 0xc8, 0x67, 0xdc, 0x05, 0x04, 0x26, 0xb7, 0xc7, 0x4c,
+	0x3f, 0xbb, 0x72, 0x5c, 0x28, 0xd3, 0xd5, 0x92, 0x32, 0xdd, 0x83, 0xc6, 0x80, 0x0e, 0x5f, 0x1f,
+	0xd3, 0xc0, 0x92, 0x05, 0xb8, 0x41, 0x62, 0x1a, 0x7f, 0x63, 0xc0, 0x92, 0xd6, 0x7c, 0x9e, 0xaf,
+	0xc4, 0x3f, 0x60, 0x41, 0xbe, 0x95, 0xfa, 0x81, 0x98, 0x8a, 0x00, 0x95, 0x14, 0xfe, 0x18, 0x3a,
+	0x8f, 0x47, 0xd4, 0x3d, 0x9c, 0x89, 0x95, 0x57, 0xa1, 0x79, 0x10, 0x78, 0xe3, 0xb4, 0x61, 0x09,
+	0x03, 0x75, 0xa1, 0xce, 0xbd, 0x74, 0xcc, 0x22, 0x52, 0x24, 0x72, 0xc0, 0x42, 0xcf, 0x99, 0xc8,
+	0x44, 0x36, 0x15, 0xc8, 0x4b, 0x38, 0xf8, 0x7b, 0x03, 0x96, 0xb4, 0xf6, 0xf3, 0x0c, 0xd9, 0x3d,
+	0xa8, 0x05, 0xd2, 0x08, 0x9d, 0xea, 0xd7, 0x72, 0x4a, 0x95, 0x89, 0x16, 0x11, 0xbf, 0x44, 0x8b,
+	0xe2, 0x43, 0x68, 0xef, 0xb8, 0x21, 0x0b, 0xde, 0x90, 0x66, 0xe1, 0xa9, 0x3b, 0xd4, 0x57, 0x53,
+	0x8e, 0x53, 0x10, 0xbd, 0x7a, 0x36, 0x88, 0xfe, 0xa9, 0x01, 0x8b, 0x4a, 0xd3, 0x39, 0xc6, 0x08,
+	0x3f, 0x85, 0xf6, 0x36, 0x73, 0xd8, 0xcc, 0x17, 0xe6, 0x8c, 0x68, 0x56, 0x7a, 0xa4, 0x36, 0x3b,
+	0x4f, 0x8f, 0xda, 0x00, 0x09, 0x88, 0xc4, 0x3f, 0x1a, 0xe2, 0x3c, 0xe7, 0x03, 0x78, 0x7f, 0x03,
+	0x73, 0x4c, 0x43, 0xf5, 0xbc, 0xb4, 0x36, 0x2f, 0xe6, 0x44, 0x9f, 0xd3, 0x70, 0x44, 0xa4, 0x80,
+	0x30, 0x6b, 0x2c, 0xec, 0x8b, 0x10, 0x46, 0x55, 0xde, 0x88, 0x0c, 0x4f, 0xca, 0x08, 0xfb, 0x22,
+	0x19, 0x53, 0xcb, 0xa4, 0x78, 0x22, 0xd0, 0x83, 0x89, 0xed, 0x58, 0x12, 0x0b, 0x35, 0x89, 0x22,
+	0xf0, 0x43, 0xb8, 0xf0, 0x84, 0x4e, 0x1c, 0xbe, 0xe3, 0xbe, 0x62, 0xc3, 0x54, 0x5a, 0xf2, 0x53,
+	0x9f, 0x49, 0x37, 0x4c, 0x22, 0xc7, 0xf2, 0xad, 0x94, 0xb3, 0xd2, 0xe2, 0x36, 0xd1, 0x14, 0xde,
+	0x85, 0x8b, 0xa9, 0x0d, 0xe6, 0x89, 0xc4, 0x22, 0x54, 0x82, 0x23, 0xbd, 0x6b, 0x25, 0x38, 0xc2,
+	0xd7, 0xa1, 0xf5, 0xc4, 0x99, 0x84, 0xa3, 0xe9, 0x49, 0x83, 0xff, 0x0d, 0x1d, 0x29, 0x32, 0x0f,
+	0x1a, 0xb8, 0x09, 0xcb, 0x2f, 0x06, 0x8e, 0xcd, 0x59, 0x30, 0x13, 0xfa, 0xe0, 0x87, 0x80, 0x12,
+	0xb9, 0x79, 0x14, 0xfd, 0x13, 0x1a, 0xd1, 0xbd, 0x8c, 0xdf, 0x0e, 0x23, 0xf5, 0x76, 0xac, 0x44,
+	0x45, 0x57, 0xb8, 0x6e, 0x44, 0xb5, 0x75, 0x0c, 0xcd, 0xb8, 0x83, 0x29, 0x5d, 0xb6, 0x0c, 0xd5,
+	0xb1, 0xed, 0xea, 0x45, 0x62, 0x28, 0xa4, 0xc6, 0x8c, 0xaa, 0xcc, 0x30, 0x88, 0x1c, 0x4b, 0x29,
+	0x7a, 0x22, 0x13, 0x41, 0x48, 0xd1, 0x13, 0xa1, 0x6e, 0xe8, 0x4d, 0x5c, 0x2e, 0xcf, 0xbf, 0x46,
+	0x14, 0x81, 0xff, 0x05, 0xed, 0x74, 0xa5, 0x4a, 0xae, 0xa3, 0x51, 0x72, 0x1d, 0x2b, 0xc9, 0x75,
+	0xdc, 0x87, 0x9a, 0x72, 0x56, 0x68, 0x1f, 0x7a, 0x96, 0xb2, 0xb1, 0x43, 0xe4, 0x58, 0x6a, 0x0f,
+	0x0f, 0x35, 0x74, 0x12, 0xc3, 0x38, 0xdd, 0xab, 0x6f, 0x48, 0x77, 0xfc, 0xab, 0x01, 0xa6, 0x20,
+	0xc5, 0xb3, 0x19, 0xb0, 0x23, 0x3b, 0x8c, 0xe0, 0x4c, 0x95, 0xc4, 0xb4, 0x48, 0x46, 0x87, 0x51,
+	0x8b, 0x05, 0x5a, 0x85, 0xa6, 0x44, 0x7f, 0xa6, 0x46, 0x24, 0x5a, 0x59, 0x95, 0x2b, 0x73, 0x5c,
+	0x01, 0xb3, 0xb8, 0xc7, 0xa9, 0xb3, 0xcf, 0xec, 0xc3, 0x11, 0x97, 0x51, 0xaa, 0x92, 0x34, 0x4b,
+	0xbc, 0x4f, 0x23, 0x46, 0x1d, 0x3e, 0x3a, 0x95, 0xf1, 0x6a, 0x90, 0x88, 0x14, 0x76, 0x4d, 0xdc,
+	0x31, 0xf5, 0x7d, 0x66, 0xc9, 0xfe, 0xd8, 0x20, 0x31, 0x8d, 0xee, 0x40, 0x7d, 0xcc, 0xc6, 0x03,
+	0x16, 0x84, 0xdd, 0xba, 0x2c, 0xd4, 0xf9, 0x04, 0x79, 0x2e, 0x67, 0x49, 0x24, 0x85, 0xbf, 0xac,
+	0x40, 0x4d, 0xf1, 0x44, 0x1c, 0x47, 0x22, 0x42, 0x3a, 0x8e, 0x23, 0x1d, 0x03, 0xd7, 0xb3, 0x98,
+	0x4b, 0x35, 0xec, 0x68, 0x92, 0x98, 0x16, 0xd7, 0x66, 0xe2, 0xeb, 0xfe, 0xb3, 0x32, 0xf1, 0x05,
+	0x6d, 0xbb, 0x1a, 0x60, 0x54, 0x6c, 0x57, 0x78, 0xc0, 0x5c, 0x3a, 0x70, 0x98, 0x15, 0x79, 0xa0,
+	0xc9, 0xe4, 0x8c, 0x6b, 0xd2, 0xef, 0xec, 0x19, 0xd7, 0x25, 0x4f, 0x7e, 0x40, 0xb8, 0x0c, 0xb5,
+	0x63, 0x15, 0xa0, 0x86, 0x64, 0x6a, 0x4a, 0x44, 0x39, 0x60, 0xd4, 0x12, 0x40, 0x91, 0x05, 0xcc,
+	0x1d, 0xb2, 0x6e, 0x53, 0xc6, 0x21, 0xc7, 0x45, 0x37, 0xa0, 0x33, 0xe2, 0xdc, 0xff, 0x9f, 0x6b,
+	0xc9, 0x6f, 0x34, 0x61, 0x17, 0xa4, 0x0b, 0x59, 0xa6, 0x90, 0x12, 0x31, 0x4a, 0xa4, 0x5a, 0x4a,
+	0x2a, 0xc3, 0xc4, 0x4f, 0xa1, 0x95, 0x02, 0x8f, 0xc2, 0xd8, 0xd7, 0xec, 0x54, 0xc3, 0x5c, 0x31,
+	0x44, 0xb7, 0xa0, 0x7a, 0x44, 0x1d, 0x5d, 0x4e, 0xf3, 0xef, 0x63, 0x0c, 0x3a, 0x85, 0x0c, 0xee,
+	0x43, 0x23, 0xde, 0x28, 0xbe, 0x84, 0xea, 0xea, 0xeb, 0x4b, 0xb8, 0x09, 0x8d, 0xa8, 0x0f, 0x29,
+	0x51, 0x95, 0xb9, 0xb8, 0xd1, 0x9a, 0xcd, 0xcf, 0x00, 0x16, 0x1e, 0xbd, 0x17, 0x6c, 0x3f, 0x42,
+	0x2f, 0xa0, 0x19, 0x7f, 0xd8, 0x43, 0x6b, 0xc5, 0xa7, 0x3a, 0xfd, 0x99, 0xb1, 0xd7, 0x9f, 0x36,
+	0x1f, 0x95, 0x9c, 0xbb, 0x06, 0xfa, 0x00, 0x16, 0xb3, 0x9f, 0xb5, 0xd0, 0x5f, 0x72, 0xab, 0xca,
+	0x3e, 0xc7, 0xf5, 0xfe, 0x3a, 0x53, 0x28, 0xb5, 0xff, 0x0e, 0xd4, 0xa3, 0x8d, 0x57, 0x73, 0x6b,
+	0xb2, 0x3b, 0xae, 0x95, 0xcf, 0xa6, 0xb6, 0xda, 0x05, 0x48, 0x3e, 0x7c, 0xa0, 0x72, 0x04, 0x9e,
+	0xbc, 0xa0, 0xbd, 0xeb, 0x53, 0x05, 0xe2, 0x8a, 0xeb, 0xc2, 0x4a, 0x59, 0xcb, 0x8b, 0x6e, 0xe5,
+	0x97, 0x4e, 0xed, 0xe2, 0x7b, 0xb7, 0xcf, 0x20, 0x1a, 0xeb, 0xdb, 0x86, 0x9a, 0x6a, 0x35, 0x51,
+	0x01, 0xd2, 0xa5, 0xba, 0xe5, 0xde, 0x9f, 0x4a, 0x27, 0xe3, 0x5d, 0x3e, 0x84, 0xa5, 0x5c, 0x3b,
+	0x88, 0x6e, 0xe4, 0x56, 0x94, 0xf6, 0xa4, 0xbd, 0x9b, 0xb3, 0xa5, 0x62, 0x05, 0xef, 0x43, 0x27,
+	0xd3, 0x31, 0x21, 0x9c, 0x5f, 0x58, 0x6c, 0x12, 0x7b, 0x37, 0x66, 0xc9, 0xa4, 0x4e, 0xf1, 0xff,
+	0x50, 0xd7, 0x5d, 0x49, 0x21, 0x21, 0x32, 0x7d, 0x52, 0x21, 0x21, 0xf2, 0xbd, 0xcc, 0x0e, 0xd4,
+	0x35, 0x56, 0x2f, 0x6c, 0x94, 0xe9, 0x20, 0x0a, 0x1b, 0xe5, 0x10, 0xfe, 0x5d, 0x43, 0x9c, 0x8b,
+	0x42, 0xb4, 0x85, 0x73, 0x49, 0x43, 0xea, 0xc2, 0xb9, 0xe4, 0x50, 0xf0, 0x36, 0xd4, 0x14, 0x8a,
+	0x2c, 0xec, 0x92, 0x46, 0xaa, 0x85, 0x5d, 0x72, 0xc8, 0xf3, 0xbf, 0x60, 0xca, 0xfc, 0xbe, 0x5a,
+	0x50, 0x16, 0x67, 0xf6, 0xb5, 0x92, 0xa9, 0x78, 0xfd, 0x1e, 0xb4, 0x52, 0xa0, 0x09, 0xe5, 0x6b,
+	0x40, 0x01, 0x91, 0xf5, 0xf0, 0x74, 0x89, 0x78, 0xd3, 0x2d, 0x58, 0x90, 0xa0, 0x08, 0xe5, 0xbb,
+	0xee, 0x14, 0x9a, 0xea, 0xad, 0x96, 0xcd, 0xc5, 0x5b, 0xec, 0x02, 0x24, 0x98, 0xa7, 0x70, 0x7b,
+	0xf3, 0xb0, 0xa9, 0x70, 0x7b, 0x8b, 0x78, 0x69, 0x50, 0x93, 0x7f, 0xb7, 0xdc, 0xfb, 0x2d, 0x00,
+	0x00, 0xff, 0xff, 0xf8, 0xac, 0xa4, 0x82, 0x8b, 0x19, 0x00, 0x00,
 }

@@ -121,16 +121,20 @@ func (b *Endpoint) FaultInject(ctx context.Context, typ uint64, args []byte) ([]
 }
 
 //Create is a low level function, rather use BTrDB.Create()
-func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotation []byte) error {
-	taglist := []*pb.Tag{}
+func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotations map[string]string) error {
+	taglist := []*pb.KeyValue{}
 	for k, v := range tags {
-		taglist = append(taglist, &pb.Tag{Key: k, Value: v})
+		taglist = append(taglist, &pb.KeyValue{Key: k, Value: []byte(v)})
+	}
+	annlist := []*pb.KeyValue{}
+	for k, v := range annotations {
+		annlist = append(taglist, &pb.KeyValue{Key: k, Value: []byte(v)})
 	}
 	rv, err := b.g.Create(ctx, &pb.CreateParams{
-		Uuid:       uu,
-		Collection: collection,
-		Tags:       taglist,
-		Annotation: annotation,
+		Uuid:        uu,
+		Collection:  collection,
+		Tags:        taglist,
+		Annotations: annlist,
 	})
 	if err != nil {
 		return err
@@ -147,7 +151,7 @@ func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 	rv, err := b.g.ListCollections(ctx, &pb.ListCollectionsParams{
 		Prefix:    "",
 		StartWith: "",
-		Number:    1000000,
+		Limit:     1000000,
 	})
 	if err != nil {
 		return nil, err
@@ -162,20 +166,50 @@ func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 }
 
 //StreamAnnotation is a low level function, rather use Stream.Annotation()
-func (b *Endpoint) StreamAnnotation(ctx context.Context, uu uuid.UUID) ([]byte, AnnotationVersion, error) {
-	rv, err := b.g.StreamAnnotation(ctx, &pb.StreamAnnotationParams{Uuid: uu})
+func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor bool, omitVersion bool) (
+	collection string,
+	aver AnnotationVersion,
+	tags map[string]string,
+	anns map[string]string,
+	version uint64, err error) {
+	rv, err := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
+		Uuid:           uu,
+		OmitDescriptor: omitDescriptor,
+		OmitVersion:    omitVersion})
 	if err != nil {
-		return nil, 0, err
+		return "", 0, nil, nil, 0, err
 	}
 	if rv.GetStat() != nil {
-		return nil, 0, &CodedError{rv.GetStat()}
+		return "", 0, nil, nil, 0, &CodedError{rv.GetStat()}
 	}
-	return rv.Annotation, AnnotationVersion(rv.AnnotationVersion), nil
+	if !omitDescriptor {
+		tags = make(map[string]string)
+		for _, kv := range rv.Descriptor_.Tags {
+			tags[kv.Key] = string(kv.Value)
+		}
+		anns = make(map[string]string)
+		for _, kv := range rv.Descriptor_.Annotations {
+			anns[kv.Key] = string(kv.Value)
+		}
+		aver = AnnotationVersion(rv.Descriptor_.AnnotationVersion)
+		collection = rv.Descriptor_.Collection
+	}
+	return collection, aver, tags, anns, rv.VersionMajor, nil
 }
 
 //SetStreamAnnotation is a low level function, rather use Stream.SetAnnotation() or Stream.CompareAndSetAnnotation()
-func (b *Endpoint) SetStreamAnnotation(ctx context.Context, uu uuid.UUID, expected AnnotationVersion, newVal []byte) error {
-	rv, err := b.g.SetStreamAnnotation(ctx, &pb.SetStreamAnnotationParams{Uuid: uu, ExpectedAnnotationVersion: uint64(expected), Annotation: newVal})
+func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expected AnnotationVersion, changes map[string]*string) error {
+	ch := []*pb.KeyOptValue{}
+	for k, v := range changes {
+		kop := &pb.KeyOptValue{
+			Key: k,
+		}
+		if v != nil {
+			kop.Val = &pb.OptValue{Value: []byte(*v)}
+		}
+		ch = append(ch, kop)
+	}
+	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedAnnotationVersion: uint64(expected), Annotations: ch})
 	if err != nil {
 		return err
 	}
@@ -186,17 +220,17 @@ func (b *Endpoint) SetStreamAnnotation(ctx context.Context, uu uuid.UUID, expect
 }
 
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()
-func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from string, maxnumber uint64) ([]string, error) {
-	if maxnumber > 10000 {
+func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from string, limit uint64) ([]string, error) {
+	if limit > 10000 {
 		return nil, fmt.Errorf("Maxnumber must be <10k")
 	}
-	if maxnumber == 0 {
-		maxnumber = 10000
+	if limit == 0 {
+		limit = 10000
 	}
 	rv, err := b.g.ListCollections(ctx, &pb.ListCollectionsParams{
 		Prefix:    prefix,
 		StartWith: from,
-		Number:    maxnumber,
+		Limit:     limit,
 	})
 	if err != nil {
 		return nil, err
@@ -207,72 +241,73 @@ func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from stri
 	return rv.Collections, nil
 }
 
-//ListAllStreams is a low level function, rather use BTrDB.ListAllStreams()
-func (b *Endpoint) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
-	rv, err := b.g.ListStreams(ctx, &pb.ListStreamsParams{
-		Collection: collection,
-		Partial:    true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if rv.GetStat() != nil {
-		return nil, &CodedError{rv.GetStat()}
-	}
-	sl := rv.StreamListings
-	nrv := make([]*Stream, 0, 10)
-	for _, s := range sl {
-		nrv = append(nrv, &Stream{uuid: s.Uuid, collection: collection, hasCollection: true})
-	}
-	return nrv, nil
-}
-
-//ListMatchingStreams is a low level function, rather use BTrDB.ListMatchingStreams()
-func (b *Endpoint) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
-	params := &pb.ListStreamsParams{
-		Collection: collection,
-		Partial:    true,
-	}
-	for k, v := range tags {
-		params.Tags = append(params.Tags, &pb.Tag{Key: k, Value: v})
-	}
-	rv, err := b.g.ListStreams(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-	if rv.GetStat() != nil {
-		return nil, &CodedError{rv.GetStat()}
-	}
-	sl := rv.StreamListings
-	nrv := make([]*Stream, 0, 10)
-	for _, s := range sl {
-		nrv = append(nrv, &Stream{uuid: s.Uuid, collection: collection, hasCollection: true})
-	}
-	return nrv, nil
+func streamFromLookupResult(lr *pb.StreamDescriptor) *Stream {
+	return nil
 }
 
 //LookupStream is a low level function, rather use BTrDB.LookupStream()
-func (b *Endpoint) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
-	params := &pb.ListStreamsParams{
-		Collection: collection,
-		Partial:    false,
-	}
+func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
+	ltags := []*pb.KeyOptValue{}
 	for k, v := range tags {
-		params.Tags = append(params.Tags, &pb.Tag{Key: k, Value: v})
+		kop := &pb.KeyOptValue{
+			Key: k,
+		}
+		if v != nil {
+			kop.Val = &pb.OptValue{Value: []byte(*v)}
+		}
+		ltags = append(ltags, kop)
 	}
-	rv, err := b.g.ListStreams(ctx, params)
+	lanns := []*pb.KeyOptValue{}
+	for k, v := range annotations {
+		kop := &pb.KeyOptValue{
+			Key: k,
+		}
+		if v != nil {
+			kop.Val = &pb.OptValue{Value: []byte(*v)}
+		}
+		lanns = append(lanns, kop)
+	}
+	params := &pb.LookupStreamsParams{
+		Collection:         collection,
+		IsCollectionPrefix: isCollectionPrefix,
+		Tags:               ltags,
+		Annotations:        lanns,
+	}
+	rv, err := b.g.LookupStreams(ctx, params)
+	rvc := make(chan *Stream, 100)
+	rve := make(chan error, 1)
 	if err != nil {
-		return nil, err
+		close(rvc)
+		rve <- err
+		close(rve)
+		return rvc, rve
 	}
-	if rv.GetStat() != nil {
-		return nil, &CodedError{rv.GetStat()}
-	}
-	if len(rv.StreamListings) == 0 {
-		return nil, nil
-	}
-	s := rv.StreamListings[0]
-	srv := &Stream{uuid: s.Uuid, collection: collection, hasCollection: true}
-	return srv, nil
+	go func() {
+		for {
+			lr, err := rv.Recv()
+			if err == io.EOF {
+				close(rvc)
+				close(rve)
+				return
+			}
+			if err != nil {
+				close(rvc)
+				rve <- err
+				close(rve)
+				return
+			}
+			if lr.Stat != nil {
+				close(rvc)
+				rve <- &CodedError{lr.Stat}
+				close(rve)
+				return
+			}
+			for _, r := range lr.Results {
+				rvc <- streamFromLookupResult(r)
+			}
+		}
+	}()
+	return rvc, rve
 }
 
 //RawValues is a low level function, rather use Stream.RawValues()
@@ -515,26 +550,26 @@ func (b *Endpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, versio
 
 //StreamInfo is a low level function, rather use Stream.Tags() Stream.Collection(), Stream.UUID() and Stream.Version() which handle caching
 //where appropriate
-func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID) (collection string, tags map[string]string, version uint64, err error) {
-	rv, e := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
-		Uuid: uu,
-	})
-	if e != nil {
-		err = e
-		return
-	}
-	if rv.Stat != nil {
-		err = &CodedError{rv.Stat}
-		return
-	}
-	collection = rv.Collection
-	version = rv.VersionMajor
-	tags = make(map[string]string)
-	for _, t := range rv.Tags {
-		tags[t.Key] = t.Value
-	}
-	return
-}
+// func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID) (collection string, tags map[string]string, version uint64, err error) {
+// 	rv, e := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
+// 		Uuid: uu,
+// 	})
+// 	if e != nil {
+// 		err = e
+// 		return
+// 	}
+// 	if rv.Stat != nil {
+// 		err = &CodedError{rv.Stat}
+// 		return
+// 	}
+// 	collection = rv.Collection
+// 	version = rv.VersionMajor
+// 	tags = make(map[string]string)
+// 	for _, t := range rv.Tags {
+// 		tags[t.Key] = t.Value
+// 	}
+// 	return
+// }
 
 type ChangedRange struct {
 	Version uint64

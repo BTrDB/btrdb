@@ -969,7 +969,8 @@ func TestDeadlock(t *testing.T) {
 
 	fmt.Println("Waiting for 70 seconds...")
 	time.Sleep(70 * time.Second)
-
+	fmt.Printf("Ok 70 seconds passed, waiting 5 before trying errors etc\n")
+	time.Sleep(5 * time.Second)
 	fmt.Println("Checking if an error happened...")
 	for _, ec := range errchans {
 		select {

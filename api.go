@@ -32,6 +32,10 @@ type Stream struct {
 	hasTags bool
 	tags    map[string]string
 
+	hasAnnotation     bool
+	annotations       map[string]string
+	annotationVersion AnnotationVersion
+
 	hasCollection bool
 	collection    string
 }
@@ -50,17 +54,18 @@ func (b *BTrDB) StreamFromUUID(uu uuid.UUID) *Stream {
 //later stream operations. Any operation that returns a stream from
 //collection and tags will have ensured the stream exists already.
 func (s *Stream) Exists(ctx context.Context) (bool, error) {
-
 	var ep *Endpoint
+	var aver AnnotationVersion
 	var err error
 	var coll string
 	var tags map[string]string
+	var anns map[string]string
 	for s.b.testEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
 		}
-		coll, tags, _, err = ep.StreamInfo(ctx, s.uuid)
+		coll, aver, tags, anns, _, err = ep.StreamInfo(ctx, s.uuid, false, true)
 		if err != nil {
 			if ToCodedError(err).Code == 404 {
 				return false, nil
@@ -73,6 +78,9 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 		s.hasCollection = true
 		s.tags = tags
 		s.hasTags = true
+		s.annotations = anns
+		s.annotationVersion = aver
+		s.hasAnnotation = true
 		return true, nil
 	}
 	return false, err
@@ -128,50 +136,44 @@ func (s *Stream) Version(ctx context.Context) (uint64, error) {
 		if err != nil {
 			continue
 		}
-		var coll string
-		var tags map[string]string
 		var ver uint64
-		coll, tags, ver, err = ep.StreamInfo(ctx, s.uuid)
+		_, _, _, _, ver, err = ep.StreamInfo(ctx, s.uuid, true, false)
 		if err != nil {
 			continue
 		}
-		s.collection = coll
-		s.hasCollection = true
-		s.tags = tags
-		s.hasTags = true
 		return ver, nil
 	}
 	return 0, err
 }
 
-func (s *Stream) Annotation(ctx context.Context) (ann []byte, ver AnnotationVersion, err error) {
-	var ep *Endpoint
+// func (s *Stream) Annotation(ctx context.Context) (ann []byte, ver AnnotationVersion, err error) {
+// 	var ep *Endpoint
+//
+// 	for s.b.testEpError(ep, err) {
+// 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		ann, ver, err = ep.StreamAnnotation(ctx, s.uuid)
+// 	}
+// 	return
+//
+// }
 
-	for s.b.testEpError(ep, err) {
-		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
-		if err != nil {
-			continue
-		}
-		ann, ver, err = ep.StreamAnnotation(ctx, s.uuid)
-	}
-	return
-
-}
-
-//SetAnnotation sets an annotation on a BTrDB stream. An annotation is
-//an arbitrary blob
-func (s *Stream) SetAnnotation(ctx context.Context, ann []byte) error {
-	var ep *Endpoint
-	var err error
-	for s.b.testEpError(ep, err) {
-		ep, err = s.b.EndpointFor(ctx, s.uuid)
-		if err != nil {
-			continue
-		}
-		err = ep.SetStreamAnnotation(ctx, s.uuid, 0, ann)
-	}
-	return err
-}
+// //SetAnnotation sets an annotation on a BTrDB stream. An annotation is
+// //an arbitrary blob
+// func (s *Stream) SetAnnotation(ctx context.Context, ann []byte) error {
+// 	var ep *Endpoint
+// 	var err error
+// 	for s.b.testEpError(ep, err) {
+// 		ep, err = s.b.EndpointFor(ctx, s.uuid)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		err = ep.SetStreamAnnotation(ctx, s.uuid, 0, ann)
+// 	}
+// 	return err
+// }
 
 //InsertTV allows insertion of two equal length arrays, one containing times and
 //the other containing values. The arrays need not be sorted, but they must correspond
@@ -453,7 +455,7 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 	return rv, cver, errc
 }
 
-func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotation []byte) (*Stream, error) {
+func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotations map[string]string) (*Stream, error) {
 	var ep *Endpoint
 	var err error
 	for b.testEpError(ep, err) {
@@ -461,115 +463,123 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 		if err != nil {
 			continue
 		}
-		err = ep.Create(ctx, uu, collection, tags, annotation)
+		err = ep.Create(ctx, uu, collection, tags, annotations)
 	}
 	if err != nil {
 		return nil, err
 	}
 	rv := &Stream{
-		uuid:          uu,
-		collection:    collection,
-		hasCollection: true,
-		tags:          make(map[string]string),
-		hasTags:       true,
-		b:             b,
+		uuid:              uu,
+		collection:        collection,
+		hasCollection:     true,
+		tags:              make(map[string]string),
+		hasTags:           true,
+		annotations:       make(map[string]string),
+		hasAnnotation:     true,
+		annotationVersion: 0,
+		b:                 b,
 	}
+	//Copy the maps in case user messes with parameters
 	for k, v := range tags {
 		rv.tags[k] = v
+	}
+	for k, v := range annotations {
+		rv.annotations[k] = v
 	}
 	return rv, nil
 }
 
-func (b *BTrDB) ListAllCollections(ctx context.Context) ([]string, error) {
-	return b.ListCollections(ctx, "")
-}
-
-func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
-	var ep *Endpoint
-	var err error
-	var rv []string
-	from := ""
-	//TODO change this to 10000 in future. This 10 just ensures code
-	//coverage during initial alpha
-	maximum := uint64(10)
-	done := false
-	for !done {
-		var thisrv []string
-		err = forceEp
-		//Loop while errors are EP errors that will go away
-		for b.testEpError(ep, err) {
-			ep, err = b.getAnyEndpoint(ctx)
-			if err != nil {
-				continue
-			}
-			thisrv, err = ep.ListCollections(ctx, prefix, from, maximum)
-		}
-		//testEpError said stop trying, non-nil is fatal
-		if err != nil {
-			return nil, err
-		}
-		rv = append(rv, thisrv...)
-		//We probably have more results
-		if len(thisrv) == int(maximum) {
-			from = thisrv[maximum-1]
-		} else {
-			//No more results
-			done = true
-		}
-	}
-	return rv, err
-}
+//
+// func (b *BTrDB) ListAllCollections(ctx context.Context) ([]string, error) {
+// 	return b.ListCollections(ctx, "")
+// }
+//
+// func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
+// 	var ep *Endpoint
+// 	var err error
+// 	var rv []string
+// 	from := ""
+// 	//TODO change this to 10000 in future. This 10 just ensures code
+// 	//coverage during initial alpha
+// 	maximum := uint64(10)
+// 	done := false
+// 	for !done {
+// 		var thisrv []string
+// 		err = forceEp
+// 		//Loop while errors are EP errors that will go away
+// 		for b.testEpError(ep, err) {
+// 			ep, err = b.getAnyEndpoint(ctx)
+// 			if err != nil {
+// 				continue
+// 			}
+// 			thisrv, err = ep.ListCollections(ctx, prefix, from, maximum)
+// 		}
+// 		//testEpError said stop trying, non-nil is fatal
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		rv = append(rv, thisrv...)
+// 		//We probably have more results
+// 		if len(thisrv) == int(maximum) {
+// 			from = thisrv[maximum-1]
+// 		} else {
+// 			//No more results
+// 			done = true
+// 		}
+// 	}
+// 	return rv, err
+// }
 
 //ListAllStreams will return all the streams in the named collection
-func (b *BTrDB) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
-	var ep *Endpoint
-	var err error
-	var rv []*Stream
-	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
-		if err != nil {
-			continue
-		}
-		rv, err = ep.ListAllStreams(ctx, collection)
-	}
-	for _, s := range rv {
-		s.b = b
-	}
-	return rv, err
-}
+// func (b *BTrDB) ListAllStreams(ctx context.Context, collection string) ([]*Stream, error) {
+// 	var ep *Endpoint
+// 	var err error
+// 	var rv []*Stream
+// 	for b.testEpError(ep, err) {
+// 		ep, err = b.getAnyEndpoint(ctx)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		rv, err = ep.ListAllStreams(ctx, collection)
+// 	}
+// 	for _, s := range rv {
+// 		s.b = b
+// 	}
+// 	return rv, err
+// }
 
 //ListMatchingStreams will return all streams in a collection that match the specified tags. If no tags are specified this
 //method is equivalent to ListAllStreams()
-func (b *BTrDB) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
-	var ep *Endpoint
-	var err error
-	var rv []*Stream
-	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
-		if err != nil {
-			continue
-		}
-		rv, err = ep.ListMatchingStreams(ctx, collection, tags)
-	}
-	return rv, err
-}
+// func (b *BTrDB) ListMatchingStreams(ctx context.Context, collection string, tags map[string]string) ([]*Stream, error) {
+// 	var ep *Endpoint
+// 	var err error
+// 	var rv []*Stream
+// 	for b.testEpError(ep, err) {
+// 		ep, err = b.getAnyEndpoint(ctx)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		rv, err = ep.ListMatchingStreams(ctx, collection, tags)
+// 	}
+// 	return rv, err
+// }
 
 //LookupStream takes a collection and a full set of tags and returns the resulting stream, or nil if the
 //stream was not found. It is an error to omit any tags, even if the stream is uniquely identified by only
 //a subset of the tags. To locate a stream with a unique subset of tags, use ListMatchingStreams.
-func (b *BTrDB) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
-	var ep *Endpoint
-	var err error
-	var rv *Stream
-	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
-		if err != nil {
-			continue
-		}
-		rv, err = ep.LookupStream(ctx, collection, tags)
-	}
-	return rv, err
-}
+// func (b *BTrDB) LookupStream(ctx context.Context, collection string, tags map[string]string) (*Stream, error) {
+// 	var ep *Endpoint
+// 	var err error
+// 	var rv *Stream
+// 	for b.testEpError(ep, err) {
+// 		ep, err = b.getAnyEndpoint(ctx)
+// 		if err != nil {
+// 			continue
+// 		}
+// 		rv, err = ep.LookupStream(ctx, collection, tags)
+// 	}
+// 	return rv, err
+// }
 
 func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 	var ep *Endpoint
