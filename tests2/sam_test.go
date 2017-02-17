@@ -933,9 +933,9 @@ const BIG_LOW = 0
 const BIG_HIGH = 1485470183000000000
 const BIG_GAP = 1143215826527
 
-const BIG2_LOW = 0
-const BIG2_HIGH = 1
-const BIG2_GAP = 90000
+const BIG2_LOW = BTRDB_LOW
+const BIG2_HIGH = 10000
+const BIG2_GAP = 1
 
 func helperOOMGen() []btrdb.RawPoint {
 	fmt.Println("Generating data...")
