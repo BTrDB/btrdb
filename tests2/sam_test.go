@@ -934,7 +934,7 @@ const BIG_HIGH = 1485470183000000000
 const BIG_GAP = 1143215826527
 
 const BIG2_LOW = 0
-const BIG2_HIGH = 9
+const BIG2_HIGH = 1
 const BIG2_GAP = 90000
 
 func helperOOMGen() []btrdb.RawPoint {
@@ -943,7 +943,7 @@ func helperOOMGen() []btrdb.RawPoint {
 }
 
 func helperOOMGen2(iter int64) []btrdb.RawPoint {
-	return helperRandomData(BIG_LOW+iter*BIG_HIGH, BIG_HIGH*(iter+1), BIG_GAP)
+	return helperRandomData(BIG_LOW+iter*(BIG_HIGH-BIG_LOW), BIG_HIGH+iter*(BIG_HIGH-BIG_LOW), BIG_GAP)
 }
 
 /* Moving this to separate function helps with garbage collection. */
@@ -960,7 +960,7 @@ func TestOOMInsert(t *testing.T) {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	const NUM_CONNS = 1
+	const NUM_CONNS = 10
 	const NUM_STREAMS_PER_CONN = 100
 
 	ctx := context.Background()
@@ -970,6 +970,27 @@ func TestOOMInsert(t *testing.T) {
 	for i := 0; i != NUM_CONNS; i++ {
 		conns = append(conns, helperConnect(t, ctx))
 	}
+
+	fmt.Println("Creating channels")
+	var datachans []chan []btrdb.RawPoint
+	for _ = range conns {
+		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
+			datachans = append(datachans, make(chan []btrdb.RawPoint, 20))
+		}
+	}
+	go func() {
+		var c int64
+		for {
+			dataslice := helperOOMGen2(c)
+			for _, datachan := range datachans {
+				select {
+				case datachan <- dataslice:
+				default:
+				}
+			}
+			c++
+		}
+	}()
 
 	fmt.Println("Creating streams")
 	var swg sync.WaitGroup
@@ -992,7 +1013,7 @@ func TestOOMInsert(t *testing.T) {
 	}
 	swg.Wait()
 
-	dctx, dcancel := context.WithTimeout(ctx, 5*time.Minute)
+	dctx, dcancel := context.WithTimeout(ctx, 2*time.Minute)
 
 	fmt.Println("Inserting")
 	var inserted uint64
@@ -1000,12 +1021,13 @@ func TestOOMInsert(t *testing.T) {
 	for j := range conns {
 		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
 			stream := streams[j*NUM_STREAMS_PER_CONN+i]
+			datachan := datachans[j*NUM_STREAMS_PER_CONN+i]
 			wg.Add(1)
 			go func(s *btrdb.Stream) {
 				defer wg.Done()
 				var c int64
 				for {
-					bigdata := helperOOMGen2(c)
+					bigdata := <-datachan
 					err := s.Insert(dctx, bigdata)
 					if dctx.Err() != nil {
 						return
@@ -1021,7 +1043,7 @@ func TestOOMInsert(t *testing.T) {
 	}
 	wg.Wait()
 	dcancel()
-	t.Logf("Inserted %v points in 5 minutes\n", inserted)
+	t.Logf("Inserted %v points in 2 minutes\n", inserted)
 }
 
 func TestDeadlock(t *testing.T) {
