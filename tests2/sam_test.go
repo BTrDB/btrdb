@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -942,9 +943,34 @@ func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
 	helperInsert(t, ctx, s, bigdata)
 }
 
+func TestOOMInsert(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
+	bigdata := helperOOMGen()
+	ctx := context.Background()
+
+	conns := []*btrdb.BTrDB{}
+	for i := 0; i != 100; i++ {
+		conns = append(conns, helperConnect(t, ctx))
+	}
+
+	var wg sync.WaitGroup
+	for _, conn := range conns {
+		for i := 0; i != 100; i++ {
+			stream := helperCreateDefaultStream(t, ctx, conn, nil, nil)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				helperInsert(t, ctx, stream, bigdata)
+			}()
+		}
+	}
+	wg.Wait()
+}
+
 func TestDeadlock(t *testing.T) {
-	//TODO reinstate this
-	//	t.Skip()
 	if testing.Short() {
 		t.Skip()
 	}
