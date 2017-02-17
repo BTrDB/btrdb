@@ -1045,7 +1045,7 @@ func TestOOMInsert(t *testing.T) {
 						return
 					}
 					if err != nil {
-						if btrdb.ToCodedError(err).Code != bte.ResourceDepleted {
+						if btrdb.ToCodedError(err).Code == bte.ResourceDepleted {
 							skip = true
 						} else {
 							t.Fatalf("Got unexpected error %v (only \"Resource Depleted\" is allowed)", err)
