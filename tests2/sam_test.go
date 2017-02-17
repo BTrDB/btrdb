@@ -960,7 +960,7 @@ func TestOOMInsert(t *testing.T) {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	const NUM_CONNS = 100
+	const NUM_CONNS = 1
 	const NUM_STREAMS_PER_CONN = 100
 
 	ctx := context.Background()
@@ -981,7 +981,6 @@ func TestOOMInsert(t *testing.T) {
 			lstreams := []*btrdb.Stream{}
 			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
 				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
-				fmt.Printf("Created #%v\n", k)
 				lstreams = append(lstreams, s)
 			}
 			l.Lock()
@@ -1002,12 +1001,12 @@ func TestOOMInsert(t *testing.T) {
 		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
 			stream := streams[j*NUM_STREAMS_PER_CONN+i]
 			wg.Add(1)
-			go func() {
+			go func(s *btrdb.Stream) {
 				defer wg.Done()
-				var i int64
+				var c int64
 				for {
-					bigdata := helperOOMGen2(i)
-					err := stream.Insert(dctx, bigdata)
+					bigdata := helperOOMGen2(c)
+					err := s.Insert(dctx, bigdata)
 					if dctx.Err() != nil {
 						return
 					}
@@ -1015,9 +1014,9 @@ func TestOOMInsert(t *testing.T) {
 						t.Fatalf("Got unexpected error %v (only \"Resource Depleted\" is allowed)", err)
 					}
 					atomic.AddUint64(&inserted, uint64(len(bigdata)))
-					i++
+					c++
 				}
-			}()
+			}(stream)
 		}
 	}
 	wg.Wait()
