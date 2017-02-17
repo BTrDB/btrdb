@@ -957,20 +957,34 @@ func TestOOMInsert(t *testing.T) {
 		t.Skip()
 	}
 
+	const NUM_CONNS = 100
+	const NUM_STREAMS_PER_CONN = 100
+
 	ctx := context.Background()
 
+	fmt.Println("Creating connections")
 	conns := []*btrdb.BTrDB{}
-	for i := 0; i != 100; i++ {
+	for i := 0; i != NUM_CONNS; i++ {
 		conns = append(conns, helperConnect(t, ctx))
+	}
+
+	fmt.Println("Creating streams")
+	streams := []*btrdb.Stream{}
+	for m := 0; m != len(conns); m++ {
+		for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
+			s := helperCreateDefaultStream(t, ctx, conns[m], nil, nil)
+			streams = append(streams, s)
+		}
 	}
 
 	dctx, dcancel := context.WithTimeout(ctx, 5*time.Minute)
 
+	fmt.Println("Inserting")
 	var inserted uint64
 	var wg sync.WaitGroup
-	for _, conn := range conns {
-		for i := 0; i != 100; i++ {
-			stream := helperCreateDefaultStream(t, dctx, conn, nil, nil)
+	for j := range conns {
+		for i := 0; i != NUM_STREAMS_PER_CONN; i++ {
+			stream := streams[j*NUM_STREAMS_PER_CONN+i]
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
