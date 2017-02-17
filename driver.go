@@ -548,29 +548,6 @@ func (b *Endpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, versio
 	return RawPoint{Time: rv.Value.Time, Value: rv.Value.Value}, rv.VersionMajor, nil
 }
 
-//StreamInfo is a low level function, rather use Stream.Tags() Stream.Collection(), Stream.UUID() and Stream.Version() which handle caching
-//where appropriate
-// func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID) (collection string, tags map[string]string, version uint64, err error) {
-// 	rv, e := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
-// 		Uuid: uu,
-// 	})
-// 	if e != nil {
-// 		err = e
-// 		return
-// 	}
-// 	if rv.Stat != nil {
-// 		err = &CodedError{rv.Stat}
-// 		return
-// 	}
-// 	collection = rv.Collection
-// 	version = rv.VersionMajor
-// 	tags = make(map[string]string)
-// 	for _, t := range rv.Tags {
-// 		tags[t.Key] = t.Value
-// 	}
-// 	return
-// }
-
 type ChangedRange struct {
 	Version uint64
 	Start   int64
