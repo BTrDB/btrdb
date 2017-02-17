@@ -977,6 +977,7 @@ func TestOOMInsert(t *testing.T) {
 	for m := 0; m != len(conns); m++ {
 		swg.Add(1)
 		go func(conn *btrdb.BTrDB) {
+			defer swg.Done()
 			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
 				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
 				streams = append(streams, s)
