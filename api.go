@@ -596,7 +596,7 @@ func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, i
 		if err != nil {
 			continue
 		}
-		streamchan, errchan := ep.LookupStreams(ctx, collection, isCollectionPrefix, tags, annotations)
+		streamchan, errchan := ep.LookupStreams(ctx, collection, isCollectionPrefix, tags, annotations, b)
 		return streamchan, b.snoopEpErr(ep, errchan)
 	}
 	if err == nil {

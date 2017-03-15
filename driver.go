@@ -241,7 +241,7 @@ func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from stri
 	return rv.Collections, nil
 }
 
-func streamFromLookupResult(lr *pb.StreamDescriptor) *Stream {
+func streamFromLookupResult(lr *pb.StreamDescriptor, b *BTrDB) *Stream {
 	rv := &Stream{
 		uuid:              lr.Uuid,
 		hasTags:           true,
@@ -251,6 +251,7 @@ func streamFromLookupResult(lr *pb.StreamDescriptor) *Stream {
 		annotationVersion: AnnotationVersion(lr.AnnotationVersion),
 		hasCollection:     true,
 		collection:        lr.Collection,
+		b:                 b,
 	}
 	for _, kv := range lr.Tags {
 		rv.tags[kv.Key] = string(kv.Value)
@@ -262,7 +263,7 @@ func streamFromLookupResult(lr *pb.StreamDescriptor) *Stream {
 }
 
 //LookupStreams is a low level function, rather use BTrDB.LookupStreams()
-func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
+func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string, patchDB *BTrDB) (chan *Stream, chan error) {
 	ltags := []*pb.KeyOptValue{}
 	for k, v := range tags {
 		kop := &pb.KeyOptValue{
@@ -319,7 +320,7 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 				return
 			}
 			for _, r := range lr.Results {
-				rvc <- streamFromLookupResult(r)
+				rvc <- streamFromLookupResult(r, patchDB)
 			}
 		}
 	}()
