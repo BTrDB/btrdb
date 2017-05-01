@@ -282,6 +282,24 @@ func (s *Stream) Flush(ctx context.Context) error {
 	return nil
 }
 
+//CompareAndSetAnnotation will make the changes in the given map (where a nil pointer means delete) as long as the
+//annotation version matches
+func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected AnnotationVersion, changes map[string]*string) error {
+	var ep *Endpoint
+	var err error
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.SetStreamAnnotations(ctx, s.uuid, expected, changes)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //Insert inserts the given array of RawPoint values. If the
 //array is larger than appropriate, this function will automatically chunk the inserts.
 //As a consequence, the insert is not necessarily atomic, but can be used with

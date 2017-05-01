@@ -585,3 +585,29 @@ func TestCreate(t *testing.T) {
 		}
 	}
 }
+
+func TestTagLookup(t *testing.T) {
+	ctx := context.Background()
+	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("connection error %v", err)
+	}
+	uu := uuid.NewRandom()
+	col := fmt.Sprintf("ntest/%x/b", []byte(uu)[:8])
+
+	str, cerr := db.Create(ctx, uu, col, btrdb.M{"a": "aval", "b": "bval", "c": "cval"}, btrdb.M{"d": "dval"})
+	if cerr != nil {
+		t.Fatalf("got create error %v", cerr)
+	}
+	_ = str
+
+	// ltags := make(map[string]*string)
+
+	rv, err := db.LookupStreams(ctx, col, false, btrdb.OptKV("a", "aval", "b", "bval", "c", "cval"), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v\n", err)
+	}
+	if len(rv) != 1 {
+		fmt.Printf("Expected 1 result, got %d\n", len(rv))
+	}
+}
