@@ -290,6 +290,19 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 		Tags:               ltags,
 		Annotations:        lanns,
 	}
+	// fmt.Printf("LUS PARAMS:\ncollection: %q, pfx %v\n", collection, isCollectionPrefix)
+	// for _, tt := range ltags {
+	// 	fmt.Printf("tag %q -> %p\n", tt.Key, tt.Val)
+	// 	if tt.Val != nil {
+	// 		fmt.Printf("  thats %q\n", string(tt.Val.Value))
+	// 	}
+	// }
+	// for _, tt := range lanns {
+	// 	fmt.Printf("tag %q -> %p\n", tt.Key, tt.Val)
+	// 	if tt.Val != nil {
+	// 		fmt.Printf("  thats %q\n", string(tt.Val.Value))
+	// 	}
+	// }
 	rv, err := b.g.LookupStreams(ctx, params)
 	rvc := make(chan *Stream, 100)
 	rve := make(chan error, 1)

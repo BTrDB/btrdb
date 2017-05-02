@@ -3,9 +3,13 @@ package btrdb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/btrdb.v4/grpcinterface"
@@ -37,6 +41,8 @@ type BTrDB struct {
 	//This covers the epcache
 	epmu    sync.RWMutex
 	epcache map[uint32]*Endpoint
+
+	bootstraps []string
 }
 
 func newBTrDB() *BTrDB {
@@ -63,6 +69,7 @@ func Connect(ctx context.Context, endpoints ...string) (*BTrDB, error) {
 		return nil, fmt.Errorf("No endpoints provided")
 	}
 	b := newBTrDB()
+	b.bootstraps = endpoints
 	for _, epa := range endpoints {
 		ep, err := ConnectEndpoint(ctx, epa)
 		if ctx.Err() != nil {
@@ -178,7 +185,8 @@ func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 }
 
 func (b *BTrDB) resyncMash() {
-	b.epmu.RLock()
+	b.epmu.Lock()
+
 	for _, ep := range b.epcache {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		mash, err := ep.Info(ctx)
@@ -186,25 +194,51 @@ func (b *BTrDB) resyncMash() {
 		if err == nil {
 			//TODO does this require a mutex?
 			b.activeMash.Store(mash)
-			b.epmu.RUnlock()
+			b.epcache = make(map[uint32]*Endpoint)
+			b.epmu.Unlock()
 			return
 		} else {
 			fmt.Printf("error was %v", err)
 		}
 	}
-	b.epmu.RUnlock()
+
+	//Try bootstraps
+	for _, epa := range b.bootstraps {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ep, err := ConnectEndpoint(ctx, epa)
+		cancel()
+		if err != nil {
+			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
+			continue
+		}
+		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+		mash, err := ep.Info(ctx)
+		cancel()
+		if err != nil {
+			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
+			continue
+		}
+		b.activeMash.Store(mash)
+		b.epcache = make(map[uint32]*Endpoint)
+		ep.Disconnect()
+		b.epmu.Unlock()
+		return
+	}
+	b.epmu.Unlock()
+	//Try clients already in the MASH
 	cm := b.activeMash.Load().(*MASH)
 	for _, mbr := range cm.Members {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		ep, err := b.EndpointForHash(ctx, mbr.Hash)
 		if err != nil {
-			fmt.Printf("got errorb %v", err)
+			fmt.Printf("got errorb %v\n", err)
 			continue
 		}
 		mash, err := ep.Info(ctx)
 		cancel()
 		if err == nil {
 			b.activeMash.Store(mash)
+			b.epcache = make(map[uint32]*Endpoint)
 			return
 		} else {
 			fmt.Printf("got errorc %v", err)
@@ -225,12 +259,24 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 	if err == nil {
 		return false
 	}
+	if strings.Contains(err.Error(), "getsockopt: connection refused") {
+		//why grpc no use proper code :(
+		fmt.Printf("Got conn refused, resyncing\n")
+		b.resyncMash()
+		return true
+	}
+	if grpc.Code(err) == codes.Unavailable {
+		fmt.Printf("Got unavailable, resyncing mash\n")
+		b.resyncMash()
+		return true
+	}
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
 		fmt.Printf("Got 405 (wrong endpoint)!\n")
 		b.resyncMash()
 		return true
 	}
+
 	return false
 }
 
