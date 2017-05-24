@@ -36,6 +36,9 @@ type BTrDB struct {
 	mashwmu    sync.Mutex
 	activeMash atomic.Value
 
+	isproxied bool
+	proxies   []string
+
 	closed bool
 
 	//This covers the epcache
@@ -79,16 +82,23 @@ func Connect(ctx context.Context, endpoints ...string) (*BTrDB, error) {
 			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
 			continue
 		}
-		mash, err := ep.Info(ctx)
+		mash, inf, err := ep.Info(ctx)
 		if err != nil {
 			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
 			continue
 		}
-		b.activeMash.Store(mash)
+		if inf.GetProxy() != nil {
+			//This is a proxied BTrDB cluster
+			b.isproxied = true
+			b.proxies = inf.GetProxy().GetProxyEndpoints()
+		} else {
+			b.activeMash.Store(mash)
+		}
 		ep.Disconnect()
 		break
 	}
-	if b.activeMash.Load() == nil {
+	if (b.isproxied && len(b.proxies) == 0) ||
+		(!b.isproxied && b.activeMash.Load() == nil) {
 		return nil, fmt.Errorf("Could not connect to cluster via provided endpoints")
 	}
 	return b, nil
@@ -115,6 +125,9 @@ func (b *BTrDB) Disconnect() error {
 func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
+	}
+	if b.isproxied {
+		return b.EndpointFor(ctx, nil)
 	}
 	m := b.activeMash.Load().(*MASH)
 	b.epmu.RLock()
@@ -151,6 +164,20 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
+	if b.isproxied {
+		b.epmu.Lock()
+		defer b.epmu.Unlock()
+		for _, ep := range b.epcache {
+			return ep, nil
+		}
+		//We need to connect to endpoint
+		nep, err := ConnectEndpoint(ctx, b.proxies...)
+		if err != nil {
+			return nil, err
+		}
+		b.epcache[0] = nep
+		return nep, nil
+	}
 	m := b.activeMash.Load().(*MASH)
 	ok, hash, addrs := m.EndpointFor(uuid)
 	if !ok {
@@ -185,14 +212,33 @@ func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 }
 
 func (b *BTrDB) resyncMash() {
+	if b.isproxied {
+		b.resyncProxies()
+	} else {
+		b.resyncInternalMash()
+	}
+}
+func (b *BTrDB) resyncProxies() {
+	b.epmu.Lock()
+	defer b.epmu.Unlock()
+	b.epcache = make(map[uint32]*Endpoint)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ep, err := ConnectEndpoint(ctx, b.bootstraps...)
+	cancel()
+	if err != nil {
+		return
+	}
+	b.epcache[0] = ep
+	return
+}
+func (b *BTrDB) resyncInternalMash() {
 	b.epmu.Lock()
 
 	for _, ep := range b.epcache {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		mash, err := ep.Info(ctx)
+		mash, _, err := ep.Info(ctx)
 		cancel()
 		if err == nil {
-			//TODO does this require a mutex?
 			b.activeMash.Store(mash)
 			b.epcache = make(map[uint32]*Endpoint)
 			b.epmu.Unlock()
@@ -212,7 +258,7 @@ func (b *BTrDB) resyncMash() {
 			continue
 		}
 		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-		mash, err := ep.Info(ctx)
+		mash, _, err := ep.Info(ctx)
 		cancel()
 		if err != nil {
 			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
@@ -234,7 +280,7 @@ func (b *BTrDB) resyncMash() {
 			fmt.Printf("got errorb %v\n", err)
 			continue
 		}
-		mash, err := ep.Info(ctx)
+		mash, _, err := ep.Info(ctx)
 		cancel()
 		if err == nil {
 			b.activeMash.Store(mash)

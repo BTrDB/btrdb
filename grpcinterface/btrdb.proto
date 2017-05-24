@@ -1,24 +1,107 @@
 syntax = "proto3";
-//Version 4.2
+//BTrDB v4 API
+
 package grpcinterface;
 
+import "google/api/annotations.proto";
+
 service BTrDB {
-  rpc RawValues(RawValuesParams) returns (stream RawValuesResponse);
-  rpc AlignedWindows(AlignedWindowsParams) returns (stream AlignedWindowsResponse);
-  rpc Windows(WindowsParams) returns (stream WindowsResponse);
-  rpc StreamInfo(StreamInfoParams) returns (StreamInfoResponse);
-  rpc SetStreamAnnotations(SetStreamAnnotationsParams) returns (SetStreamAnnotationsResponse);
-  rpc Create(CreateParams) returns (CreateResponse);
-  rpc ListCollections(ListCollectionsParams) returns (ListCollectionsResponse);
-  rpc LookupStreams(LookupStreamsParams) returns (stream LookupStreamsResponse);
-  rpc Nearest(NearestParams) returns (NearestResponse);
-  rpc Changes(ChangesParams) returns (stream ChangesResponse);
-  rpc Insert(InsertParams) returns (InsertResponse);
-  rpc Delete(DeleteParams) returns (DeleteResponse);
-  rpc Info(InfoParams) returns (InfoResponse);
-  rpc FaultInject(FaultInjectParams) returns (FaultInjectResponse);
-  rpc Flush(FlushParams) returns (FlushResponse);
-  rpc Obliterate(ObliterateParams) returns (ObliterateResponse);
+  rpc RawValues(RawValuesParams) returns (stream RawValuesResponse) {
+  option (google.api.http) = {
+     post: "/v4/rawvalues"
+       body: "*"
+     };
+  }
+  rpc AlignedWindows(AlignedWindowsParams) returns (stream AlignedWindowsResponse) {
+  option (google.api.http) = {
+     post: "/v4/alignedwindows"
+       body: "*"
+     };
+  }
+  rpc Windows(WindowsParams) returns (stream WindowsResponse) {
+  option (google.api.http) = {
+     post: "/v4/windows"
+       body: "*"
+     };
+  }
+  rpc StreamInfo(StreamInfoParams) returns (StreamInfoResponse) {
+  option (google.api.http) = {
+     post: "/v4/streaminfo"
+       body: "*"
+     };
+  }
+  rpc SetStreamAnnotations(SetStreamAnnotationsParams) returns (SetStreamAnnotationsResponse) {
+  option (google.api.http) = {
+     post: "/v4/setstreamannotations"
+       body: "*"
+     };
+  }
+  rpc Create(CreateParams) returns (CreateResponse) {
+  option (google.api.http) = {
+     post: "/v4/create"
+       body: "*"
+     };
+  }
+  rpc ListCollections(ListCollectionsParams) returns (ListCollectionsResponse) {
+  option (google.api.http) = {
+     post: "/v4/listcollections"
+       body: "*"
+     };
+  }
+  rpc LookupStreams(LookupStreamsParams) returns (stream LookupStreamsResponse) {
+  option (google.api.http) = {
+     post: "/v4/lookupstreams"
+       body: "*"
+     };
+  }
+  rpc Nearest(NearestParams) returns (NearestResponse) {
+  option (google.api.http) = {
+     post: "/v4/nearest"
+       body: "*"
+     };
+  }
+  rpc Changes(ChangesParams) returns (stream ChangesResponse) {
+  option (google.api.http) = {
+     post: "/v4/changes"
+       body: "*"
+     };
+  }
+  rpc Insert(InsertParams) returns (InsertResponse) {
+  option (google.api.http) = {
+     post: "/v4/insert"
+       body: "*"
+     };
+  }
+  rpc Delete(DeleteParams) returns (DeleteResponse) {
+  option (google.api.http) = {
+     post: "/v4/delete"
+       body: "*"
+     };
+  }
+  rpc Info(InfoParams) returns (InfoResponse) {
+  option (google.api.http) = {
+     post: "/v4/info"
+       body: "*"
+     };
+  }
+  rpc FaultInject(FaultInjectParams) returns (FaultInjectResponse) {
+  option (google.api.http) = {
+     post: "/v4/faultinject"
+       body: "*"
+     };
+  }
+  rpc Flush(FlushParams) returns (FlushResponse) {
+  option (google.api.http) = {
+     post: "/v4/flush"
+       body: "*"
+     };
+  }
+  rpc Obliterate(ObliterateParams) returns (ObliterateResponse) {
+  option (google.api.http) = {
+     post: "/v4/obliterate"
+       body: "*"
+     };
+  }
 }
 message RawValuesParams {
   bytes uuid = 1;
@@ -166,6 +249,10 @@ message InfoResponse {
   uint32 majorVersion = 3;
   uint32 minorVersion = 4;
   string build = 5;
+  ProxyInfo proxy = 6;
+}
+message ProxyInfo {
+  repeated string proxyEndpoints = 1;
 }
 message FaultInjectParams {
   uint64 type = 1;

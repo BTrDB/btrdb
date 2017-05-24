@@ -18,6 +18,7 @@ package btrdb
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/btrdb.v4/grpcinterface"
@@ -524,6 +525,7 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 	for b.testEpError(ep, err) {
 		ep, err = b.EndpointFor(ctx, uu)
 		if err != nil {
+			fmt.Printf("EP ERR %v\n", err)
 			continue
 		}
 		err = ep.Create(ctx, uu, collection, tags, annotations)
@@ -601,7 +603,7 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 		if err != nil {
 			continue
 		}
-		rv, err = ep.Info(ctx)
+		rv, _, err = ep.Info(ctx)
 	}
 	return rv, err
 }

@@ -954,9 +954,9 @@ func helperOOMInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
 }
 
 func TestOOMInsert(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
+	//if testing.Short() {
+	t.Skip()
+	//}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

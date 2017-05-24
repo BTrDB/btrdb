@@ -87,9 +87,8 @@ func TestChangedRangeSameVer(t *testing.T) {
 	count := 0
 	cr, _, cerr := stream.Changes(context.Background(), ver, ver, 0)
 
-	for r := range cr {
+	for _ = range cr {
 		count++
-		fmt.Printf("Got CR: %v", r)
 	}
 	if err := <-cerr; err != nil {
 		t.Fatalf("got changed range error: %v", err)
@@ -121,6 +120,7 @@ func TestBigInsert(t *testing.T) {
 	if ferr != nil {
 		t.Fatalf("flush error %v", ferr)
 	}
+	time.Sleep(10 * time.Second)
 	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
 	rvall := []btrdb.RawPoint{}
 	for v := range rvals {
@@ -185,9 +185,8 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	count := 0
 	cr, _, cerr := stream.Changes(context.Background(), ver-1, ver, 0)
 
-	for r := range cr {
+	for _ = range cr {
 		count++
-		fmt.Printf("Got CR: %v", r)
 	}
 	if err := <-cerr; err != nil {
 		t.Fatalf("got changed range error: %v", err)
@@ -242,12 +241,9 @@ func TestListCollections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
-	cols, err := db.ListAllCollections(context.Background())
+	_, err = db.ListAllCollections(context.Background())
 	if err != nil {
 		t.Fatalf("Unexpected list error: %v", err)
-	}
-	for i, c := range cols {
-		fmt.Printf("%d: %s\n", i, c)
 	}
 }
 func TestConnectDudEndpoints(t *testing.T) {
@@ -277,6 +273,8 @@ func TestConnectDeadline(t *testing.T) {
 }
 
 func TestInfo(t *testing.T) {
+	//TEMP
+	t.SkipNow()
 	db, err := btrdb.Connect(context.Background(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		t.Fatalf("connection error %v", err)
@@ -608,6 +606,6 @@ func TestTagLookup(t *testing.T) {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
 	if len(rv) != 1 {
-		fmt.Printf("Expected 1 result, got %d\n", len(rv))
+		t.Fatalf("Expected 1 result, got %d\n", len(rv))
 	}
 }

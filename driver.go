@@ -1,6 +1,8 @@
 package btrdb
 
-//go:generate protoc grpcinterface/btrdb.proto --go_out=plugins=grpc:.
+//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --go_out=plugins=grpc:. grpcinterface/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  grpcinterface/btrdb.proto
+//don't do this automagically protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  grpcinterface/btrdb.proto
 import (
 	"context"
 	"errors"
@@ -548,17 +550,19 @@ func (b *Endpoint) Flush(ctx context.Context, uu uuid.UUID) error {
 }
 
 //Info is a low level function, rather use BTrDB.Info()
-func (b *Endpoint) Info(ctx context.Context) (*MASH, error) {
+func (b *Endpoint) Info(ctx context.Context) (*MASH, *pb.InfoResponse, error) {
 	rv, err := b.g.Info(ctx, &pb.InfoParams{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if rv.Stat != nil {
-		return nil, &CodedError{rv.Stat}
+		return nil, nil, &CodedError{rv.Stat}
 	}
 	mrv := &MASH{rv.Mash, nil}
-	mrv.precalculate()
-	return mrv, nil
+	if rv.Mash != nil {
+		mrv.precalculate()
+	}
+	return mrv, rv, nil
 }
 
 //Nearest is a low level function, rather use Stream.Nearest()
