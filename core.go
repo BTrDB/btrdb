@@ -296,7 +296,7 @@ func (b *BTrDB) resyncInternalMash() {
 //This returns true if you should redo your operation (and get new ep)
 //and false if you should return the last value/error you got
 func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
-	if ep == nil {
+	if ep == nil && err == nil {
 		return true
 	}
 	if err == forceEp {
