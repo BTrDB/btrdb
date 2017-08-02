@@ -584,6 +584,106 @@ func TestCreate(t *testing.T) {
 	}
 }
 
+func TestObliterate(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+
+	rv, err := db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("foo", "bar"), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v\n", err)
+	}
+	oldrv := len(rv)
+
+	uu := uuid.NewRandom()
+	col := fmt.Sprintf("obl.%x", uu[:])
+	stream, err := db.Create(context.Background(), uu, col, btrdb.M{"foo": "bar"}, nil)
+	if err != nil {
+		t.Fatalf("create error %v", err)
+	}
+	vals := []btrdb.RawPoint{}
+	for i := 0; i < 100000; i++ {
+		vals = append(vals, btrdb.RawPoint{Time: int64(i), Value: float64(i)})
+	}
+	err = stream.Insert(context.Background(), vals)
+	if err != nil {
+		t.Fatalf("unexpected error %v\n", err)
+	}
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
+	time.Sleep(10 * time.Second)
+	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
+	rvall := []btrdb.RawPoint{}
+	for v := range rvals {
+		rvall = append(rvall, v)
+	}
+	if e := <-cerr; e != nil {
+		t.Fatalf("unexpected error %v\n", err)
+	}
+	if len(rvall) != 100000 {
+		t.Fatalf("only got %d points, wanted 100000", len(rvall))
+	}
+
+	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("foo", "bar"), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v\n", err)
+	}
+	if len(rv) != oldrv+1 {
+		t.Fatalf("Expected %d results, got %d\n", oldrv+1, len(rv))
+	} else {
+		fmt.Printf("got expected lookup results: %d\n", len(rv))
+	}
+
+	//Now obliterate it
+	err = stream.Obliterate(context.Background())
+	if err != nil {
+		t.Fatalf("obliterate error %v", err)
+	}
+
+	//Now try to get its anns (a lookup to backend)
+	anns, aver, err := stream.Annotations(context.Background())
+	if err == nil {
+		t.Fatalf("queried anns successfully: %d res (aver %d)", len(anns), aver)
+	} else {
+		fmt.Printf("got expected anns error %v\n", err)
+	}
+
+	//Now try query it
+	rvals, _, cerr = stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
+	rvall = []btrdb.RawPoint{}
+	for v := range rvals {
+		rvall = append(rvall, v)
+	}
+	e := <-cerr
+	if e == nil {
+		t.Fatalf("got no error (%d pts)\n", len(rvall))
+	} else {
+		fmt.Printf("got expected error %v\n", e)
+	}
+
+	//Try create with same uuid
+	_, err = db.Create(context.Background(), uu, col, btrdb.M{"foo": "bar"}, nil)
+	if err == nil {
+		t.Fatalf("got no error creating duplicate uuid")
+	} else {
+		fmt.Printf("got (expected) create error: %v\n", err)
+	}
+
+	//Also try doing lookup
+	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("foo", "bar"), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v\n", err)
+	}
+	if len(rv) != oldrv {
+		t.Fatalf("Expected %d results, got %d\n", oldrv, len(rv))
+	} else {
+		fmt.Printf("got expected lookup results: %d\n", len(rv))
+	}
+}
+
 func TestTagLookup(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)

@@ -283,6 +283,24 @@ func (s *Stream) Flush(ctx context.Context) error {
 	return nil
 }
 
+//Obliterate completely removes a stream. This operation is immediate but
+//the space will only be freed slowly
+func (s *Stream) Obliterate(ctx context.Context) error {
+	var ep *Endpoint
+	var err error
+	for s.b.testEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.Obliterate(ctx, s.uuid)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //CompareAndSetAnnotation will make the changes in the given map (where a nil pointer means delete) as long as the
 //annotation version matches
 func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected AnnotationVersion, changes map[string]*string) error {

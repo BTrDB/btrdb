@@ -549,6 +549,20 @@ func (b *Endpoint) Flush(ctx context.Context, uu uuid.UUID) error {
 	return nil
 }
 
+//Obliterate is a low level function, rather use Stream.Obliterate()
+func (b *Endpoint) Obliterate(ctx context.Context, uu uuid.UUID) error {
+	rv, err := b.g.Obliterate(ctx, &pb.ObliterateParams{
+		Uuid: uu,
+	})
+	if err != nil {
+		return err
+	}
+	if rv.Stat != nil {
+		return &CodedError{rv.Stat}
+	}
+	return nil
+}
+
 //Info is a low level function, rather use BTrDB.Info()
 func (b *Endpoint) Info(ctx context.Context) (*MASH, *pb.InfoResponse, error) {
 	rv, err := b.g.Info(ctx, &pb.InfoParams{})
