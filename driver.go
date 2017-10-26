@@ -61,8 +61,8 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 		} else {
 			tmt = 2 * time.Second
 		}
-
-		conn, err := grpc.Dial(a, grpc.WithInsecure(), grpc.WithTimeout(tmt), grpc.FailOnNonTempDialError(true), grpc.WithBlock())
+		dc := grpc.NewGZIPDecompressor()
+		conn, err := grpc.Dial(a, grpc.WithInsecure(), grpc.WithTimeout(tmt), grpc.FailOnNonTempDialError(true), grpc.WithBlock(), grpc.WithDecompressor(dc))
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
