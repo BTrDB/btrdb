@@ -2,10 +2,12 @@
 //
 // For functions returning value, version and error channels, please pay attention
 // to the following concurrenct pattern:
-// - The value channel must be completely consumed, always.
-// - The version channel need not be consumed if not required. Only one value will ever be written to the version channel.
-// - The error channel need not be read, but you cannot assume that there  was not an error just because there were values
-// - You can defer reading the error channel until after the value channel is closed (it will be closed early on error).
+//
+//  - The value channel must be completely consumed, always.
+//  - The version channel need not be consumed if not required. Only one value will ever be written to the version channel.
+//  - The error channel need not be read, but you cannot assume that there  was not an error just because there were values
+//  - You can defer reading the error channel until after the value channel is closed (it will be closed early on error).
+// 
 // A good pattern is the following:
 //   valchan, errchan = some.Method()
 //   for v := range valchan {
