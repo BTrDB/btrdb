@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
 	"github.com/pborman/uuid"
-	pb "gopkg.in/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
 func TestCDC(t *testing.T) {

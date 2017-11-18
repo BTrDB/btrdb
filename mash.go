@@ -5,7 +5,7 @@ import (
 
 	"github.com/huichen/murmur"
 	"github.com/pborman/uuid"
-	pb "gopkg.in/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
 //The MASH struct (Master Allocation by Stable Hashing) contains information

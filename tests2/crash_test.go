@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pborman/uuid"
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 func TestCrashError2(t *testing.T) {

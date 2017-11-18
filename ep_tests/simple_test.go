@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/pborman/uuid"
-	btrdb "gopkg.in/btrdb.v4"
-	pb "gopkg.in/btrdb.v4/grpcinterface"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
+	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
 func TestEndpointsFromEnv(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	pb "gopkg.in/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
 //M is an alias to neaten code specifying tags:

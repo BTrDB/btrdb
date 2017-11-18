@@ -17,8 +17,8 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/SoftwareDefinedBuildings/btrdb/bte"
-	"gopkg.in/btrdb.v4"
+	"github.com/BTrDB/btrdb/bte"
+	"gopkg.in/BTrDB/btrdb.v4"
 )
 
 /* Helper functions. */

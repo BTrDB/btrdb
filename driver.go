@@ -12,7 +12,7 @@ import (
 
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
-	pb "gopkg.in/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
 //AnnotationVersion is the version of a stream annotation. It begins at 1

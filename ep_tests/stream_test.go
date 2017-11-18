@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/pborman/uuid"
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 func TestDoubleCreateExact(t *testing.T) {

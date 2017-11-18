@@ -10,7 +10,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 //This will fail if ANY of the env enpoints are down

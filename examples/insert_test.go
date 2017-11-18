@@ -8,7 +8,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"gopkg.in/btrdb.v4"
+	"gopkg.in/BTrDB/btrdb.v4"
 )
 
 func TestInsertingProceduralData(t *testing.T) {

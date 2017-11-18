@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
 	"github.com/pborman/uuid"
 )
