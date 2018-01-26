@@ -1,4 +1,6 @@
-package tests2
+//+build ignore
+
+package tests
 
 import (
 	"context"

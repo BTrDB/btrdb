@@ -1,4 +1,4 @@
-package tests2
+package tests
 
 import (
 	"bytes"
@@ -42,10 +42,12 @@ func TestChangedRangeSameVer(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
+	fmt.Printf("calling create\n")
 	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
+	fmt.Printf("calling version\n")
 	iver, err := stream.Version(context.Background())
 	if err != nil {
 		t.Fatalf("got iver error: %v", err)
@@ -55,11 +57,13 @@ func TestChangedRangeSameVer(t *testing.T) {
 		vals[i].Time = int64(i)
 		vals[i].Value = float64(i)
 	}
+	fmt.Printf("calling insert\n")
 	err = stream.Insert(context.Background(), vals)
 	if err != nil {
 		t.Fatalf("got insert error %v", err)
 	}
 	//Let it flush
+	fmt.Printf("calling flush\n")
 	ferr := stream.Flush(context.Background())
 	if ferr != nil {
 		t.Fatalf("flush error %v", ferr)
@@ -69,14 +73,17 @@ func TestChangedRangeSameVer(t *testing.T) {
 		vals[i-300].Time = int64(i)
 		vals[i-300].Value = float64(i)
 	}
+	fmt.Printf("calling insert\n")
 	err = stream.Insert(context.Background(), vals)
 	if err != nil {
 		t.Fatalf("got insert2 error %v", err)
 	}
+	fmt.Printf("calling flush\n")
 	ferr = stream.Flush(context.Background())
 	if ferr != nil {
 		t.Fatalf("flush error %v", ferr)
 	}
+	fmt.Printf("calling version\n")
 	ver, err := stream.Version(context.Background())
 	if err != nil {
 		t.Fatalf("got ver error %v", err)
@@ -85,6 +92,7 @@ func TestChangedRangeSameVer(t *testing.T) {
 		t.Fatalf("expected two version to have happened iver=%d, ver=%d", iver, ver)
 	}
 	count := 0
+	fmt.Printf("calling changes\n")
 	cr, _, cerr := stream.Changes(context.Background(), ver, ver, 0)
 
 	for _ = range cr {

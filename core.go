@@ -28,7 +28,7 @@ var ErrorWrongArgs = &CodedError{&pb.Status{Code: 421, Msg: "Invalid Arguments"}
 
 //ErrorNoSuchStream is returned if an operation is attempted on a stream when
 //it does not exist.
-var ErrorNoSuchStream = &CodedError{&pb.Status{Code: 404, Msg: "No such stream"}}
+//var ErrorNoSuchStream = &CodedError{&pb.Status{Code: 404, Msg: "No such stream"}}
 
 //BTrDB is the main object you should use to interact with BTrDB.
 type BTrDB struct {
@@ -181,6 +181,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 	m := b.activeMash.Load().(*MASH)
 	ok, hash, addrs := m.EndpointFor(uuid)
 	if !ok {
+		b.resyncMash()
 		return nil, ErrorClusterDegraded
 	}
 	b.epmu.RLock()
@@ -307,18 +308,33 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 	}
 	if strings.Contains(err.Error(), "getsockopt: connection refused") {
 		//why grpc no use proper code :(
-		fmt.Printf("Got conn refused, resyncing\n")
+		time.Sleep(300 * time.Millisecond)
+		fmt.Printf("Got conn refused, resyncing silently\n")
+		b.resyncMash()
+		return true
+	}
+	if strings.Contains(err.Error(), "Endpoint is unreachable on all addresses") {
+		time.Sleep(300 * time.Millisecond)
+		fmt.Printf("Got conn refused, resyncing silently\n")
 		b.resyncMash()
 		return true
 	}
 	if grpc.Code(err) == codes.Unavailable {
-		fmt.Printf("Got unavailable, resyncing mash\n")
+		time.Sleep(300 * time.Millisecond)
+		fmt.Printf("Got unavailable, resyncing mash silently\n")
 		b.resyncMash()
 		return true
 	}
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
-		fmt.Printf("Got 405 (wrong endpoint)!\n")
+		time.Sleep(300 * time.Millisecond)
+		fmt.Printf("Got 405 (wrong endpoint) silently retrying\n")
+		b.resyncMash()
+		return true
+	}
+	if ce.Code == 419 {
+		time.Sleep(300 * time.Millisecond)
+		fmt.Printf("Got 419 (cluster degraded) silently retrying\n")
 		b.resyncMash()
 		return true
 	}
