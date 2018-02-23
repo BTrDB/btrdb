@@ -49,7 +49,13 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc) {
 	if err != nil {
 		t.Fatalf("Error from Flush %v", err)
 	}
+	if len(unflushed) == 0 {
+		t.Fatal("Unflushed query was empty")
+	}
 	flushed, _, _ := query(t, ctx, stream, start, end, count)
+	if len(flushed) == 0 {
+		t.Fatal("Flushed query was empty")
+	}
 	err = helperCheckStatisticalEqual(unflushed, flushed)
 	if err != nil {
 		t.Fatal("Flushed and unflushed queries were not equal.")
