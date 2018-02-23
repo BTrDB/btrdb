@@ -84,6 +84,9 @@ func helperFloatEquals(x float64, y float64) bool {
 
 func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryWidth int64) error {
 	pointsIndex := 0
+	if len(statPoints) == 0 {
+		return fmt.Errorf("Given stat point slice was empty")
+	}
 	for _, sp := range statPoints {
 		endtime := sp.Time + int64(queryWidth)
 		count := uint64(0)
