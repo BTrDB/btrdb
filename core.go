@@ -306,6 +306,7 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 	if err == nil {
 		return false
 	}
+	fmt.Printf("EP ERROR %v\n", err)
 	if strings.Contains(err.Error(), "getsockopt: connection refused") {
 		//why grpc no use proper code :(
 		time.Sleep(300 * time.Millisecond)
