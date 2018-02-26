@@ -44,7 +44,7 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc) {
 	if err != nil {
 		t.Fatalf("Error from insert %v", err)
 	}
-	unflushed, _, _ := query(t, ctx, stream, start, end, count)
+	unflushed, _, width := query(t, ctx, stream, start, end, count)
 	err = stream.Flush(ctx)
 	if err != nil {
 		t.Fatalf("Error from Flush %v", err)
@@ -59,6 +59,14 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc) {
 	err = helperCheckStatisticalEqual(unflushed, flushed)
 	if err != nil {
 		t.Fatal("Flushed and unflushed queries were not equal.")
+	}
+	err = helperCheckStatisticalCorrect(data, unflushed, width)
+	if err != nil {
+		t.Fatalf("Flushed results did not match generated data: %v", err)
+	}
+	err = helperCheckStatisticalCorrect(data, flushed, width)
+	if err != nil {
+		t.Fatalf("Unflushed results did not match generated data: %v", err)
 	}
 }
 
