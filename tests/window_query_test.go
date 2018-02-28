@@ -56,17 +56,17 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc) {
 	if len(flushed) == 0 {
 		t.Fatal("Flushed query was empty")
 	}
-	err = helperCheckStatisticalEqual(unflushed, flushed)
+	calculated, err := helperMakeStatPoints(data, width)
 	if err != nil {
-		t.Fatal("Flushed and unflushed queries were not equal.")
+		t.Fatalf("Error calculating expected query results: %v\n", err)
 	}
-	err = helperCheckStatisticalCorrect(data, unflushed, width)
+	err = helperCheckStatisticalEqual(unflushed, calculated)
 	if err != nil {
-		t.Fatalf("Flushed results did not match generated data: %v", err)
+		t.Fatalf("Unflushed and calculated queries were not equal: %v", err)
 	}
-	err = helperCheckStatisticalCorrect(data, flushed, width)
+	err = helperCheckStatisticalEqual(flushed, calculated)
 	if err != nil {
-		t.Fatalf("Unflushed results did not match generated data: %v", err)
+		t.Fatalf("Flushed and calculated queries were not equal: %v", err)
 	}
 }
 

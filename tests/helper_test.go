@@ -82,57 +82,61 @@ func helperFloatEquals(x float64, y float64) bool {
 	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
-func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryWidth int64) error {
-	pointsIndex := 0
-	if len(statPoints) == 0 {
-		return fmt.Errorf("Given stat point slice was empty")
-	}
-	for _, sp := range statPoints {
-		endtime := sp.Time + int64(queryWidth)
+func helperMakeStatPoints(points []btrdb.RawPoint, queryWidth int64) ([]btrdb.StatPoint, error) {
+	statPoints := make([]btrdb.StatPoint, int64(len(points))/queryWidth)
+	start := 0
+	for start < len(points) {
+		end := start
+		for end < len(points) && points[end].Time-points[start].Time < queryWidth {
+			end++
+		}
+		pointsSlice := points[start:end]
+		time := pointsSlice[0].Time
 		count := uint64(0)
 		min := math.Inf(1)
 		max := math.Inf(-1)
 		sum := 0.0
-		fmt.Println(sp.Time)
-		for pointsIndex < len(points) && points[pointsIndex].Time < endtime {
-			point := &points[pointsIndex]
-			if point.Time < sp.Time || point.Time > sp.Time+queryWidth {
-				return fmt.Errorf("Point at index %v time %v was out of range %v-%v", pointsIndex, point.Time, sp.Time, sp.Time+queryWidth)
-			}
+		for _, point := range pointsSlice {
 			min = math.Min(min, point.Value)
 			sum += point.Value
 			max = math.Max(max, point.Value)
 			count++
-			pointsIndex++
-		}
-		if min == math.Inf(1) {
-			fmt.Printf("index %v sp %v", sp, points[pointsIndex])
 		}
 		mean := sum / float64(count)
-		if min != sp.Min {
-			return fmt.Errorf("Calculated min %v did not equal stat point min %v", min, sp.Min)
-		}
-		if max != sp.Max {
-			return fmt.Errorf("Calculated max %v did not equal stat point max %v", max, sp.Max)
-		}
-		if count != sp.Count {
-			return fmt.Errorf("Calculated point count %v did not equal stat point count %v", count, sp.Count)
-		}
-		if !helperFloatEquals(mean, sp.Mean) {
-			return fmt.Errorf("Calculated mean %v did not equal stat point mean %v", mean, sp.Mean)
-		}
+		statPoint := btrdb.StatPoint{time, min, mean, max, count}
+		statPoints = append(statPoints, statPoint)
+		start = end + 1
 	}
-	return nil
+	return statPoints, nil
 }
 
-func helperCheckStatisticalEqual(a []btrdb.StatPoint, b []btrdb.StatPoint) error {
-	if len(a) != len(b) {
-		return fmt.Errorf("Stat point lenghts did not match %v %v", len(a), len(b))
+func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryWidth int64) error {
+	calculated, err := helperMakeStatPoints(points, queryWidth)
+	if err != nil {
+		return err
+	}
+	return helperCheckStatisticalEqual(calculated, statPoints)
+}
+
+func helperCheckStatisticalEqual(firstPoints []btrdb.StatPoint, secondPoints []btrdb.StatPoint) error {
+	if len(firstPoints) != len(secondPoints) {
+		return fmt.Errorf("Stat point lenghts did not match %v %v", len(firstPoints), len(secondPoints))
 	}
 
-	for i := range a {
-		if a[i] != b[i] {
-			return fmt.Errorf("Stat point %v is not equal to %v", a[i], b[i])
+	for i := range firstPoints {
+		first := firstPoints[i]
+		second := secondPoints[i]
+		if !helperFloatEquals(first.Min, second.Min) {
+			return fmt.Errorf("First min %v did not equal second min %v", first.Min, second.Min)
+		}
+		if !helperFloatEquals(first.Max, second.Max) {
+			return fmt.Errorf("First max %v did not equal second max %v", first.Min, second.Max)
+		}
+		if first.Count != second.Count {
+			return fmt.Errorf("First point count %v did not equal second point %v", first.Count, second.Count)
+		}
+		if !helperFloatEquals(first.Mean, second.Mean) {
+			return fmt.Errorf("First mean %v did not equal second mean %v", first.Mean, second.Mean)
 		}
 	}
 
