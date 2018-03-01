@@ -26,7 +26,7 @@ func RunTestQueryWithHoles(t *testing.T, query QueryFunc) {
 	allData := make([]btrdb.RawPoint, 0)
 	allData = append(allData, firstData...)
 	allData = append(allData, secondData...)
-	err := helperCheckStatisticalCorrect(allData, spts, int64(width))
+	err := helperCheckStatisticalCorrect(allData, spts, start, int64(width))
 	if err != nil {
 		t.Fatalf("Queried data was invalid: %v", err)
 	}
@@ -56,7 +56,7 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc) {
 	if len(flushed) == 0 {
 		t.Fatal("Flushed query was empty")
 	}
-	calculated, err := helperMakeStatPoints(data, width)
+	calculated, err := helperMakeStatPoints(data, start, width)
 	if err != nil {
 		t.Fatalf("Error calculating expected query results: %v\n", err)
 	}

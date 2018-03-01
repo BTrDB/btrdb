@@ -82,17 +82,22 @@ func helperFloatEquals(x float64, y float64) bool {
 	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
-func helperMakeStatPoints(points []btrdb.RawPoint, queryWidth int64) ([]btrdb.StatPoint, error) {
-	statPoints := make([]btrdb.StatPoint, int64(len(points))/queryWidth)
-	start := 0
-	for start < len(points) {
-		end := start
-		for end < len(points) && points[end].Time-points[start].Time < queryWidth {
+func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) ([]btrdb.StatPoint, error) {
+	numPoints := (points[len(points)-1].Time - queryStart) / queryWidth
+	statPoints := make([]btrdb.StatPoint, numPoints)
+	offset := 0
+	for offset < len(points) {
+		end := offset
+		var windowStart int64
+		if offset == 0 {
+			windowStart = queryStart
+		} else {
+			windowStart = points[offset].Time
+		}
+		for end < len(points) && points[end].Time-windowStart < queryWidth {
 			end++
 		}
-		pointsSlice := points[start:end]
-		time := pointsSlice[0].Time
-		count := uint64(0)
+		pointsSlice := points[offset:end]
 		min := math.Inf(1)
 		max := math.Inf(-1)
 		sum := 0.0
@@ -100,18 +105,17 @@ func helperMakeStatPoints(points []btrdb.RawPoint, queryWidth int64) ([]btrdb.St
 			min = math.Min(min, point.Value)
 			sum += point.Value
 			max = math.Max(max, point.Value)
-			count++
 		}
-		mean := sum / float64(count)
-		statPoint := btrdb.StatPoint{time, min, mean, max, count}
+		mean := sum / float64(len(pointsSlice))
+		statPoint := btrdb.StatPoint{windowStart, min, mean, max, uint64(len(pointsSlice))}
 		statPoints = append(statPoints, statPoint)
-		start = end + 1
+		offset = end + 1
 	}
 	return statPoints, nil
 }
 
-func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryWidth int64) error {
-	calculated, err := helperMakeStatPoints(points, queryWidth)
+func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryStart int64, queryWidth int64) error {
+	calculated, err := helperMakeStatPoints(points, queryStart, queryWidth)
 	if err != nil {
 		return err
 	}
@@ -126,6 +130,7 @@ func helperCheckStatisticalEqual(firstPoints []btrdb.StatPoint, secondPoints []b
 	for i := range firstPoints {
 		first := firstPoints[i]
 		second := secondPoints[i]
+		fmt.Printf("%v %v\n", first, second)
 		if !helperFloatEquals(first.Min, second.Min) {
 			return fmt.Errorf("First min %v did not equal second min %v", first.Min, second.Min)
 		}
