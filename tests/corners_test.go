@@ -17,64 +17,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"github.com/pborman/uuid"
-
 	"github.com/BTrDB/btrdb-server/bte"
 	"gopkg.in/BTrDB/btrdb.v4"
 )
 
 /* Helper functions. */
-
-func helperConnect(t *testing.T, ctx context.Context) *btrdb.BTrDB {
-	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
-	if err != nil {
-		t.Fatalf("Unexpected connection error: %v", err)
-	}
-	return db
-}
-
-func helperCreateDefaultStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, tags map[string]string, ann map[string]string) *btrdb.Stream {
-	uu := uuid.NewRandom()
-	coll := helperGetCollection(uu)
-	s := helperCreateStream(t, ctx, db, uu, coll, tags, ann)
-	suu := s.UUID()
-	if len(suu) != len(uu) {
-		t.Fatal("Bad UUID")
-	}
-	for i, b := range suu {
-		if b != uu[i] {
-			t.Fatal("UUID of created stream does not match provided UUID")
-		}
-	}
-	return s
-}
-
-func helperGetCollection(uu uuid.UUID) string {
-	return fmt.Sprintf("test.%x", uu[:])
-}
-
-func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu uuid.UUID, coll string, tags map[string]string, ann map[string]string) *btrdb.Stream {
-	stream, err := db.Create(ctx, uu, coll, tags, ann)
-	if err != nil {
-		t.Fatalf("create error %v", err)
-	}
-	return stream
-}
-
-func helperWaitAfterInsert(t *testing.T, ctx context.Context, s *btrdb.Stream) {
-	err := s.Flush(ctx)
-	if err != nil {
-		t.Fatalf("Error from Flush %v", err)
-	}
-}
-
-func helperInsert(t *testing.T, ctx context.Context, s *btrdb.Stream, data []btrdb.RawPoint) {
-	err := s.Insert(ctx, data)
-	if err != nil {
-		t.Fatalf("Error from Insert %v", err)
-	}
-	helperWaitAfterInsert(t, ctx, s)
-}
 
 func helperInsertTV(t *testing.T, ctx context.Context, s *btrdb.Stream, times []int64, values []float64) {
 	err := s.InsertTV(ctx, times, values)
@@ -82,21 +29,6 @@ func helperInsertTV(t *testing.T, ctx context.Context, s *btrdb.Stream, times []
 		t.Fatalf("Error from InsertTV: %v", err)
 	}
 	helperWaitAfterInsert(t, ctx, s)
-}
-
-func helperRandomData(start int64, end int64, gap int64) []btrdb.RawPoint {
-	numpts := (end - start) / gap
-	pts := make([]btrdb.RawPoint, numpts)
-	for i, _ := range pts {
-		pts[i].Time = start + (int64(i) * gap)
-		pts[i].Value = rand.NormFloat64()
-	}
-	return pts
-}
-
-func helperRandomDataCount(start int64, end int64, numpts int64) []btrdb.RawPoint {
-	gap := (end - start) / numpts
-	return helperRandomData(start, end, gap)
 }
 
 func helperRawQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, version uint64) ([]btrdb.RawPoint, uint64) {
@@ -109,36 +41,6 @@ func helperRawQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start in
 	err := <-errc
 	if err != nil {
 		t.Fatalf("raw query error: %v", err)
-	}
-
-	return rv, ver
-}
-
-func helperWindowQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, width uint64, depth uint8, version uint64) ([]btrdb.StatPoint, uint64) {
-	spc, verc, errc := s.Windows(ctx, start, end, width, depth, version)
-	rv := make([]btrdb.StatPoint, 0)
-	for sp := range spc {
-		rv = append(rv, sp)
-	}
-	ver := <-verc
-	err := <-errc
-	if err != nil {
-		t.Fatalf("window query error: %v", err)
-	}
-
-	return rv, ver
-}
-
-func helperStatisticalQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, pwe uint8, version uint64) ([]btrdb.StatPoint, uint64) {
-	spc, verc, errc := s.AlignedWindows(ctx, start, end, pwe, version)
-	rv := make([]btrdb.StatPoint, 0)
-	for sp := range spc {
-		rv = append(rv, sp)
-	}
-	ver := <-verc
-	err := <-errc
-	if err != nil {
-		t.Fatalf("statistical query error: %v", err)
 	}
 
 	return rv, ver
@@ -1204,10 +1106,6 @@ func TestRawCorrect(t *testing.T) {
 			t.Fatalf("Received point at index %d does not match inserted point (inserted %v but received %v)", i, data[i], rp)
 		}
 	}
-}
-
-func helperFloatEquals(x float64, y float64) bool {
-	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
 func TestStatisticalCorrect(t *testing.T) {
