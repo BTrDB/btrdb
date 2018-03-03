@@ -43,7 +43,7 @@ func TestChangedRangeSameVer(t *testing.T) {
 
 	uu := uuid.NewRandom()
 	fmt.Printf("calling create\n")
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -112,13 +112,13 @@ func TestBigInsert(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("testbi/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
 	vals := []btrdb.RawPoint{}
 	for i := 0; i < 100000; i++ {
-		vals = append(vals, btrdb.RawPoint{Time: int64(i), Value: float64(i)})
+		vals = append(vals, btrdb.RawPoint{Time: int64(i * 1000000), Value: float64(i)})
 	}
 	err = stream.Insert(context.Background(), vals)
 	if err != nil {
@@ -129,7 +129,7 @@ func TestBigInsert(t *testing.T) {
 		t.Fatalf("flush error %v", ferr)
 	}
 	time.Sleep(10 * time.Second)
-	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
+	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000*1000000, btrdb.LatestVersion)
 	rvall := []btrdb.RawPoint{}
 	for v := range rvals {
 		rvall = append(rvall, v)
@@ -148,7 +148,7 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -211,7 +211,7 @@ func TestAnnotationEmpty(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -231,7 +231,7 @@ func TestAnnotation(t *testing.T) {
 	expectedAnn := make([]byte, 100)
 	rand.Read(expectedAnn)
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, btrdb.M{"ann": string(expectedAnn)})
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, btrdb.M{"ann": string(expectedAnn)})
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -302,7 +302,7 @@ func TestNilRootAfterDeleteDelete(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -353,7 +353,7 @@ func TestNilRootAfterDeleteInsert(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -420,7 +420,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -481,7 +481,7 @@ func TestLookupALittle(t *testing.T) {
 		t.Fatalf("connection error %v", err)
 	}
 	guu := []byte(uuid.NewRandom())
-	colprefix := fmt.Sprintf("ntest.%x", guu[:8])
+	colprefix := fmt.Sprintf("ntest/%x", guu[:8])
 	then := time.Now()
 	for k := 0; k < 20; k++ {
 		for i := 0; i < 50; i++ {
@@ -544,7 +544,7 @@ func TestCreate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for s := 0; s < 10; s++ {
 			uu := uuid.NewRandom()
-			coll := fmt.Sprintf("test.%x", uu[:])
+			coll := fmt.Sprintf("test/%x", uu[:])
 			str, err := db.Create(ctx, uu, coll, btrdb.M{"s": fmt.Sprintf("%d", s)}, nil)
 			if err != nil {
 				t.Fatalf("got create error %v", err)
