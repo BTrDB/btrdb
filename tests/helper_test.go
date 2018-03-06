@@ -82,7 +82,7 @@ func helperFloatEquals(x float64, y float64) bool {
 	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
-func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) ([]btrdb.StatPoint, error) {
+func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) []btrdb.StatPoint {
 	numPoints := (points[len(points)-1].Time - queryStart) / queryWidth
 	statPoints := make([]btrdb.StatPoint, numPoints)
 	offset := 0
@@ -111,14 +111,11 @@ func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth 
 		statPoints = append(statPoints, statPoint)
 		offset = end + 1
 	}
-	return statPoints, nil
+	return statPoints
 }
 
 func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryStart int64, queryWidth int64) error {
-	calculated, err := helperMakeStatPoints(points, queryStart, queryWidth)
-	if err != nil {
-		return err
-	}
+	calculated := helperMakeStatPoints(points, queryStart, queryWidth)
 	return helperCheckStatisticalEqual(calculated, statPoints)
 }
 

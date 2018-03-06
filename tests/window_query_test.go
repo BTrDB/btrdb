@@ -9,10 +9,53 @@ import (
 	"gopkg.in/BTrDB/btrdb.v4"
 )
 
-type QueryFunc func(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64)
+type Queryable interface {
+	DoQuery(*btrdb.Stream, int64, int64, int64) ([]btrdb.StatPoint, uint64, int64)
+	GetContext() context.Context
+	MakeStatPoints([]btrdb.RawPoint, int64, int64) []btrdb.StatPoint
+}
 
-func RunTestQueryWithHoles(t *testing.T, query QueryFunc, scount int) {
-	ctx := context.Background()
+type AlignedWindowsQuery struct {
+	t   *testing.T
+	ctx context.Context
+}
+
+func (awq AlignedWindowsQuery) GetContext() context.Context {
+	return awq.ctx
+}
+
+func (awq AlignedWindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
+	pwe := uint8(48)
+	width := int64(1) << pwe
+	result, version := helperStatisticalQuery(awq.t, awq.ctx, s, start, end+width, pwe, 0)
+	return result, version, width
+}
+
+func (awq AlignedWindowsQuery) MakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) []btrdb.StatPoint {
+	return helperMakeStatPoints(points, queryStart, queryWidth)
+}
+
+type WindowsQuery struct {
+	t   *testing.T
+	ctx context.Context
+}
+
+func (wq WindowsQuery) GetContext() context.Context {
+	return wq.ctx
+}
+
+func (wq WindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
+	width := int64(end - start)
+	result, version := helperWindowQuery(wq.t, wq.ctx, s, start, end+width, uint64(width), 0, 0)
+	return result, version, width
+}
+
+func (wq WindowsQuery) MakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) []btrdb.StatPoint {
+	return helperMakeStatPoints(points, queryStart, queryWidth)
+}
+
+func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
+	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	start := int64(1519088910) // Random unix datetime
@@ -24,18 +67,19 @@ func RunTestQueryWithHoles(t *testing.T, query QueryFunc, scount int) {
 	helperInsert(t, ctx, stream, firstData)
 	secondData := helperRandomDataCount(midStart, finalEnd, count)
 	helperInsert(t, ctx, stream, secondData)
-	spts, _, width := query(t, ctx, stream, start, finalEnd, count*2)
+	spts, _, width := q.DoQuery(stream, start, finalEnd, count*2)
 	allData := make([]btrdb.RawPoint, 0)
 	allData = append(allData, firstData...)
 	allData = append(allData, secondData...)
-	err := helperCheckStatisticalCorrect(allData, spts, start, int64(width))
+	calculated := q.MakeStatPoints(allData, start, int64(width))
+	err := helperCheckStatisticalEqual(calculated, spts)
 	if err != nil {
 		t.Fatalf("Queried data was invalid: %v", err)
 	}
 }
 
-func RunTestQueryFlushing(t *testing.T, query QueryFunc, scount int) {
-	ctx := context.Background()
+func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
+	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	start := int64(1519088910) // Random unix datetime
@@ -46,7 +90,7 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc, scount int) {
 	if err != nil {
 		t.Fatalf("Error from insert %v", err)
 	}
-	unflushed, _, width := query(t, ctx, stream, start, end, count)
+	unflushed, _, width := q.DoQuery(stream, start, end, count)
 	err = stream.Flush(ctx)
 	if err != nil {
 		t.Fatalf("Error from Flush %v", err)
@@ -54,14 +98,11 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc, scount int) {
 	if len(unflushed) == 0 {
 		t.Fatal("Unflushed query was empty")
 	}
-	flushed, _, _ := query(t, ctx, stream, start, end, count)
+	flushed, _, _ := q.DoQuery(stream, start, end, count)
 	if len(flushed) == 0 {
 		t.Fatal("Flushed query was empty")
 	}
-	calculated, err := helperMakeStatPoints(data, start, width)
-	if err != nil {
-		t.Fatalf("Error calculating expected query results: %v\n", err)
-	}
+	calculated := q.MakeStatPoints(data, start, width)
 	//This is here to help debug the test, at the moment it is not correct
 	//as it does not calculate empty windows
 	fmt.Printf("calculated:\n")
@@ -80,42 +121,35 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc, scount int) {
 	}
 }
 
-func doWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	width := int64(end - start)
-	result, version := helperWindowQuery(t, ctx, s, start, end+width, uint64(width), 0, 0)
-	return result, version, width
-}
-
-func doAlignedWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	pwe := uint8(48)
-	width := int64(1) << pwe
-	result, version := helperStatisticalQuery(t, ctx, s, start, end+width, pwe, 0)
-	return result, version, width
-}
-
 func TestWindowsQueryWithHole(t *testing.T) {
-	RunTestQueryWithHoles(t, doWindowsQuery, 100000)
+	wq := WindowsQuery{t, context.Background()}
+	RunTestQueryWithHoles(t, wq, 100000)
 }
 
 func TestdWindowsAligneQueryWithHole(t *testing.T) {
-	RunTestQueryWithHoles(t, doAlignedWindowsQuery, 100000)
+	awq := AlignedWindowsQuery{t, context.Background()}
+	RunTestQueryWithHoles(t, awq, 100000)
 }
 
 func TestWindowsQueryFlushing(t *testing.T) {
-	RunTestQueryFlushing(t, doWindowsQuery, 100000)
+	wq := WindowsQuery{t, context.Background()}
+	RunTestQueryFlushing(t, wq, 100000)
 }
 
 func TestWindowsAlignedQueryFlushing(t *testing.T) {
-	RunTestQueryFlushing(t, doAlignedWindowsQuery, 100000)
+	awq := AlignedWindowsQuery{t, context.Background()}
+	RunTestQueryFlushing(t, awq, 100000)
 }
 
 //The database would actually flush an insert of 100k points. To properly test
 //unflushed inserts we need to use less points:
 
 func TestWindowsQueryNoInitFlushing(t *testing.T) {
-	RunTestQueryFlushing(t, doWindowsQuery, 500)
+	wq := WindowsQuery{t, context.Background()}
+	RunTestQueryFlushing(t, wq, 500)
 }
 
 func TestWindowsAlignedQueryNoInitFlushing(t *testing.T) {
-	RunTestQueryFlushing(t, doAlignedWindowsQuery, 500)
+	awq := AlignedWindowsQuery{t, context.Background()}
+	RunTestQueryFlushing(t, awq, 500)
 }
