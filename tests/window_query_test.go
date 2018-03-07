@@ -12,7 +12,7 @@ import (
 type Queryable interface {
 	DoQuery(*btrdb.Stream, int64, int64, int64) ([]btrdb.StatPoint, uint64, int64)
 	GetContext() context.Context
-	MakeStatPoints([]btrdb.RawPoint, int64, int64) []btrdb.StatPoint
+	MakeStatPoints([]btrdb.RawPoint, int64, int64, int64) []btrdb.StatPoint
 }
 
 type AlignedWindowsQuery struct {
@@ -31,8 +31,8 @@ func (awq AlignedWindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, 
 	return result, version, width
 }
 
-func (awq AlignedWindowsQuery) MakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) []btrdb.StatPoint {
-	return helperMakeStatPoints(points, queryStart, queryWidth)
+func (awq AlignedWindowsQuery) MakeStatPoints(points []btrdb.RawPoint, start int64, end, width int64) []btrdb.StatPoint {
+	return helperMakeStatPoints(points, start, end, width, false)
 }
 
 type WindowsQuery struct {
@@ -50,8 +50,8 @@ func (wq WindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, count in
 	return result, version, width
 }
 
-func (wq WindowsQuery) MakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) []btrdb.StatPoint {
-	return helperMakeStatPoints(points, queryStart, queryWidth)
+func (wq WindowsQuery) MakeStatPoints(points []btrdb.RawPoint, start int64, end int64, width int64) []btrdb.StatPoint {
+	return helperMakeStatPoints(points, start, end, width, true)
 }
 
 func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
@@ -71,7 +71,13 @@ func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
 	allData := make([]btrdb.RawPoint, 0)
 	allData = append(allData, firstData...)
 	allData = append(allData, secondData...)
-	calculated := q.MakeStatPoints(allData, start, int64(width))
+	calculated := q.MakeStatPoints(allData, start, finalEnd, int64(width))
+	/*
+		fmt.Printf("calculated:\n")
+		spew.Dump(calculated)
+		fmt.Printf("results:\n")
+		spew.Dump(spts)
+	*/
 	err := helperCheckStatisticalEqual(calculated, spts)
 	if err != nil {
 		t.Fatalf("Queried data was invalid: %v", err)
@@ -102,7 +108,7 @@ func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 	if len(flushed) == 0 {
 		t.Fatal("Flushed query was empty")
 	}
-	calculated := q.MakeStatPoints(data, start, width)
+	calculated := q.MakeStatPoints(data, start, end, width)
 	//This is here to help debug the test, at the moment it is not correct
 	//as it does not calculate empty windows
 	fmt.Printf("calculated:\n")
