@@ -2,10 +2,10 @@ package tests
 
 import (
 	"context"
-	"fmt"
+	//"fmt"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	//"github.com/davecgh/go-spew/spew"
 	"gopkg.in/BTrDB/btrdb.v4"
 )
 
@@ -109,14 +109,14 @@ func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 		t.Fatal("Flushed query was empty")
 	}
 	calculated := q.MakeStatPoints(data, start, end, width)
-	//This is here to help debug the test, at the moment it is not correct
-	//as it does not calculate empty windows
-	fmt.Printf("calculated:\n")
-	spew.Dump(calculated)
-	fmt.Printf("unflushed:\n")
-	spew.Dump(unflushed)
-	fmt.Printf("flushed:\n")
-	spew.Dump(flushed)
+	/*
+		fmt.Printf("calculated:\n")
+		spew.Dump(calculated)
+		fmt.Printf("unflushed:\n")
+		spew.Dump(unflushed)
+		fmt.Printf("flushed:\n")
+		spew.Dump(flushed)
+	*/
 	err = helperCheckStatisticalEqual(unflushed, calculated)
 	if err != nil {
 		t.Fatalf("Unflushed and calculated queries were not equal: %v", err)
