@@ -95,7 +95,7 @@ func helperMakeStatPoints(points []btrdb.RawPoint, start int64, end int64, query
 
 		/* For aligned queries, queryWidth will be 1<<pw,
 		 * and we want to clear the pw bits from the window start
-		 * (i.e. start & ~((1<<pw) - 1)
+		 * ( e.g. start & ~((1<<pw) - 1) )
 		 */
 		if aligned {
 			windowStart = windowStart &^ (queryWidth - 1)
@@ -127,8 +127,7 @@ func helperMakeStatPoints(points []btrdb.RawPoint, start int64, end int64, query
 		index = offset
 	}
 
-	/*
-	 * Unaligned queries always return the corrent number of stat
+	/* Unaligned queries always return the correct number of stat
 	 * points, even if there is no data
 	 */
 	for !aligned && len(statPoints) < numPoints {
