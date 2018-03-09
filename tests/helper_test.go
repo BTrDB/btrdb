@@ -107,7 +107,9 @@ func helperMakeStatPoints(points []btrdb.RawPoint, start int64, end int64, query
 
 		pointsSlice := points[index:offset]
 
-		// Unaligned queries return empty stat points
+		/* Unaligned queries return empty stat points
+		 * even if there is no data
+		 */
 		if !aligned && len(pointsSlice) == 0 {
 			empty := btrdb.StatPoint{windowStart, 0, 0, 0, 0}
 			statPoints = append(statPoints, empty)
@@ -128,7 +130,7 @@ func helperMakeStatPoints(points []btrdb.RawPoint, start int64, end int64, query
 	}
 
 	/* Unaligned queries always return the correct number of stat
-	 * points, even if there is no data
+	 * points, even if the end extends past the data
 	 */
 	for !aligned && len(statPoints) < numPoints {
 		windowStart := start + int64(len(statPoints))*queryWidth
