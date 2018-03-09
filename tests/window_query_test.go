@@ -25,14 +25,14 @@ func (awq AlignedWindowsQuery) GetContext() context.Context {
 }
 
 func (awq AlignedWindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	pwe := uint8(48)
+	pwe := uint8(52)
 	width := int64(1) << pwe
 	result, version := helperStatisticalQuery(awq.t, awq.ctx, s, start, end+width, pwe, 0)
 	return result, version, width
 }
 
 func (awq AlignedWindowsQuery) MakeStatPoints(points []btrdb.RawPoint, start int64, end, width int64) []btrdb.StatPoint {
-	return helperMakeStatPoints(points, start, end, width, false)
+	return helperMakeStatPoints(points, start, end, width, true)
 }
 
 type WindowsQuery struct {
@@ -45,13 +45,13 @@ func (wq WindowsQuery) GetContext() context.Context {
 }
 
 func (wq WindowsQuery) DoQuery(s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	width := int64(end - start)
+	width := int64(end-start) / 4
 	result, version := helperWindowQuery(wq.t, wq.ctx, s, start, end+width, uint64(width), 0, 0)
 	return result, version, width
 }
 
 func (wq WindowsQuery) MakeStatPoints(points []btrdb.RawPoint, start int64, end int64, width int64) []btrdb.StatPoint {
-	return helperMakeStatPoints(points, start, end, width, true)
+	return helperMakeStatPoints(points, start, end, width, false)
 }
 
 func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
