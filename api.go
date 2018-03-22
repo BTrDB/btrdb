@@ -235,7 +235,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 	}
 	var ep *Endpoint
 	var err error
-	batchsize := 5000
+	batchsize := 25000
 	for len(times) > 0 {
 		err = forceEp
 		end := len(times)
@@ -328,7 +328,7 @@ func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected Annotatio
 func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 	var ep *Endpoint
 	var err error
-	batchsize := 5000
+	batchsize := 25000
 	for len(vals) > 0 {
 		err = forceEp
 		end := len(vals)
@@ -368,7 +368,7 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, val func(int) float64) error {
 	var ep *Endpoint
 	var err error
-	batchsize := 5000
+	batchsize := 25000
 	fidx := 0
 	for fidx < length {
 		err = forceEp
