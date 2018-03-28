@@ -82,22 +82,39 @@ func helperFloatEquals(x float64, y float64) bool {
 	return math.Abs(x-y) < 1e-10*math.Max(math.Abs(x), math.Abs(y))
 }
 
-func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth int64) ([]btrdb.StatPoint, error) {
-	numPoints := (points[len(points)-1].Time - queryStart) / queryWidth
-	statPoints := make([]btrdb.StatPoint, numPoints)
-	offset := 0
-	for offset < len(points) {
-		end := offset
-		var windowStart int64
-		if offset == 0 {
-			windowStart = queryStart
-		} else {
-			windowStart = points[offset].Time
+func helperMakeStatPoints(points []btrdb.RawPoint, start int64, end int64, queryWidth int64, aligned bool) []btrdb.StatPoint {
+	if !aligned {
+		end = start + queryWidth*((end-start)/queryWidth)
+	}
+	numPoints := int((end - start) / queryWidth)
+	var statPoints []btrdb.StatPoint
+	index := 0
+	for index < len(points) {
+		offset := index
+		windowStart := start + int64(len(statPoints))*queryWidth
+
+		/* For aligned queries, queryWidth will be 1<<pw,
+		 * and we want to clear the pw bits from the window start
+		 * ( e.g. start & ~((1<<pw) - 1) )
+		 */
+		if aligned {
+			windowStart = windowStart &^ (queryWidth - 1)
 		}
-		for end < len(points) && points[end].Time-windowStart < queryWidth {
-			end++
+
+		for offset < len(points) && points[offset].Time < windowStart+queryWidth {
+			offset++
 		}
-		pointsSlice := points[offset:end]
+
+		pointsSlice := points[index:offset]
+
+		/* Unaligned queries return empty stat points
+		 * even if there is no data
+		 */
+		if !aligned && len(pointsSlice) == 0 {
+			empty := btrdb.StatPoint{windowStart, 0, 0, 0, 0}
+			statPoints = append(statPoints, empty)
+			continue
+		}
 		min := math.Inf(1)
 		max := math.Inf(-1)
 		sum := 0.0
@@ -109,17 +126,18 @@ func helperMakeStatPoints(points []btrdb.RawPoint, queryStart int64, queryWidth 
 		mean := sum / float64(len(pointsSlice))
 		statPoint := btrdb.StatPoint{windowStart, min, mean, max, uint64(len(pointsSlice))}
 		statPoints = append(statPoints, statPoint)
-		offset = end + 1
+		index = offset
 	}
-	return statPoints, nil
-}
 
-func helperCheckStatisticalCorrect(points []btrdb.RawPoint, statPoints []btrdb.StatPoint, queryStart int64, queryWidth int64) error {
-	calculated, err := helperMakeStatPoints(points, queryStart, queryWidth)
-	if err != nil {
-		return err
+	/* Unaligned queries always return the correct number of stat
+	 * points, even if the end extends past the data
+	 */
+	for !aligned && len(statPoints) < numPoints {
+		windowStart := start + int64(len(statPoints))*queryWidth
+		empty := btrdb.StatPoint{windowStart, 0, 0, 0, 0}
+		statPoints = append(statPoints, empty)
 	}
-	return helperCheckStatisticalEqual(calculated, statPoints)
+	return statPoints
 }
 
 func helperCheckStatisticalEqual(firstPoints []btrdb.StatPoint, secondPoints []btrdb.StatPoint) error {
@@ -130,7 +148,9 @@ func helperCheckStatisticalEqual(firstPoints []btrdb.StatPoint, secondPoints []b
 	for i := range firstPoints {
 		first := firstPoints[i]
 		second := secondPoints[i]
-		fmt.Printf("%v %v\n", first, second)
+		if first.Time != second.Time {
+			return fmt.Errorf("First time %v did not equal second time %v", first.Time, second.Time)
+		}
 		if !helperFloatEquals(first.Min, second.Min) {
 			return fmt.Errorf("First min %v did not equal second min %v", first.Min, second.Min)
 		}
