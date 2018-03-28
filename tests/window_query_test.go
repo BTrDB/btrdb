@@ -58,7 +58,7 @@ func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
 	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
-	start := int64(1519088910) // Random unix datetime
+	start := int64(1519088910000000000) // Random unix datetime
 	midEnd := start + 1000000
 	midStart := midEnd + 100000
 	finalEnd := midStart + 1000000
@@ -88,7 +88,7 @@ func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
-	start := int64(1519088910) // Random unix datetime
+	start := int64(1519088910000000000) // Random unix datetime
 	end := start + 1000000
 	count := int64(scount)
 	data := helperRandomDataCount(start, end, count)
@@ -125,6 +125,19 @@ func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 	if err != nil {
 		t.Fatalf("Flushed and calculated queries were not equal: %v", err)
 	}
+}
+
+func doWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
+	width := int64(end-start) / 15
+	result, version := helperWindowQuery(t, ctx, s, start, end+width, uint64(width), 0, 0)
+	return result, version, width
+}
+
+func doAlignedWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
+	pwe := uint8(30)
+	width := int64(1) << pwe
+	result, version := helperStatisticalQuery(t, ctx, s, start, end+width, pwe, 0)
+	return result, version, width
 }
 
 func TestWindowsQueryWithHole(t *testing.T) {
