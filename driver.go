@@ -130,7 +130,7 @@ func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, 
 	}
 	annlist := []*pb.KeyValue{}
 	for k, v := range annotations {
-		annlist = append(taglist, &pb.KeyValue{Key: k, Value: []byte(v)})
+		annlist = append(annlist, &pb.KeyValue{Key: k, Value: []byte(v)})
 	}
 	rv, err := b.g.Create(ctx, &pb.CreateParams{
 		Uuid:        uu,
