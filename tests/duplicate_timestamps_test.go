@@ -4,6 +4,7 @@ import (
 	"context"
 	"gopkg.in/BTrDB/btrdb.v4"
 	"testing"
+	"time"
 )
 
 func TestInsertDuplciateTimestampsErrors(t *testing.T) {
@@ -20,12 +21,13 @@ func TestInsertDuplciateTimestampsErrors(t *testing.T) {
 		t.Fatalf("Error inserting normal data: %v", err)
 	}
 
-	duplicateData := make([]btrdb.RawPoint, 100000)
+	duplicateData := make([]btrdb.RawPoint, 50000)
 	for i, _ := range duplicateData {
 		point := btrdb.RawPoint{start, 555}
 		duplicateData[i] = point
 	}
-	err = secondStream.Insert(ctx, duplicateData)
+	timedCtx, _ := context.WithTimeout(ctx, 1*time.Second)
+	err = secondStream.Insert(timedCtx, duplicateData)
 	if err != nil {
 		t.Fatalf("Error inserting normal data: %v", err)
 	}
