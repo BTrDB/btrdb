@@ -27,8 +27,9 @@ func TestInsertDuplciateTimestampsErrors(t *testing.T) {
 		point := btrdb.RawPoint{start, 555}
 		duplicateData[i] = point
 	}
-	timedCtx, _ := context.WithTimeout(ctx, 1*time.Second)
+	timedCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	err = secondStream.Insert(timedCtx, duplicateData)
+	cancel()
 	if err != nil {
 		t.Fatalf("Error inserting duplicate timestamp data: %v", err)
 	}
