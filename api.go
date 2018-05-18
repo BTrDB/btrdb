@@ -661,3 +661,15 @@ func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollecti
 	}
 	return rv, nil
 }
+
+func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[string]int, annotations map[string]int, err error) {
+	var ep *Endpoint
+	for b.testEpError(ep, err) {
+		ep, err = b.getAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		tags, annotations, err = ep.GetMetadataUsage(ctx, prefix)
+	}
+	return tags, annotations, err
+}
