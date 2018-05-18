@@ -221,6 +221,14 @@ func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expec
 	return nil
 }
 
+//GetMetadataUsage is a low level function. Rather use BTrDB.GetMetadataUsage
+func (b *Endpoint) GetMetadataUsage(ctx context.Context, prefix string) (tags map[string]int, annotations map[string]int, err error) {
+	rv, err := b.g.GetMetadataUsage(ctx, prefix)
+	_ = rv
+	_ = err
+	return nil, nil, fmt.Errorf("not implemented")
+}
+
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()
 func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from string, limit uint64) ([]string, error) {
 	if limit > 10000 {
