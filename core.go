@@ -181,7 +181,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 	m := b.activeMash.Load().(*MASH)
 	ok, hash, addrs := m.EndpointFor(uuid)
 	if !ok {
-		b.resyncMash()
+		b.ResyncMash()
 		return nil, ErrorClusterDegraded
 	}
 	b.epmu.RLock()
@@ -201,7 +201,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 	return nep, nil
 }
 
-func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*Endpoint, error) {
+func (b *BTrDB) GetAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 	b.epmu.RLock()
 	for _, ep := range b.epcache {
 		b.epmu.RUnlock()
@@ -212,7 +212,7 @@ func (b *BTrDB) getAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 	return b.EndpointFor(ctx, uuid.NewRandom())
 }
 
-func (b *BTrDB) resyncMash() {
+func (b *BTrDB) ResyncMash() {
 	if b.isproxied {
 		b.resyncProxies()
 	} else {
@@ -296,7 +296,7 @@ func (b *BTrDB) resyncInternalMash() {
 
 //This returns true if you should redo your operation (and get new ep)
 //and false if you should return the last value/error you got
-func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
+func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
 	if ep == nil && err == nil {
 		return true
 	}
@@ -311,32 +311,32 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 		//why grpc no use proper code :(
 		time.Sleep(300 * time.Millisecond)
 		fmt.Printf("Got conn refused, resyncing silently\n")
-		b.resyncMash()
+		b.ResyncMash()
 		return true
 	}
 	if strings.Contains(err.Error(), "Endpoint is unreachable on all addresses") {
 		time.Sleep(300 * time.Millisecond)
 		fmt.Printf("Got conn refused, resyncing silently\n")
-		b.resyncMash()
+		b.ResyncMash()
 		return true
 	}
 	if grpc.Code(err) == codes.Unavailable {
 		time.Sleep(300 * time.Millisecond)
 		fmt.Printf("Got unavailable, resyncing mash silently\n")
-		b.resyncMash()
+		b.ResyncMash()
 		return true
 	}
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
 		time.Sleep(300 * time.Millisecond)
 		fmt.Printf("Got 405 (wrong endpoint) silently retrying\n")
-		b.resyncMash()
+		b.ResyncMash()
 		return true
 	}
 	if ce.Code == 419 {
 		time.Sleep(300 * time.Millisecond)
 		fmt.Printf("Got 419 (cluster degraded) silently retrying\n")
-		b.resyncMash()
+		b.ResyncMash()
 		return true
 	}
 
@@ -346,7 +346,7 @@ func (b *BTrDB) testEpError(ep *Endpoint, err error) bool {
 //This should invalidate the endpoint if some kind of error occurs.
 //Because some values may have already been delivered, async functions using
 //snoopEpErr will not be able to mask cluster errors from the user
-func (b *BTrDB) snoopEpErr(ep *Endpoint, err chan error) chan error {
+func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 	rv := make(chan error, 2)
 	go func() {
 		for e := range err {
