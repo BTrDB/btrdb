@@ -102,6 +102,13 @@ service BTrDB {
        body: "*"
      };
   }
+
+  rpc GetMetadataUsage(MetadataUsageParams) returns (MetadataUsageResponse) {
+  option (google.api.http) = {
+    post: "/v4/getmetadatausage"
+      body: "*"
+    };
+  }
 }
 message RawValuesParams {
   bytes uuid = 1;
@@ -152,6 +159,18 @@ message StreamInfoResponse {
   uint64 versionMajor = 2;
   uint64 versionMinor = 3;
   StreamDescriptor descriptor = 4;
+}
+message MetadataUsageParams {
+  string prefix = 1;
+}
+message MetadataUsageResponse {
+  Status stat = 1;
+  repeated KeyCount tags = 2;
+  repeated KeyCount annotations = 3;
+}
+message KeyCount {
+  string key = 1;
+  uint64 count = 2;
 }
 message StreamDescriptor {
   bytes uuid = 1;

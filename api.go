@@ -102,7 +102,7 @@ func (s *Stream) refreshMeta(ctx context.Context) error {
 	var coll string
 	var tags map[string]string
 	var anns map[string]string
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -208,7 +208,7 @@ func (s *Stream) Version(ctx context.Context) (uint64, error) {
 	var ep *Endpoint
 	var err error
 
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -252,7 +252,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 				Value: thisBatchV[i],
 			}
 		}
-		for s.b.testEpError(ep, err) {
+		for s.b.TestEpError(ep, err) {
 			ep, err = s.b.EndpointFor(ctx, s.uuid)
 			if err != nil {
 				continue
@@ -272,7 +272,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 func (s *Stream) Flush(ctx context.Context) error {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.EndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -290,7 +290,7 @@ func (s *Stream) Flush(ctx context.Context) error {
 func (s *Stream) Obliterate(ctx context.Context) error {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.EndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -308,7 +308,7 @@ func (s *Stream) Obliterate(ctx context.Context) error {
 func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected AnnotationVersion, changes map[string]*string) error {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.EndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -344,7 +344,7 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 				Value: p.Value,
 			}
 		}
-		for s.b.testEpError(ep, err) {
+		for s.b.TestEpError(ep, err) {
 			ep, err = s.b.EndpointFor(ctx, s.uuid)
 			if err != nil {
 				continue
@@ -385,7 +385,7 @@ func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, 
 			}
 			fidx++
 		}
-		for s.b.testEpError(ep, err) {
+		for s.b.TestEpError(ep, err) {
 			ep, err = s.b.EndpointFor(ctx, s.uuid)
 			if err != nil {
 				continue
@@ -403,13 +403,13 @@ func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, 
 func (s *Stream) RawValues(ctx context.Context, start int64, end int64, version uint64) (chan RawPoint, chan uint64, chan error) {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
 		}
 		rvchan, rvvchan, errchan := ep.RawValues(ctx, s.uuid, start, end, version)
-		return rvchan, rvvchan, s.b.snoopEpErr(ep, errchan)
+		return rvchan, rvvchan, s.b.SnoopEpErr(ep, errchan)
 	}
 	if err == nil {
 		panic("Please report this")
@@ -432,13 +432,13 @@ func (s *Stream) RawValues(ctx context.Context, start int64, end int64, version 
 func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, pointwidth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
 		}
 		rvchan, rvvchan, errchan := ep.AlignedWindows(ctx, s.uuid, start, end, pointwidth, version)
-		return rvchan, rvvchan, s.b.snoopEpErr(ep, errchan)
+		return rvchan, rvvchan, s.b.SnoopEpErr(ep, errchan)
 	}
 	if err == nil {
 		panic("Please report this")
@@ -464,13 +464,13 @@ func (s *Stream) AlignedWindows(ctx context.Context, start int64, end int64, poi
 func (s *Stream) Windows(ctx context.Context, start int64, end int64, width uint64, depth uint8, version uint64) (chan StatPoint, chan uint64, chan error) {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
 		}
 		rvchan, rvvchan, errchan := ep.Windows(ctx, s.uuid, start, end, width, depth, version)
-		return rvchan, rvvchan, s.b.snoopEpErr(ep, errchan)
+		return rvchan, rvvchan, s.b.SnoopEpErr(ep, errchan)
 	}
 	if err == nil {
 		panic("Please report this")
@@ -490,7 +490,7 @@ func (s *Stream) Windows(ctx context.Context, start int64, end int64, width uint
 //returns the version of the stream and any error
 func (s *Stream) DeleteRange(ctx context.Context, start int64, end int64) (ver uint64, err error) {
 	var ep *Endpoint
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.EndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -505,7 +505,7 @@ func (s *Stream) DeleteRange(ctx context.Context, start int64, end int64) (ver u
 //stream used to satisfy the query is returned.
 func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backward bool) (rv RawPoint, ver uint64, err error) {
 	var ep *Endpoint
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
@@ -518,13 +518,13 @@ func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backwa
 func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint64, resolution uint8) (crv chan ChangedRange, cver chan uint64, cerr chan error) {
 	var ep *Endpoint
 	var err error
-	for s.b.testEpError(ep, err) {
+	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
 			continue
 		}
 		crchan, cvchan, errchan := ep.Changes(ctx, s.uuid, fromVersion, toVersion, resolution)
-		return crchan, cvchan, s.b.snoopEpErr(ep, errchan)
+		return crchan, cvchan, s.b.SnoopEpErr(ep, errchan)
 	}
 	if err == nil {
 		panic("Please report this")
@@ -542,7 +542,7 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotations map[string]string) (*Stream, error) {
 	var ep *Endpoint
 	var err error
-	for b.testEpError(ep, err) {
+	for b.TestEpError(ep, err) {
 		ep, err = b.EndpointFor(ctx, uu)
 		if err != nil {
 			fmt.Printf("EP ERR %v\n", err)
@@ -591,14 +591,14 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 		var thisrv []string
 		err = forceEp
 		//Loop while errors are EP errors that will go away
-		for b.testEpError(ep, err) {
-			ep, err = b.getAnyEndpoint(ctx)
+		for b.TestEpError(ep, err) {
+			ep, err = b.GetAnyEndpoint(ctx)
 			if err != nil {
 				continue
 			}
 			thisrv, err = ep.ListCollections(ctx, prefix, from, maximum)
 		}
-		//testEpError said stop trying, non-nil is fatal
+		//TestEpError said stop trying, non-nil is fatal
 		if err != nil {
 			return nil, err
 		}
@@ -618,8 +618,8 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 	var ep *Endpoint
 	var err error
 	var rv *MASH
-	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
 		if err != nil {
 			continue
 		}
@@ -631,13 +631,13 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
 	var ep *Endpoint
 	var err error
-	for b.testEpError(ep, err) {
-		ep, err = b.getAnyEndpoint(ctx)
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
 		if err != nil {
 			continue
 		}
 		streamchan, errchan := ep.LookupStreams(ctx, collection, isCollectionPrefix, tags, annotations, b)
-		return streamchan, b.snoopEpErr(ep, errchan)
+		return streamchan, b.SnoopEpErr(ep, errchan)
 	}
 	if err == nil {
 		panic("Please report this")
@@ -660,4 +660,16 @@ func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollecti
 		return nil, err
 	}
 	return rv, nil
+}
+
+func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[string]int, annotations map[string]int, err error) {
+	var ep *Endpoint
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		tags, annotations, err = ep.GetMetadataUsage(ctx, prefix)
+	}
+	return tags, annotations, err
 }

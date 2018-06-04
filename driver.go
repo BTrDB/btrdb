@@ -130,7 +130,7 @@ func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, 
 	}
 	annlist := []*pb.KeyValue{}
 	for k, v := range annotations {
-		annlist = append(taglist, &pb.KeyValue{Key: k, Value: []byte(v)})
+		annlist = append(annlist, &pb.KeyValue{Key: k, Value: []byte(v)})
 	}
 	rv, err := b.g.Create(ctx, &pb.CreateParams{
 		Uuid:        uu,
@@ -219,6 +219,28 @@ func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expec
 		return &CodedError{rv.GetStat()}
 	}
 	return nil
+}
+
+//GetMetadataUsage is a low level function. Rather use BTrDB.GetMetadataUsage
+func (b *Endpoint) GetMetadataUsage(ctx context.Context, prefix string) (tags map[string]int, annotations map[string]int, err error) {
+	rv, err := b.g.GetMetadataUsage(ctx, &pb.MetadataUsageParams{
+		Prefix: prefix,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if rv.Stat != nil {
+		return nil, nil, &CodedError{rv.GetStat()}
+	}
+	tags = make(map[string]int)
+	annotations = make(map[string]int)
+	for _, kv := range rv.Tags {
+		tags[kv.Key] = int(kv.Count)
+	}
+	for _, kv := range rv.Annotations {
+		annotations[kv.Key] = int(kv.Count)
+	}
+	return tags, annotations, nil
 }
 
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()
