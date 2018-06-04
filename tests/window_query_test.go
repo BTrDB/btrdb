@@ -81,13 +81,13 @@ func RunTestQueryFlushing(t *testing.T, query QueryFunc, scount int) {
 }
 
 func doWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	width := int64(end - start)
+	width := int64(end-start) / 1000
 	result, version := helperWindowQuery(t, ctx, s, start, end+width, uint64(width), 0, 0)
 	return result, version, width
 }
 
 func doAlignedWindowsQuery(t *testing.T, ctx context.Context, s *btrdb.Stream, start int64, end int64, count int64) ([]btrdb.StatPoint, uint64, int64) {
-	pwe := uint8(48)
+	pwe := uint8(35)
 	width := int64(1) << pwe
 	result, version := helperStatisticalQuery(t, ctx, s, start, end+width, pwe, 0)
 	return result, version, width
