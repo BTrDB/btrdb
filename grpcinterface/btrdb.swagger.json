@@ -726,6 +726,10 @@
           "type": "string",
           "format": "int64"
         },
+        "windowSize": {
+          "type": "string",
+          "format": "uint64"
+        },
         "depth": {
           "type": "integer",
           "format": "int64"
