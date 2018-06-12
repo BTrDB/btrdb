@@ -20,6 +20,7 @@ package btrdb
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 
 	"github.com/pborman/uuid"
@@ -672,4 +673,22 @@ func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[s
 		tags, annotations, err = ep.GetMetadataUsage(ctx, prefix)
 	}
 	return tags, annotations, err
+}
+
+// WriteCSV will synchronously write the provided stream's data
+// to a csv writer. The header has two columns for timestamps (UNIX
+// and human readable). It will also contain columns for each stream
+// with the label provided (each stream for statistical queries
+// get four columns). For aligned windows queries, the the width
+// parameter is ignored.
+func (b *BTrDB) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType CSVQueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
+	var ep *Endpoint
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		err = ep.WriteCSV(ctx, csvWriter, queryType, start, end, width, depth, includeVersions, streams...)
+	}
+	return err
 }

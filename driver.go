@@ -5,6 +5,7 @@ package btrdb
 //don't do this automagically protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  grpcinterface/btrdb.proto
 import (
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
@@ -676,4 +677,56 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 		}
 	}()
 	return rvc, rvv, rve
+}
+
+type StreamCSVConfig struct {
+	Version uint64
+	Label   string
+	Uuid    uuid.UUID
+}
+
+type CSVQueryType pb.GenerateCSVParams_QueryType
+
+var (
+	AlignedWindowsQuery CSVQueryType = CSVQueryType(pb.GenerateCSVParams_ALIGNED_WINDOWS_QUERY)
+	WindowsQuery        CSVQueryType = CSVQueryType(pb.GenerateCSVParams_WINDOWS_QUERY)
+	RawQuery            CSVQueryType = CSVQueryType(pb.GenerateCSVParams_RAW_QUERY)
+)
+
+// WriteCSV is a low level function. Rather use BTrDB.WriteCSV
+func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType CSVQueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+	paramsStreams := []*pb.StreamCSVConfig{}
+	for _, stream := range streams {
+		paramsStreams = append(paramsStreams, &pb.StreamCSVConfig{
+			Version: stream.Version,
+			Label:   stream.Label,
+			Uuid:    stream.Uuid,
+		})
+	}
+	rv, err := b.g.GenerateCSV(ctx, &pb.GenerateCSVParams{
+		QueryType:       pb.GenerateCSVParams_QueryType(queryType),
+		StartTime:       start,
+		EndTime:         end,
+		WindowSize:      width,
+		Depth:           uint32(depth),
+		IncludeVersions: includeVersions,
+		Streams:         paramsStreams,
+	})
+	if err != nil {
+		return err
+	}
+
+	for {
+		row, err := rv.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if row.Stat != nil {
+			return &CodedError{row.Stat}
+		}
+		csvWriter.Write(row.Row)
+	}
 }
