@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "BTrDB v4 API",
-    "version": "4.7.0"
+    "version": "v4.11.1"
   },
   "schemes": [
     "http",
@@ -17,12 +17,10 @@
   "paths": {
     "/v4/alignedwindows": {
       "post": {
-        "summary": "Get aggregated power-of-two-length windows of data",
-        "description": "AlignedWindows is similar to Windows but only permits a window length that is a power of two nanoseconds long, and starts on an exact multiple of the window length. It is faster for the database to execute, so should be used whenever the use case permits (e.g graphing)",
         "operationId": "AlignedWindows",
         "responses": {
           "200": {
-            "description": "A streaming response",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/grpcinterfaceAlignedWindowsResponse"
             }
@@ -39,14 +37,12 @@
           }
         ],
         "tags": [
-          "BTrDB", "Read"
+          "BTrDB"
         ]
       }
     },
     "/v4/changes": {
       "post": {
-        "summary": "Get the differences between two versions of a stream",
-        "description": "Changes takes two versions and returns a sequence of time intervals where the streams have seen changes. For performance reasons, these windows can be 'rounded up', which is faster for the database to execute",
         "operationId": "Changes",
         "responses": {
           "200": {
@@ -706,13 +702,13 @@
         "stat": {
           "$ref": "#/definitions/grpcinterfaceStatus"
         },
-        "majorVersion": {
-          "type": "integer",
-          "format": "int64"
+        "versionMajor": {
+          "type": "string",
+          "format": "uint64"
         },
-        "minorVersion": {
-          "type": "integer",
-          "format": "int64"
+        "versionMinor": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },
