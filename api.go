@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
@@ -675,24 +676,36 @@ func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[s
 	return tags, annotations, err
 }
 
-// WindowsToCSV will synchronously write the provided stream's data
-// to a csv writer, performing a windows query on the stream for the given range.
-// The header has two columns for timestamps (UNIX and human readable).
-// It will also contain columns for each stream with the label provided
-func (b *BTrDB) WindowsToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
+type CSVQueryType pb.GenerateCSVParams_QueryType
+
+var (
+	AlignedWindowsQuery CSVQueryType = CSVQueryType(pb.GenerateCSVParams_ALIGNED_WINDOWS_QUERY)
+	WindowsQuery        CSVQueryType = CSVQueryType(pb.GenerateCSVParams_WINDOWS_QUERY)
+	RawQuery            CSVQueryType = CSVQueryType(pb.GenerateCSVParams_RAW_QUERY)
+)
+
+func (b *BTrDB) WriteCSV(ctx context.Context, csvWriter *csv.Writer, queryType CSVQueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
 	var ep *Endpoint
 	for b.TestEpError(ep, err) {
 		ep, err = b.GetAnyEndpoint(ctx)
 		if err != nil {
 			continue
 		}
-		windowsQueryType := pb.GenerateCSVParams_WINDOWS_QUERY
 		err = ep.WriteCSV(
-			ctx, csvWriter, windowsQueryType,
+			ctx, csvWriter, pb.GenerateCSVParams_QueryType(queryType),
 			start, end, width, depth,
 			includeVersions, streams...)
 	}
 	return err
+}
+
+// WindowsToCSV will synchronously write the provided stream's data
+// to a csv writer, performing a windows query on the stream for the given range.
+// The header has two columns for timestamps (UNIX and human readable).
+// It will also contain columns for each stream with the label provided
+func (b *BTrDB) WindowsToCSV(ctx context.Context, writer io.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+	csvWriter := csv.NewWriter(writer)
+	return b.WriteCSV(ctx, csvWriter, WindowsQuery, start, end, width, depth, includeVersions, streams...)
 }
 
 // AlignedWindowsToCSV will synchronously write the provided stream's data
@@ -700,20 +713,9 @@ func (b *BTrDB) WindowsToCSV(ctx context.Context, csvWriter csv.Writer, start in
 // the given range. The header has two columns for timestamps (UNIX and
 // human readable). It will also contain columns for each stream with the
 // label provided.
-func (b *BTrDB) AlignedWindowsToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
-	var ep *Endpoint
-	for b.TestEpError(ep, err) {
-		ep, err = b.GetAnyEndpoint(ctx)
-		if err != nil {
-			continue
-		}
-		alignedWindowsQueryType := pb.GenerateCSVParams_ALIGNED_WINDOWS_QUERY
-		err = ep.WriteCSV(
-			ctx, csvWriter, alignedWindowsQueryType,
-			start, end, 0, depth,
-			includeVersions, streams...)
-	}
-	return err
+func (b *BTrDB) AlignedWindowsToCSV(ctx context.Context, writer io.Writer, start int64, end int64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+	csvWriter := csv.NewWriter(writer)
+	return b.WriteCSV(ctx, csvWriter, AlignedWindowsQuery, start, end, 0, depth, includeVersions, streams...)
 }
 
 // RawValuesToCSV will synchronously write the provided stream's data
@@ -721,18 +723,7 @@ func (b *BTrDB) AlignedWindowsToCSV(ctx context.Context, csvWriter csv.Writer, s
 // the given range. The header has two columns for timestamps (UNIX and
 // human readable). It will also contain columns for each stream with the
 // label provided.
-func (b *BTrDB) RawValuesToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
-	var ep *Endpoint
-	for b.TestEpError(ep, err) {
-		ep, err = b.GetAnyEndpoint(ctx)
-		if err != nil {
-			continue
-		}
-		rawQueryType := pb.GenerateCSVParams_RAW_QUERY
-		err = ep.WriteCSV(
-			ctx, csvWriter, rawQueryType,
-			start, end, width, depth,
-			includeVersions, streams...)
-	}
-	return err
+func (b *BTrDB) RawValuesToCSV(ctx context.Context, writer io.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+	csvWriter := csv.NewWriter(writer)
+	return b.WriteCSV(ctx, csvWriter, RawQuery, start, end, width, depth, includeVersions, streams...)
 }

@@ -686,7 +686,7 @@ type StreamCSVConfig struct {
 }
 
 // WriteCSV is a low level function. Rather use BTrDB.WindowsToCSV, BTrDB.AlignedWindowsToCSV, or BTrDB.RawValuesToCSV,
-func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType pb.GenerateCSVParams_QueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter *csv.Writer, queryType pb.GenerateCSVParams_QueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
 	paramsStreams := []*pb.StreamCSVConfig{}
 	for _, stream := range streams {
 		paramsStreams = append(paramsStreams, &pb.StreamCSVConfig{
@@ -696,7 +696,7 @@ func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType
 		})
 	}
 	rv, err := b.g.GenerateCSV(ctx, &pb.GenerateCSVParams{
-		QueryType:       pb.GenerateCSVParams_QueryType(queryType),
+		QueryType:       queryType,
 		StartTime:       start,
 		EndTime:         end,
 		WindowSize:      width,
