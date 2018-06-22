@@ -675,20 +675,64 @@ func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[s
 	return tags, annotations, err
 }
 
-// WriteCSV will synchronously write the provided stream's data
-// to a csv writer. The header has two columns for timestamps (UNIX
-// and human readable). It will also contain columns for each stream
-// with the label provided (each stream for statistical queries
-// get four columns). For aligned windows queries, the the width
-// parameter is ignored.
-func (b *BTrDB) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType CSVQueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
+// WindowsToCSV will synchronously write the provided stream's data
+// to a csv writer, performing a windows query on the stream for the given range.
+// The header has two columns for timestamps (UNIX and human readable).
+// It will also contain columns for each stream with the label provided
+func (b *BTrDB) WindowsToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
 	var ep *Endpoint
 	for b.TestEpError(ep, err) {
 		ep, err = b.GetAnyEndpoint(ctx)
 		if err != nil {
 			continue
 		}
-		err = ep.WriteCSV(ctx, csvWriter, queryType, start, end, width, depth, includeVersions, streams...)
+		windowsQueryType := pb.GenerateCSVParams_WINDOWS_QUERY
+		err = ep.WriteCSV(
+			ctx, csvWriter, windowsQueryType,
+			start, end, width, depth,
+			includeVersions, streams...)
+	}
+	return err
+}
+
+// AlignedWindowsToCSV will synchronously write the provided stream's data
+// to a csv writer, performing an aligned windows query on the stream for
+// the given range. The header has two columns for timestamps (UNIX and
+// human readable). It will also contain columns for each stream with the
+// label provided.
+func (b *BTrDB) AlignedWindowsToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
+	var ep *Endpoint
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		alignedWindowsQueryType := pb.GenerateCSVParams_ALIGNED_WINDOWS_QUERY
+		err = ep.WriteCSV(
+			ctx, csvWriter, alignedWindowsQueryType,
+			start, end, 0, depth,
+			includeVersions, streams...)
+	}
+	return err
+}
+
+// RawValuesToCSV will synchronously write the provided stream's data
+// to a csv writer, performing a raw values query on the stream for
+// the given range. The header has two columns for timestamps (UNIX and
+// human readable). It will also contain columns for each stream with the
+// label provided.
+func (b *BTrDB) RawValuesToCSV(ctx context.Context, csvWriter csv.Writer, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) (err error) {
+	var ep *Endpoint
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		rawQueryType := pb.GenerateCSVParams_RAW_QUERY
+		err = ep.WriteCSV(
+			ctx, csvWriter, rawQueryType,
+			start, end, width, depth,
+			includeVersions, streams...)
 	}
 	return err
 }

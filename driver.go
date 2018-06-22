@@ -685,16 +685,8 @@ type StreamCSVConfig struct {
 	Uuid    uuid.UUID
 }
 
-type CSVQueryType pb.GenerateCSVParams_QueryType
-
-var (
-	AlignedWindowsQuery CSVQueryType = CSVQueryType(pb.GenerateCSVParams_ALIGNED_WINDOWS_QUERY)
-	WindowsQuery        CSVQueryType = CSVQueryType(pb.GenerateCSVParams_WINDOWS_QUERY)
-	RawQuery            CSVQueryType = CSVQueryType(pb.GenerateCSVParams_RAW_QUERY)
-)
-
-// WriteCSV is a low level function. Rather use BTrDB.WriteCSV
-func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType CSVQueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
+// WriteCSV is a low level function. Rather use BTrDB.WindowsToCSV, BTrDB.AlignedWindowsToCSV, or BTrDB.RawValuesToCSV,
+func (b *Endpoint) WriteCSV(ctx context.Context, csvWriter csv.Writer, queryType pb.GenerateCSVParams_QueryType, start int64, end int64, width uint64, depth uint8, includeVersions bool, streams ...StreamCSVConfig) error {
 	paramsStreams := []*pb.StreamCSVConfig{}
 	for _, stream := range streams {
 		paramsStreams = append(paramsStreams, &pb.StreamCSVConfig{
