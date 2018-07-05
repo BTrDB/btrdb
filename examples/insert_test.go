@@ -8,7 +8,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"gopkg.in/BTrDB/btrdb.v4"
+	"github.com/BTrDB/btrdb"
 )
 
 func TestInsertingProceduralData(t *testing.T) {
@@ -36,7 +36,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	//is technically just a byte array, but we prefer people use msgpacked objects.
 	//the tooling is not quite there to make this easy, so its ok to make this nil
 	//for now
-	var annotation []byte = nil
+	var annotation map[string]string = nil
 
 	stream, err := db.Create(context.TODO(), uu, collection, tags, annotation)
 	if err != nil {
@@ -51,12 +51,6 @@ func TestInsertingProceduralData(t *testing.T) {
 		t.Fatalf("Unexpected insert error: %v", err)
 	}
 
-	//This is missing, but will soon be there
-	//stream.Flush()
-	//So we do a poor mans flush
-	time.Sleep(6 * time.Second)
-
-	//Now we can query it and stuff too
 	//Start = -1000ns, End = 1000ns, Width = 150ns, Depth = 2^0 (all the way), Version = latest
 	rvchan, ver, errc := stream.Windows(context.TODO(), -1000, 1000, 150, 0, btrdb.LatestVersion)
 	_ = ver //don't use this, that's ok

@@ -46,6 +46,8 @@ type BTrDB struct {
 	epcache map[uint32]*Endpoint
 
 	bootstraps []string
+
+	apikey string
 }
 
 func newBTrDB() *BTrDB {
@@ -68,13 +70,22 @@ type StatPoint struct {
 //more endpoints will make the initial connection more robust to cluster
 //changes. Different addresses for the same endpoint are permitted
 func Connect(ctx context.Context, endpoints ...string) (*BTrDB, error) {
+	return ConnectAuth(ctx, "", endpoints...)
+}
+
+//ConnectAuth takes an API key and a list of endpoints and returns a BTrDB handle.
+//Note that only a single endpoint is technically required, but having
+//more endpoints will make the initial connection more robust to cluster
+//changes. Different addresses for the same endpoint are permitted
+func ConnectAuth(ctx context.Context, apikey string, endpoints ...string) (*BTrDB, error) {
 	if len(endpoints) == 0 {
 		return nil, fmt.Errorf("No endpoints provided")
 	}
 	b := newBTrDB()
+	b.apikey = apikey
 	b.bootstraps = endpoints
 	for _, epa := range endpoints {
-		ep, err := ConnectEndpoint(ctx, epa)
+		ep, err := ConnectEndpointAuth(ctx, apikey, epa)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -143,7 +154,7 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, er
 		}
 	}
 	//We need to connect to endpoint
-	nep, err := ConnectEndpoint(ctx, addrs...)
+	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +182,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 			return ep, nil
 		}
 		//We need to connect to endpoint
-		nep, err := ConnectEndpoint(ctx, b.proxies...)
+		nep, err := ConnectEndpointAuth(ctx, b.apikey, b.proxies...)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +202,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 		return ep, nil
 	}
 	//We need to connect to endpoint
-	nep, err := ConnectEndpoint(ctx, addrs...)
+	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +235,7 @@ func (b *BTrDB) resyncProxies() {
 	defer b.epmu.Unlock()
 	b.epcache = make(map[uint32]*Endpoint)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	ep, err := ConnectEndpoint(ctx, b.bootstraps...)
+	ep, err := ConnectEndpointAuth(ctx, b.apikey, b.bootstraps...)
 	cancel()
 	if err != nil {
 		return
@@ -252,7 +263,7 @@ func (b *BTrDB) resyncInternalMash() {
 	//Try bootstraps
 	for _, epa := range b.bootstraps {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		ep, err := ConnectEndpoint(ctx, epa)
+		ep, err := ConnectEndpointAuth(ctx, b.apikey, epa)
 		cancel()
 		if err != nil {
 			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
