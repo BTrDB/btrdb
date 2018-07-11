@@ -29,7 +29,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	//A collection is a small group of streams (<100 is best) generally associated
 	//with a single device or service. BTrDB is designed for lots of small collections
 	//not small numbers of big collections
-	collection := fmt.Sprintf("test.inserting_procedural_data.%d", time.Now().UnixNano())
+	collection := fmt.Sprintf("test/inserting_procedural_data.%d", time.Now().UnixNano())
 	//Tags are used to identify streams within a collection
 	tags := btrdb.M{"key": "value", "anotherkey": "anothervalue"}
 	//The annotation is used to store (mutable) extra data with the stream. It
@@ -45,7 +45,7 @@ func TestInsertingProceduralData(t *testing.T) {
 
 	//Now you manipulate the stream:
 	err = stream.InsertTV(context.TODO(),
-		[]int64{100, 200, 300, 400},
+		[]int64{100e6, 200e6, 300e6, 400e6},
 		[]float64{1.1, 2.2, 3.3, 4.4})
 	if err != nil {
 		t.Fatalf("Unexpected insert error: %v", err)
