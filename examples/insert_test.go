@@ -52,7 +52,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	}
 
 	//Start = -1000ns, End = 1000ns, Width = 150ns, Depth = 2^0 (all the way), Version = latest
-	rvchan, ver, errc := stream.Windows(context.TODO(), -1000, 1000, 150, 0, btrdb.LatestVersion)
+	rvchan, ver, errc := stream.Windows(context.TODO(), -1000e6, 1000e6, 150e6, 0, btrdb.LatestVersion)
 	_ = ver //don't use this, that's ok
 	for result := range rvchan {
 		fmt.Printf("Window @%d min=%.2f mean=%.2f max=%.2f count=%d\n",
