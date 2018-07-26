@@ -5,13 +5,16 @@ package btrdb
 //don't do this automagically protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  grpcinterface/btrdb.proto
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
@@ -37,12 +40,33 @@ type RawPoint struct {
 
 var forceEp = errors.New("Not really an error, you should not see this")
 
+type apikeyCred string
+
+func (a apikeyCred) GetRequestMetadata(ctx context.Context, uris ...string) (map[string]string, error) {
+	return map[string]string{
+		"authorization": fmt.Sprintf("bearer %s", a),
+	}, nil
+}
+
+func (a apikeyCred) RequireTransportSecurity() bool {
+	return false
+}
+
 //ConnectEndpoint is a low level call that connects to a single BTrDB
 //server. It takes multiple arguments, but it is assumed that they are
 //all different addresses for the same server, in decreasing order of
 //priority. It returns a Endpoint, which is generally never used directly.
 //Rather use Connect()
 func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error) {
+	return ConnectEndpointAuth(ctx, "", addresses...)
+}
+
+//ConnectEndpointAuth is a low level call that connects to a single BTrDB
+//server. It takes multiple arguments, but it is assumed that they are
+//all different addresses for the same server, in decreasing order of
+//priority. It returns a Endpoint, which is generally never used directly.
+//Rather use ConnectAuthenticated()
+func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string) (*Endpoint, error) {
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("No addresses provided")
 	}
@@ -61,8 +85,36 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 		} else {
 			tmt = 2 * time.Second
 		}
+		addrport := strings.SplitN(a, ":", 2)
+		if len(addrport) != 2 {
+			fmt.Printf("invalid address:port %q\n", a)
+			continue
+		}
+		secure := false
+		if addrport[1] == "4411" {
+			secure = true
+		}
 		dc := grpc.NewGZIPDecompressor()
-		conn, err := grpc.Dial(a, grpc.WithInsecure(), grpc.WithTimeout(tmt), grpc.FailOnNonTempDialError(true), grpc.WithBlock(), grpc.WithDecompressor(dc), grpc.WithInitialWindowSize(1*1024*1024), grpc.WithInitialConnWindowSize(1*1024*1024))
+		dialopts := []grpc.DialOption{
+			grpc.WithTimeout(tmt),
+			grpc.FailOnNonTempDialError(true),
+			grpc.WithBlock(),
+			grpc.WithDecompressor(dc),
+			grpc.WithInitialWindowSize(1 * 1024 * 1024),
+			grpc.WithInitialConnWindowSize(1 * 1024 * 1024)}
+
+		if secure {
+			dialopts = append(dialopts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		} else {
+			dialopts = append(dialopts, grpc.WithInsecure())
+		}
+		if apikey != "" {
+			if !secure {
+				fmt.Printf("WARNING: you are using API key authentication, but are using the insecure (unencrypted) API port. This is very dangerous and should never be done. Try connecting to port 4411 instead.")
+			}
+			dialopts = append(dialopts, grpc.WithPerRPCCredentials(apikeyCred(apikey)))
+		}
+		conn, err := grpc.Dial(a, dialopts...)
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
@@ -75,6 +127,7 @@ func ConnectEndpoint(ctx context.Context, addresses ...string) (*Endpoint, error
 		return rv, nil
 	}
 	fmt.Printf(ep_errors)
+
 	return nil, fmt.Errorf("Endpoint is unreachable on all addresses")
 }
 

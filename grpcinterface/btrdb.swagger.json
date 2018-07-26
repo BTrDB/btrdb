@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "BTrDB v4 API",
-    "version": "4.7.0"
+    "version": "v4.11.1"
   },
   "schemes": [
     "http",
@@ -17,12 +17,10 @@
   "paths": {
     "/v4/alignedwindows": {
       "post": {
-        "summary": "Get aggregated power-of-two-length windows of data",
-        "description": "AlignedWindows is similar to Windows but only permits a window length that is a power of two nanoseconds long, and starts on an exact multiple of the window length. It is faster for the database to execute, so should be used whenever the use case permits (e.g graphing)",
         "operationId": "AlignedWindows",
         "responses": {
           "200": {
-            "description": "A streaming response",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/grpcinterfaceAlignedWindowsResponse"
             }
@@ -39,14 +37,12 @@
           }
         ],
         "tags": [
-          "BTrDB", "Read"
+          "BTrDB"
         ]
       }
     },
     "/v4/changes": {
       "post": {
-        "summary": "Get the differences between two versions of a stream",
-        "description": "Changes takes two versions and returns a sequence of time intervals where the streams have seen changes. For performance reasons, these windows can be 'rounded up', which is faster for the database to execute",
         "operationId": "Changes",
         "responses": {
           "200": {
@@ -167,6 +163,58 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/grpcinterfaceFlushParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v4/generatecsv": {
+      "post": {
+        "operationId": "GenerateCSV",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceGenerateCSVResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceGenerateCSVParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v4/getmetadatausage": {
+      "post": {
+        "operationId": "GetMetadataUsage",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceMetadataUsageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceMetadataUsageParams"
             }
           }
         ],
@@ -437,6 +485,15 @@
     }
   },
   "definitions": {
+    "GenerateCSVParamsQueryType": {
+      "type": "string",
+      "enum": [
+        "ALIGNED_WINDOWS_QUERY",
+        "WINDOWS_QUERY",
+        "RAW_QUERY"
+      ],
+      "default": "ALIGNED_WINDOWS_QUERY"
+    },
     "grpcinterfaceAlignedWindowsParams": {
       "type": "object",
       "properties": {
@@ -644,6 +701,66 @@
       "properties": {
         "stat": {
           "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "versionMajor": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "versionMinor": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "grpcinterfaceGenerateCSVParams": {
+      "type": "object",
+      "properties": {
+        "queryType": {
+          "$ref": "#/definitions/GenerateCSVParamsQueryType"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "int64"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "int64"
+        },
+        "windowSize": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "depth": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "includeVersions": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceStreamCSVConfig"
+          }
+        }
+      }
+    },
+    "grpcinterfaceGenerateCSVResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "isHeader": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "row": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -705,6 +822,18 @@
           "format": "uint64"
         },
         "versionMinor": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "grpcinterfaceKeyCount": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "count": {
           "type": "string",
           "format": "uint64"
         }
@@ -877,6 +1006,34 @@
         },
         "grpcEndpoints": {
           "type": "string"
+        }
+      }
+    },
+    "grpcinterfaceMetadataUsageParams": {
+      "type": "object",
+      "properties": {
+        "prefix": {
+          "type": "string"
+        }
+      }
+    },
+    "grpcinterfaceMetadataUsageResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceKeyCount"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceKeyCount"
+          }
         }
       }
     },
@@ -1077,6 +1234,22 @@
         },
         "mash": {
           "$ref": "#/definitions/grpcinterfaceMash"
+        }
+      }
+    },
+    "grpcinterfaceStreamCSVConfig": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "label": {
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },

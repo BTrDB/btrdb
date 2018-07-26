@@ -8,7 +8,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"gopkg.in/BTrDB/btrdb.v4"
+	"github.com/BTrDB/btrdb"
 )
 
 func TestInsertingProceduralData(t *testing.T) {
@@ -29,14 +29,14 @@ func TestInsertingProceduralData(t *testing.T) {
 	//A collection is a small group of streams (<100 is best) generally associated
 	//with a single device or service. BTrDB is designed for lots of small collections
 	//not small numbers of big collections
-	collection := fmt.Sprintf("test.inserting_procedural_data.%d", time.Now().UnixNano())
+	collection := fmt.Sprintf("test/inserting_procedural_data.%d", time.Now().UnixNano())
 	//Tags are used to identify streams within a collection
 	tags := btrdb.M{"key": "value", "anotherkey": "anothervalue"}
 	//The annotation is used to store (mutable) extra data with the stream. It
 	//is technically just a byte array, but we prefer people use msgpacked objects.
 	//the tooling is not quite there to make this easy, so its ok to make this nil
 	//for now
-	var annotation []byte = nil
+	var annotation map[string]string = nil
 
 	stream, err := db.Create(context.TODO(), uu, collection, tags, annotation)
 	if err != nil {
@@ -45,20 +45,14 @@ func TestInsertingProceduralData(t *testing.T) {
 
 	//Now you manipulate the stream:
 	err = stream.InsertTV(context.TODO(),
-		[]int64{100, 200, 300, 400},
+		[]int64{100e6, 200e6, 300e6, 400e6},
 		[]float64{1.1, 2.2, 3.3, 4.4})
 	if err != nil {
 		t.Fatalf("Unexpected insert error: %v", err)
 	}
 
-	//This is missing, but will soon be there
-	//stream.Flush()
-	//So we do a poor mans flush
-	time.Sleep(6 * time.Second)
-
-	//Now we can query it and stuff too
 	//Start = -1000ns, End = 1000ns, Width = 150ns, Depth = 2^0 (all the way), Version = latest
-	rvchan, ver, errc := stream.Windows(context.TODO(), -1000, 1000, 150, 0, btrdb.LatestVersion)
+	rvchan, ver, errc := stream.Windows(context.TODO(), -1000e6, 1000e6, 150e6, 0, btrdb.LatestVersion)
 	_ = ver //don't use this, that's ok
 	for result := range rvchan {
 		fmt.Printf("Window @%d min=%.2f mean=%.2f max=%.2f count=%d\n",
