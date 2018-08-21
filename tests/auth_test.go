@@ -11,7 +11,6 @@ import (
 )
 
 func testAuthAPICalls(ctx context.Context, t *testing.T, db *btrdb.BTrDB) {
-
 	uu := uuid.NewRandom()
 	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), nil, nil)
 	if err != nil {
@@ -100,6 +99,7 @@ func testAuthAPICalls(ctx context.Context, t *testing.T, db *btrdb.BTrDB) {
 
 }
 func TestAuthPublic(t *testing.T) {
+	t.Skip()
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -109,6 +109,7 @@ func TestAuthPublic(t *testing.T) {
 }
 
 func TestAuthAPIK(t *testing.T) {
+	t.Skip()
 	//Fill in the username and API key to test
 	const user = "tst"
 	const apik = "255C59A06BB698681E3580D2"

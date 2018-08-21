@@ -474,6 +474,25 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 
 }
 
+func Test2kLookup(t *testing.T) {
+	ctx := context.Background()
+	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("connection error %v", err)
+	}
+	guu := []byte(uuid.NewRandom())
+	colprefix := fmt.Sprintf("ntest/%x", guu[:8])
+	for k := 0; k < 2000; k++ {
+		uu := uuid.NewRandom()
+		col := fmt.Sprintf("%s.%03d", colprefix, k)
+		str, cerr := db.Create(ctx, uu, col, btrdb.M{"k": fmt.Sprintf("%d", k)}, nil)
+		if cerr != nil {
+			t.Fatalf("got create error %v", cerr)
+		}
+		_ = str
+	}
+}
+
 func TestLookupALittle(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
