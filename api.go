@@ -601,11 +601,6 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 		if err != nil {
 			return nil, err
 		}
-		//The first element is a duplicate of the previous last element
-		if !first && len(thisrv) >= 1 {
-			thisrv = thisrv[1:]
-		}
-		rv = append(rv, thisrv...)
 		//We probably have more results
 		if len(thisrv) == int(maximum) {
 			from = thisrv[maximum-1]
@@ -613,6 +608,12 @@ func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, e
 			//No more results
 			done = true
 		}
+
+		//The first element is a duplicate of the previous last element
+		if !first && len(thisrv) >= 1 {
+			thisrv = thisrv[1:]
+		}
+		rv = append(rv, thisrv...)
 		first = false
 	}
 	return rv, err
