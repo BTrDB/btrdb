@@ -117,6 +117,19 @@ func request_BTrDB_SetStreamAnnotations_0(ctx context.Context, marshaler runtime
 
 }
 
+func request_BTrDB_SetStreamTags_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SetStreamTagsParams
+	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.SetStreamTags(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 func request_BTrDB_Create_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateParams
 	var metadata runtime.ServerMetadata
@@ -320,14 +333,14 @@ func RegisterBTrDBHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -341,8 +354,8 @@ func RegisterBTrDBHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc
 	return RegisterBTrDBHandlerClient(ctx, mux, NewBTrDBClient(conn))
 }
 
-// RegisterBTrDBHandler registers the http handlers for service BTrDB to "mux".
-// The handlers forward requests to the grpc endpoint over the given implementation of "BTrDBClient".
+// RegisterBTrDBHandlerClient registers the http handlers for service BTrDB
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "BTrDBClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "BTrDBClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "BTrDBClient" to call the correct interceptors.
@@ -490,6 +503,35 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_BTrDB_SetStreamAnnotations_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_BTrDB_SetStreamTags_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_BTrDB_SetStreamTags_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_BTrDB_SetStreamTags_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -874,41 +916,43 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_BTrDB_RawValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "rawvalues"}, ""))
+	pattern_BTrDB_RawValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "rawvalues"}, ""))
 
-	pattern_BTrDB_AlignedWindows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "alignedwindows"}, ""))
+	pattern_BTrDB_AlignedWindows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "alignedwindows"}, ""))
 
-	pattern_BTrDB_Windows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "windows"}, ""))
+	pattern_BTrDB_Windows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "windows"}, ""))
 
-	pattern_BTrDB_StreamInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "streaminfo"}, ""))
+	pattern_BTrDB_StreamInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "streaminfo"}, ""))
 
-	pattern_BTrDB_SetStreamAnnotations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "setstreamannotations"}, ""))
+	pattern_BTrDB_SetStreamAnnotations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "setstreamannotations"}, ""))
 
-	pattern_BTrDB_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "create"}, ""))
+	pattern_BTrDB_SetStreamTags_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "setstreamtags"}, ""))
 
-	pattern_BTrDB_ListCollections_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "listcollections"}, ""))
+	pattern_BTrDB_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "create"}, ""))
 
-	pattern_BTrDB_LookupStreams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "lookupstreams"}, ""))
+	pattern_BTrDB_ListCollections_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "listcollections"}, ""))
 
-	pattern_BTrDB_Nearest_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "nearest"}, ""))
+	pattern_BTrDB_LookupStreams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "lookupstreams"}, ""))
 
-	pattern_BTrDB_Changes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "changes"}, ""))
+	pattern_BTrDB_Nearest_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "nearest"}, ""))
 
-	pattern_BTrDB_Insert_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "insert"}, ""))
+	pattern_BTrDB_Changes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "changes"}, ""))
 
-	pattern_BTrDB_Delete_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "delete"}, ""))
+	pattern_BTrDB_Insert_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "insert"}, ""))
 
-	pattern_BTrDB_Info_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "info"}, ""))
+	pattern_BTrDB_Delete_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "delete"}, ""))
 
-	pattern_BTrDB_FaultInject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "faultinject"}, ""))
+	pattern_BTrDB_Info_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "info"}, ""))
 
-	pattern_BTrDB_Flush_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "flush"}, ""))
+	pattern_BTrDB_FaultInject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "faultinject"}, ""))
 
-	pattern_BTrDB_Obliterate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "obliterate"}, ""))
+	pattern_BTrDB_Flush_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "flush"}, ""))
 
-	pattern_BTrDB_GetMetadataUsage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "getmetadatausage"}, ""))
+	pattern_BTrDB_Obliterate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "obliterate"}, ""))
 
-	pattern_BTrDB_GenerateCSV_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v4", "generatecsv"}, ""))
+	pattern_BTrDB_GetMetadataUsage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "getmetadatausage"}, ""))
+
+	pattern_BTrDB_GenerateCSV_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "generatecsv"}, ""))
 )
 
 var (
@@ -921,6 +965,8 @@ var (
 	forward_BTrDB_StreamInfo_0 = runtime.ForwardResponseMessage
 
 	forward_BTrDB_SetStreamAnnotations_0 = runtime.ForwardResponseMessage
+
+	forward_BTrDB_SetStreamTags_0 = runtime.ForwardResponseMessage
 
 	forward_BTrDB_Create_0 = runtime.ForwardResponseMessage
 

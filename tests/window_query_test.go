@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	//"github.com/davecgh/go-spew/spew"
-	"gopkg.in/BTrDB/btrdb.v4"
+	"github.com/BTrDB/btrdb"
 )
 
 type Queryable interface {

@@ -2,9 +2,10 @@ package tests
 
 import (
 	"context"
-	"gopkg.in/BTrDB/btrdb.v4"
 	"testing"
 	"time"
+
+	"github.com/BTrDB/btrdb"
 )
 
 func TestInsertDuplciateTimestampsErrors(t *testing.T) {

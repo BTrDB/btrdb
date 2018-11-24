@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
 )
 
 //OptKV is a utility function for use in SetAnnotations or LookupStreams that

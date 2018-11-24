@@ -1,5 +1,5 @@
 syntax = "proto3";
-//BTrDB v4 API
+//BTrDB v5 API
 
 package grpcinterface;
 
@@ -8,111 +8,117 @@ import "google/api/annotations.proto";
 service BTrDB {
   rpc RawValues(RawValuesParams) returns (stream RawValuesResponse) {
   option (google.api.http) = {
-     post: "/v4/rawvalues"
+     post: "/v5/rawvalues"
        body: "*"
      };
   }
   rpc AlignedWindows(AlignedWindowsParams) returns (stream AlignedWindowsResponse) {
   option (google.api.http) = {
-     post: "/v4/alignedwindows"
+     post: "/v5/alignedwindows"
        body: "*"
      };
   }
   rpc Windows(WindowsParams) returns (stream WindowsResponse) {
   option (google.api.http) = {
-     post: "/v4/windows"
+     post: "/v5/windows"
        body: "*"
      };
   }
   rpc StreamInfo(StreamInfoParams) returns (StreamInfoResponse) {
   option (google.api.http) = {
-     post: "/v4/streaminfo"
+     post: "/v5/streaminfo"
        body: "*"
      };
   }
   rpc SetStreamAnnotations(SetStreamAnnotationsParams) returns (SetStreamAnnotationsResponse) {
   option (google.api.http) = {
-     post: "/v4/setstreamannotations"
+     post: "/v5/setstreamannotations"
+       body: "*"
+     };
+  }
+  rpc SetStreamTags(SetStreamTagsParams) returns (SetStreamTagsResponse) {
+  option (google.api.http) = {
+     post: "/v5/setstreamtags"
        body: "*"
      };
   }
   rpc Create(CreateParams) returns (CreateResponse) {
   option (google.api.http) = {
-     post: "/v4/create"
+     post: "/v5/create"
        body: "*"
      };
   }
   rpc ListCollections(ListCollectionsParams) returns (ListCollectionsResponse) {
   option (google.api.http) = {
-     post: "/v4/listcollections"
+     post: "/v5/listcollections"
        body: "*"
      };
   }
   rpc LookupStreams(LookupStreamsParams) returns (stream LookupStreamsResponse) {
   option (google.api.http) = {
-     post: "/v4/lookupstreams"
+     post: "/v5/lookupstreams"
        body: "*"
      };
   }
   rpc Nearest(NearestParams) returns (NearestResponse) {
   option (google.api.http) = {
-     post: "/v4/nearest"
+     post: "/v5/nearest"
        body: "*"
      };
   }
   rpc Changes(ChangesParams) returns (stream ChangesResponse) {
   option (google.api.http) = {
-     post: "/v4/changes"
+     post: "/v5/changes"
        body: "*"
      };
   }
   rpc Insert(InsertParams) returns (InsertResponse) {
   option (google.api.http) = {
-     post: "/v4/insert"
+     post: "/v5/insert"
        body: "*"
      };
   }
   rpc Delete(DeleteParams) returns (DeleteResponse) {
   option (google.api.http) = {
-     post: "/v4/delete"
+     post: "/v5/delete"
        body: "*"
      };
   }
   rpc Info(InfoParams) returns (InfoResponse) {
   option (google.api.http) = {
-     post: "/v4/info"
+     post: "/v5/info"
        body: "*"
      };
   }
   rpc FaultInject(FaultInjectParams) returns (FaultInjectResponse) {
   option (google.api.http) = {
-     post: "/v4/faultinject"
+     post: "/v5/faultinject"
        body: "*"
      };
   }
   rpc Flush(FlushParams) returns (FlushResponse) {
   option (google.api.http) = {
-     post: "/v4/flush"
+     post: "/v5/flush"
        body: "*"
      };
   }
   rpc Obliterate(ObliterateParams) returns (ObliterateResponse) {
   option (google.api.http) = {
-     post: "/v4/obliterate"
+     post: "/v5/obliterate"
        body: "*"
      };
   }
 
   rpc GetMetadataUsage(MetadataUsageParams) returns (MetadataUsageResponse) {
   option (google.api.http) = {
-    post: "/v4/getmetadatausage"
+    post: "/v5/getmetadatausage"
       body: "*"
     };
   }
 
   rpc GenerateCSV(GenerateCSVParams) returns (stream GenerateCSVResponse) {
   option (google.api.http) = {
-    post: "/v4/generatecsv"
+    post: "/v5/generatecsv"
       body: "*"
     };
   }
@@ -167,6 +173,38 @@ message StreamInfoResponse {
   uint64 versionMinor = 3;
   StreamDescriptor descriptor = 4;
 }
+message StreamDescriptor {
+  bytes uuid = 1;
+  string collection = 2;
+  repeated KeyValue tags = 3;
+  repeated KeyValue annotations = 4;
+  uint64 propertyVersion = 5;
+}
+message SetStreamAnnotationsParams {
+  bytes uuid = 1;
+  uint64 expectedPropertyVersion = 2;
+  repeated KeyOptValue annotations = 3;
+}
+message SetStreamAnnotationsResponse {
+  Status stat = 1;
+}
+message SetStreamTagsParams {
+  bytes uuid = 1;
+  uint64 expectedPropertyVersion = 2;
+  repeated KeyValue tags = 3;
+}
+message SetStreamTagsResponse {
+  Status stat = 1;
+}
+message CreateParams {
+  bytes uuid = 1;
+  string collection = 2;
+  repeated KeyValue tags = 3;
+  repeated KeyValue annotations = 4;
+}
+message CreateResponse {
+  Status stat = 1;
+}
 message MetadataUsageParams {
   string prefix = 1;
 }
@@ -178,30 +216,6 @@ message MetadataUsageResponse {
 message KeyCount {
   string key = 1;
   uint64 count = 2;
-}
-message StreamDescriptor {
-  bytes uuid = 1;
-  string collection = 2;
-  repeated KeyValue tags = 3;
-  repeated KeyValue annotations = 4;
-  uint64 annotationVersion = 5;
-}
-message SetStreamAnnotationsParams {
-  bytes uuid = 1;
-  uint64 expectedAnnotationVersion = 2;
-  repeated KeyOptValue annotations = 3;
-}
-message SetStreamAnnotationsResponse {
-  Status stat = 1;
-}
-message CreateParams {
-  bytes uuid = 1;
-  string collection = 2;
-  repeated KeyValue tags = 3;
-  repeated KeyValue annotations = 4;
-}
-message CreateResponse {
-  Status stat = 1;
 }
 message ListCollectionsParams {
   string prefix = 1;
@@ -215,7 +229,7 @@ message ListCollectionsResponse {
 message LookupStreamsParams {
   string collection = 1;
   bool isCollectionPrefix = 2;
-  repeated KeyOptValue tags = 3;
+  repeated KeyValue tags = 3;
   repeated KeyOptValue annotations = 4;
 }
 message LookupStreamsResponse {
@@ -312,6 +326,7 @@ message StatPoint {
   double mean = 3;
   double max = 4;
   fixed64 count = 5;
+  double stddev = 6;
 }
 message ChangedRange {
   sfixed64 start = 1;

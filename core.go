@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
 )
 
 //ErrorDisconnected is returned when operations are attempted after Disconnect()

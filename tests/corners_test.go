@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	"github.com/BTrDB/btrdb"
 	"github.com/BTrDB/btrdb-server/bte"
-	"gopkg.in/BTrDB/btrdb.v4"
 )
 
 /* Helper functions. */

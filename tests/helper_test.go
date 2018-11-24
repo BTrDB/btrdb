@@ -9,7 +9,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"gopkg.in/BTrDB/btrdb.v4"
+	"github.com/BTrDB/btrdb"
 )
 
 func helperConnect(t *testing.T, ctx context.Context) *btrdb.BTrDB {

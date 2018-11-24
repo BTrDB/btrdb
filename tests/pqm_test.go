@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/BTrDB/btrdb"
 	"github.com/pborman/uuid"
-	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 func TestNoFlushInsert(t *testing.T) {
