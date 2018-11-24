@@ -78,9 +78,9 @@ type Stream struct {
 	hasTags bool
 	tags    map[string]string
 
-	hasAnnotation     bool
-	annotations       map[string]string
-	annotationVersion AnnotationVersion
+	hasAnnotation   bool
+	annotations     map[string]string
+	propertyVersion PropertyVersion
 
 	hasCollection bool
 	collection    string
@@ -97,7 +97,7 @@ func (b *BTrDB) StreamFromUUID(uu uuid.UUID) *Stream {
 
 func (s *Stream) refreshMeta(ctx context.Context) error {
 	var ep *Endpoint
-	var aver AnnotationVersion
+	var pver PropertyVersion
 	var err error
 	var coll string
 	var tags map[string]string
@@ -107,7 +107,7 @@ func (s *Stream) refreshMeta(ctx context.Context) error {
 		if err != nil {
 			continue
 		}
-		coll, aver, tags, anns, _, err = ep.StreamInfo(ctx, s.uuid, false, true)
+		coll, pver, tags, anns, _, err = ep.StreamInfo(ctx, s.uuid, false, true)
 		if err != nil {
 			continue
 		}
@@ -119,7 +119,7 @@ func (s *Stream) refreshMeta(ctx context.Context) error {
 		s.hasTags = true
 		s.knownToExist = true
 		s.annotations = anns
-		s.annotationVersion = aver
+		s.propertyVersion = pver
 		s.hasAnnotation = true
 		return nil
 	}
@@ -168,24 +168,24 @@ func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
 //It will always require a round trip to the server. If you are ok with stale
 //data and want a higher performance version, use Stream.CachedAnnotations().
 //Do not modify the resulting map.
-func (s *Stream) Annotations(ctx context.Context) (map[string]string, AnnotationVersion, error) {
+func (s *Stream) Annotations(ctx context.Context) (map[string]string, PropertyVersion, error) {
 	err := s.refreshMeta(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
-	return s.annotations, s.annotationVersion, nil
+	return s.annotations, s.propertyVersion, nil
 }
 
 //CachedAnnotations returns the annotations of the stream, reusing previous
 //results if available, otherwise fetching from the server
-func (s *Stream) CachedAnnotations(ctx context.Context) (map[string]string, AnnotationVersion, error) {
+func (s *Stream) CachedAnnotations(ctx context.Context) (map[string]string, PropertyVersion, error) {
 	if !s.hasAnnotation {
 		err := s.refreshMeta(ctx)
 		if err != nil {
 			return nil, 0, err
 		}
 	}
-	return s.annotations, s.annotationVersion, nil
+	return s.annotations, s.propertyVersion, nil
 }
 
 //Collection returns the collection of the stream. It may require a round
@@ -305,7 +305,7 @@ func (s *Stream) Obliterate(ctx context.Context) error {
 
 //CompareAndSetAnnotation will make the changes in the given map (where a nil pointer means delete) as long as the
 //annotation version matches
-func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected AnnotationVersion, changes map[string]*string) error {
+func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyVersion, changes map[string]*string) error {
 	var ep *Endpoint
 	var err error
 	for s.b.TestEpError(ep, err) {
@@ -554,15 +554,15 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 		return nil, err
 	}
 	rv := &Stream{
-		uuid:              uu,
-		collection:        collection,
-		hasCollection:     true,
-		tags:              make(map[string]string),
-		hasTags:           true,
-		annotations:       make(map[string]string),
-		hasAnnotation:     true,
-		annotationVersion: 0,
-		b:                 b,
+		uuid:            uu,
+		collection:      collection,
+		hasCollection:   true,
+		tags:            make(map[string]string),
+		hasTags:         true,
+		annotations:     make(map[string]string),
+		hasAnnotation:   true,
+		propertyVersion: 0,
+		b:               b,
 	}
 	//Copy the maps in case user messes with parameters
 	for k, v := range tags {
@@ -633,7 +633,7 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 	return rv, err
 }
 
-func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
+func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string) (chan *Stream, chan error) {
 	var ep *Endpoint
 	var err error
 	for b.TestEpError(ep, err) {
@@ -655,7 +655,7 @@ func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, i
 	return rv, errc
 }
 
-func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) ([]*Stream, error) {
+func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string) ([]*Stream, error) {
 	rv := []*Stream{}
 	cv, ce := b.StreamingLookupStreams(ctx, collection, isCollectionPrefix, tags, annotations)
 	for s := range cv {

@@ -31,10 +31,10 @@ func TestUsage(t *testing.T) {
 	}
 	rvtags, rvanns, err := db.GetMetadataUsage(context.Background(), "usagetest/")
 	require.NoError(t, err)
-	require.EqualValues(t, 3, len(rvtags))
+	require.EqualValues(t, 2, len(rvtags))
 	require.EqualValues(t, 300, len(rvanns))
 	rvtags, rvanns, err = db.GetMetadataUsage(context.Background(), "usagetest2/")
 	require.NoError(t, err)
-	require.EqualValues(t, 3, len(rvtags))
+	require.EqualValues(t, 2, len(rvtags))
 	require.EqualValues(t, 0, len(rvanns))
 }

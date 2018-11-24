@@ -18,10 +18,10 @@ import (
 	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
 )
 
-//AnnotationVersion is the version of a stream annotation. It begins at 1
+//PropertyVersion is the version of a stream annotations and tags. It begins at 1
 //for a newly created stream and increases by 1 for each SetStreamAnnotation
-//call. An AnnotationVersion of 0 means "any version"
-type AnnotationVersion uint64
+//or SetStreamTags call. An PropertyVersion of 0 means "any version"
+type PropertyVersion uint64
 
 //Endpoint is a low level connection to a single server. Rather use
 //BTrDB which manages creating and destroying Endpoint objects as required
@@ -223,7 +223,7 @@ func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 //StreamAnnotation is a low level function, rather use Stream.Annotation()
 func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor bool, omitVersion bool) (
 	collection string,
-	aver AnnotationVersion,
+	pver PropertyVersion,
 	tags map[string]string,
 	anns map[string]string,
 	version uint64, err error) {
@@ -246,14 +246,14 @@ func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor 
 		for _, kv := range rv.Descriptor_.Annotations {
 			anns[kv.Key] = string(kv.Value)
 		}
-		aver = AnnotationVersion(rv.Descriptor_.AnnotationVersion)
+		pver = PropertyVersion(rv.Descriptor_.PropertyVersion)
 		collection = rv.Descriptor_.Collection
 	}
-	return collection, aver, tags, anns, rv.VersionMajor, nil
+	return collection, pver, tags, anns, rv.VersionMajor, nil
 }
 
 //SetStreamAnnotation is a low level function, rather use Stream.SetAnnotation() or Stream.CompareAndSetAnnotation()
-func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expected AnnotationVersion, changes map[string]*string) error {
+func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expected PropertyVersion, changes map[string]*string) error {
 	ch := []*pb.KeyOptValue{}
 	for k, v := range changes {
 		kop := &pb.KeyOptValue{
@@ -264,7 +264,7 @@ func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expec
 		}
 		ch = append(ch, kop)
 	}
-	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedAnnotationVersion: uint64(expected), Annotations: ch})
+	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Annotations: ch})
 	if err != nil {
 		return err
 	}
@@ -320,15 +320,15 @@ func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from stri
 
 func streamFromLookupResult(lr *pb.StreamDescriptor, b *BTrDB) *Stream {
 	rv := &Stream{
-		uuid:              lr.Uuid,
-		hasTags:           true,
-		tags:              make(map[string]string),
-		hasAnnotation:     true,
-		annotations:       make(map[string]string),
-		annotationVersion: AnnotationVersion(lr.AnnotationVersion),
-		hasCollection:     true,
-		collection:        lr.Collection,
-		b:                 b,
+		uuid:            lr.Uuid,
+		hasTags:         true,
+		tags:            make(map[string]string),
+		hasAnnotation:   true,
+		annotations:     make(map[string]string),
+		propertyVersion: PropertyVersion(lr.PropertyVersion),
+		hasCollection:   true,
+		collection:      lr.Collection,
+		b:               b,
 	}
 	for _, kv := range lr.Tags {
 		rv.tags[kv.Key] = string(kv.Value)
@@ -340,14 +340,12 @@ func streamFromLookupResult(lr *pb.StreamDescriptor, b *BTrDB) *Stream {
 }
 
 //LookupStreams is a low level function, rather use BTrDB.LookupStreams()
-func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string, patchDB *BTrDB) (chan *Stream, chan error) {
-	ltags := []*pb.KeyOptValue{}
+func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string, patchDB *BTrDB) (chan *Stream, chan error) {
+	ltags := []*pb.KeyValue{}
 	for k, v := range tags {
-		kop := &pb.KeyOptValue{
-			Key: k,
-		}
-		if v != nil {
-			kop.Val = &pb.OptValue{Value: []byte(*v)}
+		kop := &pb.KeyValue{
+			Key:   k,
+			Value: []byte(v),
 		}
 		ltags = append(ltags, kop)
 	}
