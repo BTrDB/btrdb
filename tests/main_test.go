@@ -204,6 +204,58 @@ func TestChangedRangeDiffVer(t *testing.T) {
 	}
 }
 
+func TestChangedRangeDiffVerNoFlush(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+
+	uu := uuid.NewRandom()
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), nil, nil)
+	if err != nil {
+		t.Fatalf("create error %v", err)
+	}
+	vals := make([]btrdb.RawPoint, 100)
+	for i := 0; i < 100; i++ {
+		vals[i].Time = int64(i)
+		vals[i].Value = float64(i)
+	}
+	err = stream.Insert(context.Background(), vals)
+	if err != nil {
+		t.Fatalf("got insert error %v", err)
+	}
+	//Let it flush
+	ferr := stream.Flush(context.Background())
+	if ferr != nil {
+		t.Fatalf("flush error %v", ferr)
+	}
+	gver, err := stream.Version(context.Background())
+	if err != nil {
+		t.Fatalf("got gver error: %v", err)
+	}
+	vals = make([]btrdb.RawPoint, 100)
+	for i := 300; i < 400; i++ {
+		vals[i-300].Time = int64(i)
+		vals[i-300].Value = float64(i)
+	}
+	err = stream.Insert(context.Background(), vals)
+	if err != nil {
+		t.Fatalf("got insert2 error %v", err)
+	}
+	count := 0
+	cr, _, cerr := stream.Changes(context.Background(), gver, 0, 0)
+
+	for _ = range cr {
+		count++
+	}
+	if err := <-cerr; err != nil {
+		t.Fatalf("got changed range error: %v", err)
+	}
+	if count == 0 {
+		t.Fatalf("Got empty for different version")
+	}
+}
+
 func TestAnnotationEmpty(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {

@@ -683,7 +683,7 @@ func TestStatisticalSmallRange1(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
-	spts, := helperStatisticalQuery(t, ctx, stream, 11136, 11199, 6, 0)
+	spts, _ := helperStatisticalQuery(t, ctx, stream, 11136, 11199, 6, 0)
 	if len(spts) != 0 {
 		for idx, pt := range spts {
 			fmt.Printf("SP %d  t=%d et=%d df=%f\n", idx, pt.Time, pt.Time+64, float64(pt.Time-11136)/64)
@@ -804,7 +804,7 @@ func TestStatisticalInvalidVersion(t *testing.T) {
 	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	ver := helperVersion(t, ctx, stream)
-	_, _, errc := stream.AlignedWindows(ctx, CANONICAL_START+50, CANONICAL_START+100, 61, ver+1)
+	_, _, errc := stream.AlignedWindows(ctx, CANONICAL_START+50, CANONICAL_START+1<<48, 48, ver+1)
 	err := <-errc
 	if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchStream {
 		t.Fatalf("Expected \"no such stream\"; got %v", err)

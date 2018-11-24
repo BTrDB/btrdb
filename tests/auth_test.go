@@ -6,10 +6,28 @@ import (
 	"testing"
 
 	"github.com/pborman/uuid"
+	"github.com/stretchr/testify/require"
 
 	"github.com/BTrDB/btrdb"
 )
 
+func Test2Auth(t *testing.T) {
+	t.Skip()
+	ctx := context.Background()
+	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+	db.Create(context.Background(), uuid.NewRandom(), "test2/a/b", nil, nil)
+	db.Create(context.Background(), uuid.NewRandom(), "test2/b/c", nil, nil)
+}
+func Test2AuthTry(t *testing.T) {
+	ctx := context.Background()
+	db, err := btrdb.ConnectAuth(ctx, "26A027F19AA246E196CF6CE0", btrdb.EndpointsFromEnv()...)
+	require.NoError(t, err)
+	cols, err := db.ListAllCollections(ctx)
+	_ = cols
+}
 func testAuthAPICalls(ctx context.Context, t *testing.T, db *btrdb.BTrDB) {
 	uu := uuid.NewRandom()
 	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), nil, nil)

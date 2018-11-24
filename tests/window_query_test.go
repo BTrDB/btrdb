@@ -72,12 +72,6 @@ func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
 	allData = append(allData, firstData...)
 	allData = append(allData, secondData...)
 	calculated := q.MakeStatPoints(allData, start, finalEnd, int64(width))
-	/*
-		fmt.Printf("calculated:\n")
-		spew.Dump(calculated)
-		fmt.Printf("results:\n")
-		spew.Dump(spts)
-	*/
 	err := helperCheckStatisticalEqual(calculated, spts)
 	if err != nil {
 		t.Fatalf("Queried data was invalid: %v", err)
@@ -109,14 +103,6 @@ func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 		t.Fatal("Flushed query was empty")
 	}
 	calculated := q.MakeStatPoints(data, start, end, width)
-	/*
-		fmt.Printf("calculated:\n")
-		spew.Dump(calculated)
-		fmt.Printf("unflushed:\n")
-		spew.Dump(unflushed)
-		fmt.Printf("flushed:\n")
-		spew.Dump(flushed)
-	*/
 	err = helperCheckStatisticalEqual(unflushed, calculated)
 	if err != nil {
 		t.Fatalf("Unflushed and calculated queries were not equal: %v", err)
