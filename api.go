@@ -164,6 +164,12 @@ func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
 	return s.tags, nil
 }
 
+//If a stream has changed tags, you will need to call this to load the new
+//tags
+func (s *Stream) Refresh(ctx context.Context) error {
+	return s.refreshMeta(ctx)
+}
+
 //Annotations returns the annotations of the stream (and the annotation version).
 //It will always require a round trip to the server. If you are ok with stale
 //data and want a higher performance version, use Stream.CachedAnnotations().
@@ -314,6 +320,23 @@ func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyV
 			continue
 		}
 		err = ep.SetStreamAnnotations(ctx, s.uuid, expected, changes)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//CompareAndSetAnnotation will update a stream's collection name and tags if the property version matches
+func (s *Stream) CompareAndSetTags(ctx context.Context, expected PropertyVersion, collection string, changes map[string]string) error {
+	var ep *Endpoint
+	var err error
+	for s.b.TestEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.SetStreamTags(ctx, s.uuid, expected, collection, changes)
 	}
 	if err != nil {
 		return err

@@ -220,7 +220,7 @@ func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
 	return rv.Collections, nil
 }
 
-//StreamAnnotation is a low level function, rather use Stream.Annotation()
+//StreamInfo is a low level function, rather use Stream.Annotation()
 func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor bool, omitVersion bool) (
 	collection string,
 	pver PropertyVersion,
@@ -265,6 +265,26 @@ func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expec
 		ch = append(ch, kop)
 	}
 	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Annotations: ch})
+	if err != nil {
+		return err
+	}
+	if rv.GetStat() != nil {
+		return &CodedError{rv.GetStat()}
+	}
+	return nil
+}
+
+//SetStreamTags is a low level function, rather use Stream.SetTags()
+func (b *Endpoint) SetStreamTags(ctx context.Context, uu uuid.UUID, expected PropertyVersion, collection string, changes map[string]string) error {
+	ch := []*pb.KeyValue{}
+	for k, v := range changes {
+		kop := &pb.KeyValue{
+			Key:   k,
+			Value: []byte(v),
+		}
+		ch = append(ch, kop)
+	}
+	rv, err := b.g.SetStreamTags(ctx, &pb.SetStreamTagsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Tags: ch, Collection: collection})
 	if err != nil {
 		return err
 	}

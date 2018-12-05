@@ -192,6 +192,7 @@ message SetStreamTagsParams {
   bytes uuid = 1;
   uint64 expectedPropertyVersion = 2;
   repeated KeyValue tags = 3;
+  string collection = 4;
 }
 message SetStreamTagsResponse {
   Status stat = 1;
