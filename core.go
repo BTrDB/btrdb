@@ -11,9 +11,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	logging "github.com/op/go-logging"
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
 )
+
+var lg *logging.Logger
+
+func init() {
+	lg = logging.MustGetLogger("log")
+}
 
 //ErrorDisconnected is returned when operations are attempted after Disconnect()
 //is called.
@@ -90,12 +97,13 @@ func ConnectAuth(ctx context.Context, apikey string, endpoints ...string) (*BTrD
 			return nil, ctx.Err()
 		}
 		if err != nil {
-			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
+			lg.Warningf("attempt to connect to %s yielded %v", epa, err)
 			continue
 		}
 		mash, inf, err := ep.Info(ctx)
 		if err != nil {
-			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
+			lg.Warningf("attempt to obtain MASH from %s yielded %v", epa, err)
+			ep.Disconnect()
 			continue
 		}
 		if inf.GetProxy() != nil {
@@ -141,10 +149,10 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, er
 		return b.EndpointFor(ctx, nil)
 	}
 	m := b.activeMash.Load().(*MASH)
-	b.epmu.RLock()
+	b.epmu.Lock()
 	ep, ok := b.epcache[hash]
-	b.epmu.RUnlock()
 	if ok {
+		b.epmu.Unlock()
 		return ep, nil
 	}
 	var addrs []string
@@ -158,7 +166,6 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, er
 	if err != nil {
 		return nil, err
 	}
-	b.epmu.Lock()
 	b.epcache[hash] = nep
 	b.epmu.Unlock()
 	return nep, nil
@@ -195,21 +202,27 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 		b.ResyncMash()
 		return nil, ErrorClusterDegraded
 	}
-	b.epmu.RLock()
+	b.epmu.Lock()
 	ep, ok := b.epcache[hash]
-	b.epmu.RUnlock()
 	if ok {
+		b.epmu.Unlock()
 		return ep, nil
 	}
 	//We need to connect to endpoint
-	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...)
+	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...) //XX
 	if err != nil {
 		return nil, err
 	}
-	b.epmu.Lock()
 	b.epcache[hash] = nep
 	b.epmu.Unlock()
 	return nep, nil
+}
+
+func (b *BTrDB) dropEpcache() {
+	for _, e := range b.epcache {
+		e.Disconnect()
+	}
+	b.epcache = make(map[uint32]*Endpoint)
 }
 
 func (b *BTrDB) GetAnyEndpoint(ctx context.Context) (*Endpoint, error) {
@@ -233,7 +246,7 @@ func (b *BTrDB) ResyncMash() {
 func (b *BTrDB) resyncProxies() {
 	b.epmu.Lock()
 	defer b.epmu.Unlock()
-	b.epcache = make(map[uint32]*Endpoint)
+	b.dropEpcache()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	ep, err := ConnectEndpointAuth(ctx, b.apikey, b.bootstraps...)
 	cancel()
@@ -252,11 +265,11 @@ func (b *BTrDB) resyncInternalMash() {
 		cancel()
 		if err == nil {
 			b.activeMash.Store(mash)
-			b.epcache = make(map[uint32]*Endpoint)
+			b.dropEpcache()
 			b.epmu.Unlock()
 			return
 		} else {
-			fmt.Printf("error was %v", err)
+			lg.Warningf("attempt to obtain info from endpoint cache error: %v", err)
 		}
 	}
 
@@ -266,18 +279,19 @@ func (b *BTrDB) resyncInternalMash() {
 		ep, err := ConnectEndpointAuth(ctx, b.apikey, epa)
 		cancel()
 		if err != nil {
-			fmt.Printf("attempt to connect to %s yielded %v\n", epa, err)
+			lg.Warningf("attempt to connect to %s yielded %v", epa, err)
 			continue
 		}
 		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 		mash, _, err := ep.Info(ctx)
 		cancel()
 		if err != nil {
-			fmt.Printf("attempt to obtain MASH from %s yielded %v\n", epa, err)
+			ep.Disconnect()
+			lg.Warningf("attempt to obtain MASH from %s yielded %v", epa, err)
 			continue
 		}
 		b.activeMash.Store(mash)
-		b.epcache = make(map[uint32]*Endpoint)
+		b.dropEpcache()
 		ep.Disconnect()
 		b.epmu.Unlock()
 		return
@@ -289,20 +303,20 @@ func (b *BTrDB) resyncInternalMash() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		ep, err := b.EndpointForHash(ctx, mbr.Hash)
 		if err != nil {
-			fmt.Printf("got errorb %v\n", err)
+			lg.Warningf("obtaining endpoint for hash error: %v", err)
 			continue
 		}
 		mash, _, err := ep.Info(ctx)
 		cancel()
 		if err == nil {
 			b.activeMash.Store(mash)
-			b.epcache = make(map[uint32]*Endpoint)
+			b.dropEpcache()
 			return
 		} else {
-			fmt.Printf("got errorc %v", err)
+			lg.Warningf("obtaining endpoint info error: %v", err)
 		}
 	}
-	fmt.Printf("failed to resync mash")
+	lg.Warningf("failed to resync MASH, is BTrDB unavailable?")
 }
 
 //This returns true if you should redo your operation (and get new ep)
@@ -321,32 +335,32 @@ func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
 	if strings.Contains(err.Error(), "getsockopt: connection refused") {
 		//why grpc no use proper code :(
 		time.Sleep(300 * time.Millisecond)
-		fmt.Printf("Got conn refused, resyncing silently\n")
+		lg.Warningf("Got conn refused, resyncing silently")
 		b.ResyncMash()
 		return true
 	}
 	if strings.Contains(err.Error(), "Endpoint is unreachable on all addresses") {
 		time.Sleep(300 * time.Millisecond)
-		fmt.Printf("Got conn refused, resyncing silently\n")
+		lg.Warningf("Got conn refused, resyncing silently")
 		b.ResyncMash()
 		return true
 	}
 	if grpc.Code(err) == codes.Unavailable {
 		time.Sleep(300 * time.Millisecond)
-		fmt.Printf("Got unavailable, resyncing mash silently\n")
+		lg.Warningf("Got unavailable, resyncing mash silently")
 		b.ResyncMash()
 		return true
 	}
 	ce := ToCodedError(err)
 	if ce.Code == 405 {
 		time.Sleep(300 * time.Millisecond)
-		fmt.Printf("Got 405 (wrong endpoint) silently retrying\n")
+		lg.Warningf("Got 405 (wrong endpoint) silently retrying")
 		b.ResyncMash()
 		return true
 	}
 	if ce.Code == 419 {
 		time.Sleep(300 * time.Millisecond)
-		fmt.Printf("Got 419 (cluster degraded) silently retrying\n")
+		lg.Warningf("Got 419 (cluster degraded) silently retrying")
 		b.ResyncMash()
 		return true
 	}
