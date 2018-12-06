@@ -302,7 +302,7 @@ func (b *BTrDB) resyncInternalMash() {
 			fmt.Printf("got errorc %v", err)
 		}
 	}
-	panic("No endpoints reachable!")
+	fmt.Printf("failed to resync mash")
 }
 
 //This returns true if you should redo your operation (and get new ep)
@@ -317,7 +317,7 @@ func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
 	if err == nil {
 		return false
 	}
-	fmt.Printf("EP ERROR %v\n", err)
+
 	if strings.Contains(err.Error(), "getsockopt: connection refused") {
 		//why grpc no use proper code :(
 		time.Sleep(300 * time.Millisecond)

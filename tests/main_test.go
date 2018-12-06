@@ -8,9 +8,12 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pborman/uuid"
+	"github.com/stretchr/testify/require"
 
 	"github.com/BTrDB/btrdb"
+	"github.com/BTrDB/btrdb-server/bte"
 )
 
 //This will fail if ANY of the env enpoints are down
@@ -35,6 +38,23 @@ func TestConnectLong(t *testing.T) {
 	_ = db
 }
 
+func TestSameUUID(t *testing.T) {
+	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		t.Fatalf("Unexpected connection error: %v", err)
+	}
+
+	sn1 := uuid.NewRandom().String()
+	sn2 := uuid.NewRandom().String()
+	uu := uuid.NewRandom()
+
+	_, err = db.Create(context.Background(), uu, sn1, btrdb.M{"name": "foo"}, nil)
+	require.NoError(t, err)
+	_, err = db.Create(context.Background(), uu, sn2, btrdb.M{"name": "foo"}, nil)
+	require.NotNil(t, err)
+	require.EqualValues(t, bte.SameStream, btrdb.ToCodedError(err).Code)
+	spew.Dump(err)
+}
 func TestChangedRangeSameVer(t *testing.T) {
 	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
