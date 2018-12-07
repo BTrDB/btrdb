@@ -17,6 +17,7 @@ import (
 
 	"github.com/BTrDB/btrdb"
 	"github.com/BTrDB/btrdb-server/bte"
+	"github.com/stretchr/testify/require"
 )
 
 /* Helper functions. */
@@ -74,7 +75,7 @@ func helperVersion(t *testing.T, ctx context.Context, s *btrdb.Stream) uint64 {
 func TestNearestEmpty(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	_, _, err := stream.Nearest(ctx, 0, 0, false)
 	if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchPoint {
 		t.Fatalf("Expected \"no such point\"; got %v", err)
@@ -85,7 +86,7 @@ func TestNearestEmpty(t *testing.T) {
 func TestNearestForwardNoPoint(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, err := stream.Nearest(ctx, CANONICAL_END+1, 0, false)
 	if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchPoint {
@@ -97,7 +98,7 @@ func TestNearestForwardNoPoint(t *testing.T) {
 func TestNearestForwardInclusive(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
 	fmt.Printf("%v %v\n", data[len(data)-1].Time, CANONICAL_FINAL)
@@ -121,7 +122,7 @@ func TestNearestForwardInclusive(t *testing.T) {
 func TestNearestBackwardNoPoint(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, err := stream.Nearest(ctx, CANONICAL_START-1, 0, true)
 	if err == nil || btrdb.ToCodedError(err).Code != bte.NoSuchPoint {
@@ -133,7 +134,7 @@ func TestNearestBackwardNoPoint(t *testing.T) {
 func TestNearestBackwardExclusive(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
 	_, _, err := stream.Nearest(ctx, CANONICAL_START, 0, true)
@@ -153,7 +154,7 @@ func TestNearestBackwardExclusive(t *testing.T) {
 func TestEarliestInclusive(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	rp := btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}
 	helperInsert(t, ctx, stream, []btrdb.RawPoint{rp})
 	rv, _, err := stream.Nearest(ctx, BTRDB_LOW, 0, false)
@@ -169,7 +170,7 @@ func TestEarliestInclusive(t *testing.T) {
 func TestInsertBeforeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	err := stream.Insert(ctx, []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW - 1, Value: rand.NormFloat64()}})
 	if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
 		t.Fatalf("Expected \"invalid time range\" error: got %v", err)
@@ -180,7 +181,7 @@ func TestInsertBeforeRange(t *testing.T) {
 func TestInsertNothing(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	err := stream.Insert(ctx, []btrdb.RawPoint{})
 	if err != nil {
 		t.Fatalf("Error inserting zero points: %v", err)
@@ -195,7 +196,7 @@ func TestInsertNothing(t *testing.T) {
 func TestLatestExclusive(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	err := stream.Insert(ctx, []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH, Value: rand.NormFloat64()}})
 	if err == nil || btrdb.ToCodedError(err).Code != bte.InvalidTimeRange {
 		t.Fatalf("Expected \"invalid time range\" error: got %v", err)
@@ -206,7 +207,7 @@ func TestLatestExclusive(t *testing.T) {
 func TestHighestValid(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	rp := btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}
 	helperInsert(t, ctx, stream, []btrdb.RawPoint{rp})
 	rv, _, err := stream.Nearest(ctx, BTRDB_HIGH, 0, true)
@@ -222,7 +223,7 @@ func TestHighestValid(t *testing.T) {
 func TestQueryFullTimeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
 	pts, _ := helperRawQuery(t, ctx, stream, CANONICAL_START, CANONICAL_END, 0)
@@ -240,7 +241,7 @@ func TestQueryFullTimeRange(t *testing.T) {
 func TestQueryInvalidTimeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	helperInsert(t, ctx, stream, data)
 	_, _, errc := stream.RawValues(ctx, BTRDB_LOW-1, BTRDB_HIGH+1, 0)
@@ -263,7 +264,7 @@ func TestNaN(t *testing.T) {
 
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsertTV(t, ctx, stream, times, values)
 	pts, _ := helperRawQuery(t, ctx, stream, times[0], times[len(times)-1]+1, 0)
 	if len(times) != len(pts) {
@@ -302,7 +303,7 @@ func TestInf(t *testing.T) {
 
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsertTV(t, ctx, stream, times, values)
 	pts, _ := helperRawQuery(t, ctx, stream, times[0], times[len(times)-1]+1, 0)
 	if len(times) != len(pts) {
@@ -347,7 +348,7 @@ func TestNaNError(t *testing.T) {
 
 		ctx := context.Background()
 		db := helperConnect(t, ctx)
-		stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+		stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 		err := stream.InsertTV(ctx, times, values)
 		if err == nil || btrdb.ToCodedError(err).Code != bte.BadValue {
 			t.Fatalf("Expected \"bad value\" error: got %v", err)
@@ -364,7 +365,7 @@ func TestInfError(t *testing.T) {
 
 		ctx := context.Background()
 		db := helperConnect(t, ctx)
-		stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+		stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 		err := stream.InsertTV(ctx, times, values)
 		if err == nil || btrdb.ToCodedError(err).Code != bte.BadValue {
 			t.Fatalf("Expected \"bad value\" error: got %v", err)
@@ -383,7 +384,7 @@ func TestSpecialValues(t *testing.T) {
 
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsertTV(t, ctx, stream, times, values)
 	pts, _ := helperRawQuery(t, ctx, stream, times[0], times[len(times)-1]+1, 0)
 	if len(times) != len(pts) {
@@ -422,7 +423,7 @@ func TestEdgeWindow1(t *testing.T) {
 	t.Skip() //this test is incorrect
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
 	helperInsert(t, ctx, stream, pts)
 	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_HIGH-2, BTRDB_HIGH, 2, 0, 0)
@@ -444,7 +445,7 @@ func TestEdgeWindow2(t *testing.T) {
 	t.Skip() //this test is incorrect
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_HIGH - 1, Value: rand.NormFloat64()}}
 	helperInsert(t, ctx, stream, pts)
 	ptc, _, errc := stream.Windows(ctx, BTRDB_HIGH-1, BTRDB_HIGH+3, 2, 0, 0)
@@ -461,7 +462,7 @@ func TestEdgeWindow2(t *testing.T) {
 func TestEdgeWindow3(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
 	helperInsert(t, ctx, stream, pts)
 	spts, _ := helperWindowQuery(t, ctx, stream, BTRDB_LOW, BTRDB_LOW+2, 2, 0, 0)
@@ -482,7 +483,7 @@ func TestEdgeWindow3(t *testing.T) {
 func TestEdgeWindow4(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	pts := []btrdb.RawPoint{btrdb.RawPoint{Time: BTRDB_LOW, Value: rand.NormFloat64()}}
 	helperInsert(t, ctx, stream, pts)
 	ptc, _, errc := stream.Windows(ctx, BTRDB_LOW-1, BTRDB_LOW+3, 2, 0, 0)
@@ -499,7 +500,7 @@ func TestEdgeWindow4(t *testing.T) {
 func TestWindowBoundaryRounding1(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, 11136, 11647, 64, 0, 0)
@@ -526,7 +527,7 @@ func TestWindowBoundaryRounding1(t *testing.T) {
 func TestWindowBoundaryRounding2(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, 11136, 11584, 64, 0, 0)
@@ -544,7 +545,7 @@ func TestWindowBoundaryRounding2(t *testing.T) {
 func TestWindowBoundaryRounding3(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(-20000, -10000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, -18864, -18353, 64, 0, 0)
@@ -562,7 +563,7 @@ func TestWindowBoundaryRounding3(t *testing.T) {
 func TestWindowBoundaryRounding4(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(-20000, -10000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, -18864, -18416, 64, 0, 0)
@@ -580,7 +581,7 @@ func TestWindowBoundaryRounding4(t *testing.T) {
 func TestStatisticalBoundaryRounding1(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperStatisticalQuery(t, ctx, stream, 11136, 11647, 6, 0)
@@ -600,7 +601,7 @@ func TestStatisticalBoundaryRounding1(t *testing.T) {
 func TestStatisticalBoundaryRounding2(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperStatisticalQuery(t, ctx, stream, 11199, 11584, 6, 0)
@@ -620,7 +621,7 @@ func TestStatisticalBoundaryRounding2(t *testing.T) {
 func TestRawBoundaryRounding(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	rpts, _ := helperRawQuery(t, ctx, stream, 10000, 19990, 0)
@@ -662,7 +663,7 @@ func TestRawBoundaryRounding(t *testing.T) {
 func TestWindowSmallRange2(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperWindowQuery(t, ctx, stream, 11137, 11201, 64, 0, 0)
@@ -680,7 +681,7 @@ func TestStatisticalSmallRange1(t *testing.T) {
 	t.Skip()
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperStatisticalQuery(t, ctx, stream, 11136, 11199, 6, 0)
@@ -695,7 +696,7 @@ func TestStatisticalSmallRange1(t *testing.T) {
 func TestStatisticalSmallRange2(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	spts, _ := helperStatisticalQuery(t, ctx, stream, 11199, 11200, 6, 0)
@@ -711,7 +712,7 @@ func TestStatisticalSmallRange2(t *testing.T) {
 func TestRawSmallRange1(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	rpts, _ := helperRawQuery(t, ctx, stream, 12001, 12010, 0)
@@ -724,7 +725,7 @@ func TestRawSmallRange1(t *testing.T) {
 func TestRawSmallRange2(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperRandomData(10000, 20000, 10)
 	helperInsert(t, ctx, stream, data)
 	rpts, _ := helperRawQuery(t, ctx, stream, 12000, 12010, 0)
@@ -740,7 +741,7 @@ func TestRawSmallRange2(t *testing.T) {
 func TestWindowNegativeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, errc := stream.Windows(ctx, CANONICAL_START+100, CANONICAL_START+50, 10, 0, 0)
 	err := <-errc
@@ -752,7 +753,7 @@ func TestWindowNegativeRange(t *testing.T) {
 func TestWindowInvalidDepth(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, errc := stream.Windows(ctx, CANONICAL_START+50, CANONICAL_START+100, 10, 64, 0)
 	err := <-errc
@@ -764,7 +765,7 @@ func TestWindowInvalidDepth(t *testing.T) {
 func TestWindowInvalidVersion(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	ver := helperVersion(t, ctx, stream)
 	_, _, errc := stream.Windows(ctx, CANONICAL_START+50, CANONICAL_START+100, 10, 61, ver+1)
@@ -777,7 +778,7 @@ func TestWindowInvalidVersion(t *testing.T) {
 func TestStatisticalNegativeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, errc := stream.AlignedWindows(ctx, CANONICAL_START+100, CANONICAL_START+50, 3, 0)
 	err := <-errc
@@ -789,7 +790,7 @@ func TestStatisticalNegativeRange(t *testing.T) {
 func TestStatisticalInvalidPointWidth(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, errc := stream.AlignedWindows(ctx, CANONICAL_START+50, CANONICAL_START+100, 64, 0)
 	err := <-errc
@@ -801,7 +802,7 @@ func TestStatisticalInvalidPointWidth(t *testing.T) {
 func TestStatisticalInvalidVersion(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	ver := helperVersion(t, ctx, stream)
 	_, _, errc := stream.AlignedWindows(ctx, CANONICAL_START+50, CANONICAL_START+1<<48, 48, ver+1)
@@ -811,10 +812,21 @@ func TestStatisticalInvalidVersion(t *testing.T) {
 	}
 }
 
+func TestWindowZeroWidth(t *testing.T) {
+	ctx := context.Background()
+	db := helperConnect(t, ctx)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
+	helperInsert(t, ctx, stream, helperCanonicalData())
+	_, _, errc := stream.Windows(ctx, CANONICAL_START+50, CANONICAL_START+1<<48, 0, 0, btrdb.LatestVersion)
+	err := <-errc
+	require.NotNil(t, err)
+	require.EqualValues(t, bte.InvalidPointWidth, btrdb.ToCodedError(err).Code)
+}
+
 func TestRawNegativeRange(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	_, _, errc := stream.RawValues(ctx, CANONICAL_START+100, CANONICAL_START+50, 0)
 	err := <-errc
@@ -826,7 +838,7 @@ func TestRawNegativeRange(t *testing.T) {
 func TestRawInvalidVersion(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	ver := helperVersion(t, ctx, stream)
 	_, _, errc := stream.RawValues(ctx, CANONICAL_START+50, CANONICAL_START+100, ver+1)
@@ -842,7 +854,7 @@ func TestClosedChannel(t *testing.T) {
 
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx, stream, helperCanonicalData())
 	resp, _, _ := stream.RawValues(ctx, CANONICAL_START, CANONICAL_END+1, 0)
 	close(resp)
@@ -930,7 +942,7 @@ func TestOOMInsert(t *testing.T) {
 		go func(conn *btrdb.BTrDB) {
 			lstreams := []*btrdb.Stream{}
 			for k := 0; k != NUM_STREAMS_PER_CONN; k++ {
-				s := helperCreateDefaultStream(t, ctx, conn, nil, nil)
+				s := helperCreateDefaultStream(t, ctx, conn, btrdb.M{"name": "n"}, nil)
 				lstreams = append(lstreams, s)
 			}
 			l.Lock()
@@ -1026,7 +1038,7 @@ func TestDeadlock(t *testing.T) {
 	ctx2, cancelfunc2 := context.WithTimeout(ctx, time.Minute)
 	defer cancelfunc2()
 	db2 := helperConnect(t, ctx2)
-	stream2 := helperCreateDefaultStream(t, ctx2, db2, nil, nil)
+	stream2 := helperCreateDefaultStream(t, ctx2, db2, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx2, stream2, helperCanonicalData())
 }
 
@@ -1037,7 +1049,7 @@ func TestCancelDeadlock(t *testing.T) {
 
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperOOMInsert(t, ctx, stream)
 
 	fmt.Println("Making queries...")
@@ -1063,7 +1075,7 @@ func TestCancelDeadlock(t *testing.T) {
 	ctx2, cancelfunc2 := context.WithTimeout(context.Background(), time.Minute)
 	defer cancelfunc2()
 	db2 := helperConnect(t, ctx2)
-	stream2 := helperCreateDefaultStream(t, ctx2, db2, nil, nil)
+	stream2 := helperCreateDefaultStream(t, ctx2, db2, btrdb.M{"name": "n"}, nil)
 	helperInsert(t, ctx2, stream2, helperCanonicalData())
 }
 
@@ -1074,7 +1086,7 @@ func TestContextCancel(t *testing.T) {
 
 	ctx, cancelfunc := context.WithCancel(context.Background())
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	helperOOMInsert(t, ctx, stream)
 
 	fmt.Println("Querying data...")
@@ -1102,7 +1114,7 @@ func TestContextCancel(t *testing.T) {
 func TestRawCorrect(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	fmt.Println("Inserting...")
 	helperInsert(t, ctx, stream, data)
@@ -1122,7 +1134,7 @@ func TestRawCorrect(t *testing.T) {
 func TestStatisticalCorrect(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	fmt.Println("Inserting...")
 	helperInsert(t, ctx, stream, data)
@@ -1171,7 +1183,7 @@ func TestStatisticalCorrect(t *testing.T) {
 func TestWindowCorrect(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, nil, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
 	data := helperCanonicalData()
 	fmt.Println("Inserting...")
 	helperInsert(t, ctx, stream, data)

@@ -18,8 +18,8 @@ func Test2Auth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
-	db.Create(context.Background(), uuid.NewRandom(), "test2/a/b", nil, nil)
-	db.Create(context.Background(), uuid.NewRandom(), "test2/b/c", nil, nil)
+	db.Create(context.Background(), uuid.NewRandom(), "test2/a/b", btrdb.M{"name": "n"}, nil)
+	db.Create(context.Background(), uuid.NewRandom(), "test2/b/c", btrdb.M{"name": "n"}, nil)
 }
 func Test2AuthTry(t *testing.T) {
 	ctx := context.Background()
@@ -30,7 +30,7 @@ func Test2AuthTry(t *testing.T) {
 }
 func testAuthAPICalls(ctx context.Context, t *testing.T, db *btrdb.BTrDB) {
 	uu := uuid.NewRandom()
-	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), nil, nil)
+	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), btrdb.M{"name": "n"}, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}

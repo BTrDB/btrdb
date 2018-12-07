@@ -123,6 +123,15 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 			continue
 		}
 		client := pb.NewBTrDBClient(conn)
+		inf, err := client.Info(ctx, &pb.InfoParams{})
+		if err != nil {
+			ep_errors += fmt.Sprintf("endpoint error: err=%v a=%v\n", err, a)
+			continue
+		}
+		if inf.MajorVersion != 5 {
+			lg.Errorf("BTrDB server is the wrong version (expecting v5.x, got v%d.%d)", inf.MajorVersion, inf.MinorVersion)
+			return nil, fmt.Errorf("Endpoint is the wrong version")
+		}
 		rv := &Endpoint{g: client, conn: conn}
 		return rv, nil
 	}

@@ -23,7 +23,7 @@ func TestUsage(t *testing.T) {
 	}
 	for k, _ := range anns {
 		uu := uuid.NewRandom()
-		stream, err := db.Create(context.Background(), uu, fmt.Sprintf("usagetest/%x", uu[:]), nil, btrdb.M{k: "tst"})
+		stream, err := db.Create(context.Background(), uu, fmt.Sprintf("usagetest/%x", uu[:]), btrdb.M{"name": "n"}, btrdb.M{k: "tst"})
 		if err != nil {
 			t.Fatalf("create error %v", err)
 		}
@@ -31,10 +31,10 @@ func TestUsage(t *testing.T) {
 	}
 	rvtags, rvanns, err := db.GetMetadataUsage(context.Background(), "usagetest/")
 	require.NoError(t, err)
-	require.EqualValues(t, 2, len(rvtags))
+	require.EqualValues(t, 3, len(rvtags))
 	require.EqualValues(t, 300, len(rvanns))
 	rvtags, rvanns, err = db.GetMetadataUsage(context.Background(), "usagetest2/")
 	require.NoError(t, err)
-	require.EqualValues(t, 2, len(rvtags))
+	require.EqualValues(t, 3, len(rvtags))
 	require.EqualValues(t, 0, len(rvanns))
 }

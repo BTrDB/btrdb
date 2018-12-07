@@ -38,7 +38,7 @@ func TestCrashError(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), nil, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"name": "n"}, nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
