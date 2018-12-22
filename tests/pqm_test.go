@@ -16,7 +16,7 @@ func TestNoFlushInsert(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"name": "n"}, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.OptKV("name", "n"), nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -48,7 +48,7 @@ func TestNoFlushInsertBiggerThanBuffer(t *testing.T) {
 	}
 
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.M{"name": "n"}, nil)
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test.%x", uu[:]), btrdb.OptKV("name", "n"), nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}

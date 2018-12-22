@@ -12,8 +12,8 @@ func TestInsertDuplciateTimestampsErrors(t *testing.T) {
 	ctx := context.Background()
 	db := helperConnect(t, ctx)
 
-	firstStream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
-	secondStream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
+	firstStream := helperCreateDefaultStream(t, ctx, db, btrdb.OptKV("name", "n"), nil)
+	secondStream := helperCreateDefaultStream(t, ctx, db, btrdb.OptKV("name", "n"), nil)
 	start := int64(1524520800000)
 	end := start + 100
 	normalData := helperRandomDataCount(start, end, 100)

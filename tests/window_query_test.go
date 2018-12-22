@@ -57,7 +57,7 @@ func (wq WindowsQuery) MakeStatPoints(points []btrdb.RawPoint, start int64, end 
 func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
 	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.OptKV("name", "n"), nil)
 	start := int64(1519088910000000000) // Random unix datetime
 	midEnd := start + 1000000
 	midStart := midEnd + 100000
@@ -81,7 +81,7 @@ func RunTestQueryWithHoles(t *testing.T, q Queryable, scount int) {
 func RunTestQueryFlushing(t *testing.T, q Queryable, scount int) {
 	ctx := q.GetContext()
 	db := helperConnect(t, ctx)
-	stream := helperCreateDefaultStream(t, ctx, db, btrdb.M{"name": "n"}, nil)
+	stream := helperCreateDefaultStream(t, ctx, db, btrdb.OptKV("name", "n"), nil)
 	start := int64(1519088910000000000) // Random unix datetime
 	end := start + 1000000
 	count := int64(scount)

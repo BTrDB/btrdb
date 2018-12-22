@@ -18,19 +18,20 @@ func Test2Auth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
-	db.Create(context.Background(), uuid.NewRandom(), "test2/a/b", btrdb.M{"name": "n"}, nil)
-	db.Create(context.Background(), uuid.NewRandom(), "test2/b/c", btrdb.M{"name": "n"}, nil)
+	db.Create(context.Background(), uuid.NewRandom(), "test2/a/b", btrdb.OptKV("name", "n"), nil)
+	db.Create(context.Background(), uuid.NewRandom(), "test2/b/c", btrdb.OptKV("name", "n"), nil)
 }
 func Test2AuthTry(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.ConnectAuth(ctx, "26A027F19AA246E196CF6CE0", btrdb.EndpointsFromEnv()...)
 	require.NoError(t, err)
-	cols, err := db.ListAllCollections(ctx)
+	cols, err := db.ListCollections(ctx, "")
+	require.NoError(t, err)
 	_ = cols
 }
 func testAuthAPICalls(ctx context.Context, t *testing.T, db *btrdb.BTrDB) {
 	uu := uuid.NewRandom()
-	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), btrdb.M{"name": "n"}, nil)
+	stream, err := db.Create(ctx, uu, fmt.Sprintf("authtest/%x", uu[:]), btrdb.OptKV("name", "n"), nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
