@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "BTrDB v4 API",
-    "version": "v4.11.1"
+    "title": "grpcinterface/btrdb.proto",
+    "version": "5.0.0"
   },
   "schemes": [
     "http",
@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/v4/alignedwindows": {
+    "/v5/alignedwindows": {
       "post": {
         "operationId": "AlignedWindows",
         "responses": {
@@ -41,7 +41,7 @@
         ]
       }
     },
-    "/v4/changes": {
+    "/v5/changes": {
       "post": {
         "operationId": "Changes",
         "responses": {
@@ -67,7 +67,7 @@
         ]
       }
     },
-    "/v4/create": {
+    "/v5/create": {
       "post": {
         "operationId": "Create",
         "responses": {
@@ -93,7 +93,7 @@
         ]
       }
     },
-    "/v4/delete": {
+    "/v5/delete": {
       "post": {
         "operationId": "Delete",
         "responses": {
@@ -119,7 +119,7 @@
         ]
       }
     },
-    "/v4/faultinject": {
+    "/v5/faultinject": {
       "post": {
         "operationId": "FaultInject",
         "responses": {
@@ -145,7 +145,7 @@
         ]
       }
     },
-    "/v4/flush": {
+    "/v5/flush": {
       "post": {
         "operationId": "Flush",
         "responses": {
@@ -171,14 +171,14 @@
         ]
       }
     },
-    "/v4/generatecsv": {
+    "/v5/generatecsv": {
       "post": {
-        "operationId": "GenerateCSV",
+        "operationId": "SQLQuery",
         "responses": {
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceGenerateCSVResponse"
+              "$ref": "#/definitions/grpcinterfaceSQLQueryResponse"
             }
           }
         },
@@ -188,7 +188,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceGenerateCSVParams"
+              "$ref": "#/definitions/grpcinterfaceSQLQueryParams"
             }
           }
         ],
@@ -197,7 +197,7 @@
         ]
       }
     },
-    "/v4/getmetadatausage": {
+    "/v5/getmetadatausage": {
       "post": {
         "operationId": "GetMetadataUsage",
         "responses": {
@@ -223,7 +223,7 @@
         ]
       }
     },
-    "/v4/info": {
+    "/v5/info": {
       "post": {
         "operationId": "Info",
         "responses": {
@@ -249,7 +249,7 @@
         ]
       }
     },
-    "/v4/insert": {
+    "/v5/insert": {
       "post": {
         "operationId": "Insert",
         "responses": {
@@ -275,12 +275,12 @@
         ]
       }
     },
-    "/v4/listcollections": {
+    "/v5/listcollections": {
       "post": {
         "operationId": "ListCollections",
         "responses": {
           "200": {
-            "description": "",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/grpcinterfaceListCollectionsResponse"
             }
@@ -301,7 +301,7 @@
         ]
       }
     },
-    "/v4/lookupstreams": {
+    "/v5/lookupstreams": {
       "post": {
         "operationId": "LookupStreams",
         "responses": {
@@ -327,7 +327,7 @@
         ]
       }
     },
-    "/v4/nearest": {
+    "/v5/nearest": {
       "post": {
         "operationId": "Nearest",
         "responses": {
@@ -353,7 +353,7 @@
         ]
       }
     },
-    "/v4/obliterate": {
+    "/v5/obliterate": {
       "post": {
         "operationId": "Obliterate",
         "responses": {
@@ -379,7 +379,7 @@
         ]
       }
     },
-    "/v4/rawvalues": {
+    "/v5/rawvalues": {
       "post": {
         "operationId": "RawValues",
         "responses": {
@@ -405,7 +405,7 @@
         ]
       }
     },
-    "/v4/setstreamannotations": {
+    "/v5/setstreamannotations": {
       "post": {
         "operationId": "SetStreamAnnotations",
         "responses": {
@@ -431,7 +431,33 @@
         ]
       }
     },
-    "/v4/streaminfo": {
+    "/v5/setstreamtags": {
+      "post": {
+        "operationId": "SetStreamTags",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceSetStreamTagsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceSetStreamTagsParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v5/streaminfo": {
       "post": {
         "operationId": "StreamInfo",
         "responses": {
@@ -457,7 +483,7 @@
         ]
       }
     },
-    "/v4/windows": {
+    "/v5/windows": {
       "post": {
         "operationId": "Windows",
         "responses": {
@@ -610,13 +636,13 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyValue"
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyValue"
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
         }
       }
@@ -857,8 +883,7 @@
           "type": "string"
         },
         "value": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
@@ -868,12 +893,8 @@
         "prefix": {
           "type": "string"
         },
-        "startWith": {
-          "type": "string"
-        },
-        "limit": {
-          "type": "string",
-          "format": "uint64"
+        "role": {
+          "$ref": "#/definitions/grpcinterfaceRole"
         }
       }
     },
@@ -904,7 +925,7 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/grpcinterfaceKeyValue"
           }
         },
         "annotations": {
@@ -912,6 +933,9 @@
           "items": {
             "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
+        },
+        "role": {
+          "$ref": "#/definitions/grpcinterfaceRole"
         }
       }
     },
@@ -1014,6 +1038,9 @@
       "properties": {
         "prefix": {
           "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/grpcinterfaceRole"
         }
       }
     },
@@ -1098,8 +1125,7 @@
       "type": "object",
       "properties": {
         "value": {
-          "type": "string",
-          "format": "byte"
+          "type": "string"
         }
       }
     },
@@ -1170,6 +1196,46 @@
         }
       }
     },
+    "grpcinterfaceRole": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "grpcinterfaceSQLQueryParams": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "$ref": "#/definitions/grpcinterfaceRole"
+        }
+      }
+    },
+    "grpcinterfaceSQLQueryResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "SQLQueryRow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      }
+    },
     "grpcinterfaceSetStreamAnnotationsParams": {
       "type": "object",
       "properties": {
@@ -1177,19 +1243,61 @@
           "type": "string",
           "format": "byte"
         },
-        "expectedAnnotationVersion": {
+        "expectedPropertyVersion": {
           "type": "string",
           "format": "uint64"
         },
-        "annotations": {
+        "changes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+          }
+        },
+        "removals": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }
     },
     "grpcinterfaceSetStreamAnnotationsResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        }
+      }
+    },
+    "grpcinterfaceSetStreamTagsParams": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "byte"
+        },
+        "expectedPropertyVersion": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+          }
+        },
+        "collection": {
+          "type": "string"
+        },
+        "remove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "grpcinterfaceSetStreamTagsResponse": {
       "type": "object",
       "properties": {
         "stat": {
@@ -1219,6 +1327,10 @@
         "count": {
           "type": "string",
           "format": "uint64"
+        },
+        "stddev": {
+          "type": "number",
+          "format": "double"
         }
       }
     },
@@ -1266,16 +1378,16 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyValue"
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyValue"
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
         },
-        "annotationVersion": {
+        "propertyVersion": {
           "type": "string",
           "format": "uint64"
         }
@@ -1295,6 +1407,9 @@
         "omitDescriptor": {
           "type": "boolean",
           "format": "boolean"
+        },
+        "role": {
+          "$ref": "#/definitions/grpcinterfaceRole"
         }
       }
     },
