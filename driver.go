@@ -6,12 +6,14 @@ package btrdb
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	"github.com/BTrDB/btrdb-server/bte"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -185,14 +187,22 @@ func (b *Endpoint) FaultInject(ctx context.Context, typ uint64, args []byte) ([]
 }
 
 //Create is a low level function, rather use BTrDB.Create()
-func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotations map[string]string) error {
-	taglist := []*pb.KeyValue{}
+func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]*string, annotations map[string]*string) error {
+	taglist := []*pb.KeyOptValue{}
 	for k, v := range tags {
-		taglist = append(taglist, &pb.KeyValue{Key: k, Value: []byte(v)})
+		if v == nil {
+			taglist = append(taglist, &pb.KeyOptValue{Key: k})
+		} else {
+			taglist = append(taglist, &pb.KeyOptValue{Key: k, Val: &pb.OptValue{Value: *v}})
+		}
 	}
-	annlist := []*pb.KeyValue{}
+	annlist := []*pb.KeyOptValue{}
 	for k, v := range annotations {
-		annlist = append(annlist, &pb.KeyValue{Key: k, Value: []byte(v)})
+		if v == nil {
+			annlist = append(annlist, &pb.KeyOptValue{Key: k})
+		} else {
+			annlist = append(annlist, &pb.KeyOptValue{Key: k, Val: &pb.OptValue{Value: *v}})
+		}
 	}
 	rv, err := b.g.Create(ctx, &pb.CreateParams{
 		Uuid:        uu,
@@ -211,30 +221,16 @@ func (b *Endpoint) Create(ctx context.Context, uu uuid.UUID, collection string, 
 
 //ListAllCollections is a low level function, and in particular will only work
 //with small numbers of collections. Rather use BTrDB.ListAllCollections()
-func (b *Endpoint) ListAllCollections(ctx context.Context) ([]string, error) {
-	rv, err := b.g.ListCollections(ctx, &pb.ListCollectionsParams{
-		Prefix:    "",
-		StartWith: "",
-		Limit:     1000000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if rv.GetStat() != nil {
-		return nil, &CodedError{rv.GetStat()}
-	}
-	if len(rv.Collections) >= 1000000 {
-		return nil, fmt.Errorf("You cannot use ListAllCollections if the number of collections exceeds 1 million. Please use ListCollections")
-	}
-	return rv.Collections, nil
+func (b *Endpoint) ListAllCollections(ctx context.Context) (chan string, chan error) {
+	return b.ListCollections(ctx, "")
 }
 
 //StreamInfo is a low level function, rather use Stream.Annotation()
 func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor bool, omitVersion bool) (
 	collection string,
 	pver PropertyVersion,
-	tags map[string]string,
-	anns map[string]string,
+	tags map[string]*string,
+	anns map[string]*string,
 	version uint64, err error) {
 	rv, err := b.g.StreamInfo(ctx, &pb.StreamInfoParams{
 		Uuid:           uu,
@@ -247,13 +243,23 @@ func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor 
 		return "", 0, nil, nil, 0, &CodedError{rv.GetStat()}
 	}
 	if !omitDescriptor {
-		tags = make(map[string]string)
+		tags = make(map[string]*string)
 		for _, kv := range rv.Descriptor_.Tags {
-			tags[kv.Key] = string(kv.Value)
+			if kv.Val == nil {
+				tags[kv.Key] = nil
+			} else {
+				vc := kv.Val.Value
+				tags[kv.Key] = &vc
+			}
 		}
-		anns = make(map[string]string)
+		anns = make(map[string]*string)
 		for _, kv := range rv.Descriptor_.Annotations {
-			anns[kv.Key] = string(kv.Value)
+			if kv.Val == nil {
+				anns[kv.Key] = nil
+			} else {
+				vc := kv.Val.Value
+				anns[kv.Key] = &vc
+			}
 		}
 		pver = PropertyVersion(rv.Descriptor_.PropertyVersion)
 		collection = rv.Descriptor_.Collection
@@ -262,18 +268,18 @@ func (b *Endpoint) StreamInfo(ctx context.Context, uu uuid.UUID, omitDescriptor 
 }
 
 //SetStreamAnnotation is a low level function, rather use Stream.SetAnnotation() or Stream.CompareAndSetAnnotation()
-func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expected PropertyVersion, changes map[string]*string) error {
+func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expected PropertyVersion, changes map[string]*string, remove []string) error {
 	ch := []*pb.KeyOptValue{}
 	for k, v := range changes {
 		kop := &pb.KeyOptValue{
 			Key: k,
 		}
 		if v != nil {
-			kop.Val = &pb.OptValue{Value: []byte(*v)}
+			kop.Val = &pb.OptValue{Value: *v}
 		}
 		ch = append(ch, kop)
 	}
-	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Annotations: ch})
+	rv, err := b.g.SetStreamAnnotations(ctx, &pb.SetStreamAnnotationsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Changes: ch, Removals: remove})
 	if err != nil {
 		return err
 	}
@@ -284,14 +290,14 @@ func (b *Endpoint) SetStreamAnnotations(ctx context.Context, uu uuid.UUID, expec
 }
 
 //SetStreamTags is a low level function, rather use Stream.SetTags()
-func (b *Endpoint) SetStreamTags(ctx context.Context, uu uuid.UUID, expected PropertyVersion, collection string, changes map[string]string) error {
-	ch := []*pb.KeyValue{}
+func (b *Endpoint) SetStreamTags(ctx context.Context, uu uuid.UUID, expected PropertyVersion, collection string, changes map[string]*string) error {
+	ch := []*pb.KeyOptValue{}
 	for k, v := range changes {
-		kop := &pb.KeyValue{
-			Key:   k,
-			Value: []byte(v),
+		if v == nil {
+			ch = append(ch, &pb.KeyOptValue{Key: k})
+		} else {
+			ch = append(ch, &pb.KeyOptValue{Key: k, Val: &pb.OptValue{Value: *v}})
 		}
-		ch = append(ch, kop)
 	}
 	rv, err := b.g.SetStreamTags(ctx, &pb.SetStreamTagsParams{Uuid: uu, ExpectedPropertyVersion: uint64(expected), Tags: ch, Collection: collection})
 	if err != nil {
@@ -326,44 +332,73 @@ func (b *Endpoint) GetMetadataUsage(ctx context.Context, prefix string) (tags ma
 }
 
 //ListCollections is a low level function, and in particular has complex constraints. Rather use BTrDB.ListCollections()
-func (b *Endpoint) ListCollections(ctx context.Context, prefix string, from string, limit uint64) ([]string, error) {
-	if limit > 10000 {
-		return nil, fmt.Errorf("Maxnumber must be <10k")
-	}
-	if limit == 0 {
-		limit = 10000
-	}
+func (b *Endpoint) ListCollections(ctx context.Context, prefix string) (chan string, chan error) {
 	rv, err := b.g.ListCollections(ctx, &pb.ListCollectionsParams{
-		Prefix:    prefix,
-		StartWith: from,
-		Limit:     limit,
+		Prefix: prefix,
 	})
+	rvc := make(chan string, 100)
+	rve := make(chan error, 1)
 	if err != nil {
-		return nil, err
+		close(rvc)
+		rve <- err
+		close(rve)
+		return rvc, rve
 	}
-	if rv.GetStat() != nil {
-		return nil, &CodedError{rv.GetStat()}
-	}
-	return rv.Collections, nil
+	go func() {
+		for {
+			cols, err := rv.Recv()
+			if err == io.EOF {
+				close(rvc)
+				close(rve)
+				return
+			}
+			if err != nil {
+				close(rvc)
+				rve <- err
+				close(rve)
+				return
+			}
+			if cols.Stat != nil {
+				close(rvc)
+				rve <- &CodedError{cols.Stat}
+				close(rve)
+				return
+			}
+			for _, r := range cols.Collections {
+				rvc <- r
+			}
+		}
+	}()
+	return rvc, rve
 }
 
 func streamFromLookupResult(lr *pb.StreamDescriptor, b *BTrDB) *Stream {
 	rv := &Stream{
 		uuid:            lr.Uuid,
 		hasTags:         true,
-		tags:            make(map[string]string),
+		tags:            make(map[string]*string),
 		hasAnnotation:   true,
-		annotations:     make(map[string]string),
+		annotations:     make(map[string]*string),
 		propertyVersion: PropertyVersion(lr.PropertyVersion),
 		hasCollection:   true,
 		collection:      lr.Collection,
 		b:               b,
 	}
 	for _, kv := range lr.Tags {
-		rv.tags[kv.Key] = string(kv.Value)
+		if kv.Val == nil {
+			rv.tags[kv.Key] = nil
+		} else {
+			vc := kv.Val.Value
+			rv.tags[kv.Key] = &vc
+		}
 	}
 	for _, kv := range lr.Annotations {
-		rv.annotations[kv.Key] = string(kv.Value)
+		if kv.Val == nil {
+			rv.annotations[kv.Key] = nil
+		} else {
+			vc := kv.Val.Value
+			rv.annotations[kv.Key] = &vc
+		}
 	}
 	return rv
 }
@@ -374,7 +409,7 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 	for k, v := range tags {
 		kop := &pb.KeyValue{
 			Key:   k,
-			Value: []byte(v),
+			Value: v,
 		}
 		ltags = append(ltags, kop)
 	}
@@ -384,7 +419,7 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 			Key: k,
 		}
 		if v != nil {
-			kop.Val = &pb.OptValue{Value: []byte(*v)}
+			kop.Val = &pb.OptValue{Value: *v}
 		}
 		lanns = append(lanns, kop)
 	}
@@ -394,19 +429,6 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 		Tags:               ltags,
 		Annotations:        lanns,
 	}
-	// fmt.Printf("LUS PARAMS:\ncollection: %q, pfx %v\n", collection, isCollectionPrefix)
-	// for _, tt := range ltags {
-	// 	fmt.Printf("tag %q -> %p\n", tt.Key, tt.Val)
-	// 	if tt.Val != nil {
-	// 		fmt.Printf("  thats %q\n", string(tt.Val.Value))
-	// 	}
-	// }
-	// for _, tt := range lanns {
-	// 	fmt.Printf("tag %q -> %p\n", tt.Key, tt.Val)
-	// 	if tt.Val != nil {
-	// 		fmt.Printf("  thats %q\n", string(tt.Val.Value))
-	// 	}
-	// }
 	rv, err := b.g.LookupStreams(ctx, params)
 	rvc := make(chan *Stream, 100)
 	rve := make(chan error, 1)
@@ -438,6 +460,56 @@ func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isColle
 			}
 			for _, r := range lr.Results {
 				rvc <- streamFromLookupResult(r, patchDB)
+			}
+		}
+	}()
+	return rvc, rve
+}
+
+//SQLQuery is a low level function, rather use BTrDB.SQLQuery()
+func (b *Endpoint) SQLQuery(ctx context.Context, query string, params []string) (chan map[string]interface{}, chan error) {
+	rv, err := b.g.SQLQuery(ctx, &pb.SQLQueryParams{
+		Query:  query,
+		Params: params,
+	})
+	rvc := make(chan map[string]interface{}, 100)
+	rve := make(chan error, 1)
+	if err != nil {
+		close(rvc)
+		rve <- err
+		close(rve)
+		return rvc, rve
+	}
+	go func() {
+		for {
+			row, err := rv.Recv()
+			if err == io.EOF {
+				close(rvc)
+				close(rve)
+				return
+			}
+			if err != nil {
+				close(rvc)
+				rve <- err
+				close(rve)
+				return
+			}
+			if row.Stat != nil {
+				close(rvc)
+				rve <- &CodedError{row.Stat}
+				close(rve)
+				return
+			}
+			for _, r := range row.SQLQueryRow {
+				m := make(map[string]interface{})
+				err := json.Unmarshal(r, &m)
+				if err != nil {
+					close(rvc)
+					rve <- &CodedError{&pb.Status{Code: bte.BadSQLValue, Msg: "could not unmarshal SQL row"}}
+					close(rve)
+					return
+				}
+				rvc <- m
 			}
 		}
 	}()

@@ -13,14 +13,13 @@
 //   for v := range valchan {
 //     do stuff
 //   }
-//   if <-errchan != nil {
+//   if err := <-errchan; err != nil {
 //     handle error
 //   }
 package btrdb
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
@@ -76,10 +75,10 @@ type Stream struct {
 	knownToExist bool
 
 	hasTags bool
-	tags    map[string]string
+	tags    map[string]*string
 
 	hasAnnotation   bool
-	annotations     map[string]string
+	annotations     map[string]*string
 	propertyVersion PropertyVersion
 
 	hasCollection bool
@@ -100,8 +99,8 @@ func (s *Stream) refreshMeta(ctx context.Context) error {
 	var pver PropertyVersion
 	var err error
 	var coll string
-	var tags map[string]string
-	var anns map[string]string
+	var tags map[string]*string
+	var anns map[string]*string
 	for s.b.TestEpError(ep, err) {
 		ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
 		if err != nil {
@@ -153,7 +152,7 @@ func (s *Stream) UUID() uuid.UUID {
 //Tags returns the tags of the stream. It may require a round trip to the
 //server depending on how the stream was acquired. Do not modify the resulting
 //map as it is a reference to the internal stream state
-func (s *Stream) Tags(ctx context.Context) (map[string]string, error) {
+func (s *Stream) Tags(ctx context.Context) (map[string]*string, error) {
 	if s.hasTags {
 		return s.tags, nil
 	}
@@ -174,7 +173,7 @@ func (s *Stream) Refresh(ctx context.Context) error {
 //It will always require a round trip to the server. If you are ok with stale
 //data and want a higher performance version, use Stream.CachedAnnotations().
 //Do not modify the resulting map.
-func (s *Stream) Annotations(ctx context.Context) (map[string]string, PropertyVersion, error) {
+func (s *Stream) Annotations(ctx context.Context) (map[string]*string, PropertyVersion, error) {
 	err := s.refreshMeta(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -184,7 +183,7 @@ func (s *Stream) Annotations(ctx context.Context) (map[string]string, PropertyVe
 
 //CachedAnnotations returns the annotations of the stream, reusing previous
 //results if available, otherwise fetching from the server
-func (s *Stream) CachedAnnotations(ctx context.Context) (map[string]string, PropertyVersion, error) {
+func (s *Stream) CachedAnnotations(ctx context.Context) (map[string]*string, PropertyVersion, error) {
 	if !s.hasAnnotation {
 		err := s.refreshMeta(ctx)
 		if err != nil {
@@ -311,7 +310,7 @@ func (s *Stream) Obliterate(ctx context.Context) error {
 
 //CompareAndSetAnnotation will make the changes in the given map (where a nil pointer means delete) as long as the
 //annotation version matches
-func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyVersion, changes map[string]*string) error {
+func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyVersion, changes map[string]*string, remove []string) error {
 	var ep *Endpoint
 	var err error
 	for s.b.TestEpError(ep, err) {
@@ -319,7 +318,7 @@ func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyV
 		if err != nil {
 			continue
 		}
-		err = ep.SetStreamAnnotations(ctx, s.uuid, expected, changes)
+		err = ep.SetStreamAnnotations(ctx, s.uuid, expected, changes, remove)
 	}
 	if err != nil {
 		return err
@@ -328,7 +327,7 @@ func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyV
 }
 
 //CompareAndSetAnnotation will update a stream's collection name and tags if the property version matches
-func (s *Stream) CompareAndSetTags(ctx context.Context, expected PropertyVersion, collection string, changes map[string]string) error {
+func (s *Stream) CompareAndSetTags(ctx context.Context, expected PropertyVersion, collection string, changes map[string]*string) error {
 	var ep *Endpoint
 	var err error
 	for s.b.TestEpError(ep, err) {
@@ -562,13 +561,12 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 	return rv, cver, errc
 }
 
-func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]string, annotations map[string]string) (*Stream, error) {
+func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]*string, annotations map[string]*string) (*Stream, error) {
 	var ep *Endpoint
 	var err error
 	for b.TestEpError(ep, err) {
 		ep, err = b.EndpointFor(ctx, uu)
 		if err != nil {
-			fmt.Printf("EP ERR %v\n", err)
 			continue
 		}
 		err = ep.Create(ctx, uu, collection, tags, annotations)
@@ -580,9 +578,9 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 		uuid:            uu,
 		collection:      collection,
 		hasCollection:   true,
-		tags:            make(map[string]string),
+		tags:            make(map[string]*string),
 		hasTags:         true,
-		annotations:     make(map[string]string),
+		annotations:     make(map[string]*string),
 		hasAnnotation:   true,
 		propertyVersion: 0,
 		b:               b,
@@ -597,49 +595,39 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 	return rv, nil
 }
 
-func (b *BTrDB) ListAllCollections(ctx context.Context) ([]string, error) {
-	return b.ListCollections(ctx, "")
+func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
+	rv := []string{}
+	rvc, rve := b.StreamingListCollections(ctx, prefix)
+	for v := range rvc {
+		rv = append(rv, v)
+	}
+	if err := <-rve; err != nil {
+		return nil, err
+	}
+	return rv, nil
 }
 
-func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
+//List all the collections with the given prefix, without loading them all into memory
+func (b *BTrDB) StreamingListCollections(ctx context.Context, prefix string) (chan string, chan error) {
 	var ep *Endpoint
 	var err error
-	var rv []string
-	from := prefix
-	maximum := uint64(10000)
-	done := false
-	first := true
-	for !done {
-		var thisrv []string
-		err = forceEp
-		//Loop while errors are EP errors that will go away
-		for b.TestEpError(ep, err) {
-			ep, err = b.GetAnyEndpoint(ctx)
-			if err != nil {
-				continue
-			}
-			thisrv, err = ep.ListCollections(ctx, prefix, from, maximum)
-		}
-		//TestEpError said stop trying, non-nil is fatal
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
 		if err != nil {
-			return nil, err
+			continue
 		}
-		//We probably have more results
-		if len(thisrv) == int(maximum) {
-			from = thisrv[maximum-1]
-		} else {
-			//No more results
-			done = true
-		}
-
-		//The first element is a duplicate of the previous last element
-		if !first && len(thisrv) >= 1 {
-			thisrv = thisrv[1:]
-		}
-		rv = append(rv, thisrv...)
-		first = false
+		streamchan, errchan := ep.ListCollections(ctx, prefix)
+		return streamchan, b.SnoopEpErr(ep, errchan)
 	}
-	return rv, err
+	if err == nil {
+		panic("Please report this")
+	}
+	rv := make(chan string)
+	close(rv)
+	errc := make(chan error, 1)
+	errc <- err
+	close(errc)
+	return rv, errc
 }
 
 func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
@@ -671,6 +659,42 @@ func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, i
 		panic("Please report this")
 	}
 	rv := make(chan *Stream)
+	close(rv)
+	errc := make(chan error, 1)
+	errc <- err
+	close(errc)
+	return rv, errc
+}
+
+//Execute a metadata SQL query but buffer the results in memory
+func (b *BTrDB) SQLQuery(ctx context.Context, query string, params []string) ([]map[string]interface{}, error) {
+	rv := []map[string]interface{}{}
+	cv, ce := b.StreamingSQLQuery(ctx, query, params)
+	for s := range cv {
+		rv = append(rv, s)
+	}
+	if err := <-ce; err != nil {
+		return nil, err
+	}
+	return rv, nil
+}
+
+//Execute a metadata SQL query
+func (b *BTrDB) StreamingSQLQuery(ctx context.Context, query string, params []string) (chan map[string]interface{}, chan error) {
+	var ep *Endpoint
+	var err error
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		streamchan, errchan := ep.SQLQuery(ctx, query, params)
+		return streamchan, b.SnoopEpErr(ep, errchan)
+	}
+	if err == nil {
+		panic("Please report this")
+	}
+	rv := make(chan map[string]interface{})
 	close(rv)
 	errc := make(chan error, 1)
 	errc <- err

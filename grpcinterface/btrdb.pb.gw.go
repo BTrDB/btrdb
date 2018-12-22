@@ -143,7 +143,7 @@ func request_BTrDB_Create_0(ctx context.Context, marshaler runtime.Marshaler, cl
 
 }
 
-func request_BTrDB_ListCollections_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_BTrDB_ListCollections_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (BTrDB_ListCollectionsClient, runtime.ServerMetadata, error) {
 	var protoReq ListCollectionsParams
 	var metadata runtime.ServerMetadata
 
@@ -151,8 +151,16 @@ func request_BTrDB_ListCollections_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListCollections(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
+	stream, err := client.ListCollections(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
 
 }
 
@@ -311,6 +319,27 @@ func request_BTrDB_GenerateCSV_0(ctx context.Context, marshaler runtime.Marshale
 	}
 
 	stream, err := client.GenerateCSV(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
+func request_BTrDB_SQLQuery_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (BTrDB_SQLQueryClient, runtime.ServerMetadata, error) {
+	var protoReq SQLQueryParams
+	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.SQLQuery(ctx, &protoReq)
 	if err != nil {
 		return nil, metadata, err
 	}
@@ -589,7 +618,7 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			return
 		}
 
-		forward_BTrDB_ListCollections_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_BTrDB_ListCollections_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -912,6 +941,35 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
+	mux.Handle("POST", pattern_BTrDB_SQLQuery_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		if cn, ok := w.(http.CloseNotifier); ok {
+			go func(done <-chan struct{}, closed <-chan bool) {
+				select {
+				case <-done:
+				case <-closed:
+					cancel()
+				}
+			}(ctx.Done(), cn.CloseNotify())
+		}
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_BTrDB_SQLQuery_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_BTrDB_SQLQuery_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -953,6 +1011,8 @@ var (
 	pattern_BTrDB_GetMetadataUsage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "getmetadatausage"}, ""))
 
 	pattern_BTrDB_GenerateCSV_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "generatecsv"}, ""))
+
+	pattern_BTrDB_SQLQuery_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "generatecsv"}, ""))
 )
 
 var (
@@ -970,7 +1030,7 @@ var (
 
 	forward_BTrDB_Create_0 = runtime.ForwardResponseMessage
 
-	forward_BTrDB_ListCollections_0 = runtime.ForwardResponseMessage
+	forward_BTrDB_ListCollections_0 = runtime.ForwardResponseStream
 
 	forward_BTrDB_LookupStreams_0 = runtime.ForwardResponseStream
 
@@ -993,4 +1053,6 @@ var (
 	forward_BTrDB_GetMetadataUsage_0 = runtime.ForwardResponseMessage
 
 	forward_BTrDB_GenerateCSV_0 = runtime.ForwardResponseStream
+
+	forward_BTrDB_SQLQuery_0 = runtime.ForwardResponseStream
 )
