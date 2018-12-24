@@ -24,7 +24,7 @@ func helperGetCollection(uu uuid.UUID) string {
 	return fmt.Sprintf("test.%x", uu[:])
 }
 
-func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu uuid.UUID, coll string, tags map[string]string, ann map[string]string) *btrdb.Stream {
+func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu uuid.UUID, coll string, tags map[string]*string, ann map[string]*string) *btrdb.Stream {
 	stream, err := db.Create(ctx, uu, coll, tags, ann)
 	if err != nil {
 		t.Fatalf("create error %v", err)
@@ -32,7 +32,7 @@ func helperCreateStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, uu u
 	return stream
 }
 
-func helperCreateDefaultStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, tags map[string]string, ann map[string]string) *btrdb.Stream {
+func helperCreateDefaultStream(t *testing.T, ctx context.Context, db *btrdb.BTrDB, tags map[string]*string, ann map[string]*string) *btrdb.Stream {
 	uu := uuid.NewRandom()
 	coll := helperGetCollection(uu)
 	s := helperCreateStream(t, ctx, db, uu, coll, tags, ann)

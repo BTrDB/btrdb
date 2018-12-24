@@ -23,9 +23,9 @@ func TestUsage(t *testing.T) {
 	}
 	for k, _ := range anns {
 		uu := uuid.NewRandom()
-		stream, err := db.Create(context.Background(), uu, fmt.Sprintf("usagetest/%x", uu[:]), btrdb.OptKV("name", "n"), btrdb.M{k: "tst"})
-		if err != nil {
-			t.Fatalf("create error %v", err)
+		stream, uerr := db.Create(context.Background(), uu, fmt.Sprintf("usagetest/%x", uu[:]), btrdb.OptKV("name", "n"), btrdb.OptKV(k, "tst"))
+		if uerr != nil {
+			t.Fatalf("create error %v", uerr)
 		}
 		_ = stream
 	}

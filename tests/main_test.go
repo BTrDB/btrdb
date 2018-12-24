@@ -48,9 +48,9 @@ func TestSameUUID(t *testing.T) {
 	sn2 := uuid.NewRandom().String()
 	uu := uuid.NewRandom()
 
-	_, err = db.Create(context.Background(), uu, sn1, btrdb.M{"name": "foo"}, nil)
+	_, err = db.Create(context.Background(), uu, sn1, btrdb.OptKV("name", "foo"), nil)
 	require.NoError(t, err)
-	_, err = db.Create(context.Background(), uu, sn2, btrdb.M{"name": "foo"}, nil)
+	_, err = db.Create(context.Background(), uu, sn2, btrdb.OptKV("name", "foo"), nil)
 	require.NotNil(t, err)
 	require.EqualValues(t, bte.SameStream, btrdb.ToCodedError(err).Code)
 	spew.Dump(err)
@@ -308,7 +308,7 @@ func TestAnnotation(t *testing.T) {
 		}
 	}
 	uu := uuid.NewRandom()
-	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), btrdb.OptKV("name", "n"), btrdb.M{"ann": string(expectedAnn)})
+	stream, err := db.Create(context.Background(), uu, fmt.Sprintf("test/%x", uu[:]), btrdb.OptKV("name", "n"), btrdb.OptKV("ann", string(expectedAnn)))
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -316,7 +316,7 @@ func TestAnnotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get annotation error %v", err)
 	}
-	if ann["ann"] != expectedAnn {
+	if *ann["ann"] != expectedAnn {
 		t.Fatalf("annotation mismatch:\n%x\n%x", expectedAnn, ann["ann"])
 	}
 }
@@ -326,7 +326,7 @@ func TestListCollections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
-	_, err = db.ListAllCollections(context.Background())
+	_, err = db.ListCollections(context.Background(), "")
 	if err != nil {
 		t.Fatalf("Unexpected list error: %v", err)
 	}
@@ -551,7 +551,7 @@ func TestNilRootAfterDeleteQueryRaw(t *testing.T) {
 
 }
 
-func Test2kLookup(t *testing.T) {
+func Test2kCreate(t *testing.T) {
 	ctx := context.Background()
 	db, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
 	if err != nil {
@@ -562,12 +562,13 @@ func Test2kLookup(t *testing.T) {
 	for k := 0; k < 2000; k++ {
 		uu := uuid.NewRandom()
 		col := fmt.Sprintf("%s.%03d", colprefix, k)
-		str, cerr := db.Create(ctx, uu, col, btrdb.M{"name": fmt.Sprintf("%d", k)}, nil)
+		str, cerr := db.Create(ctx, uu, col, btrdb.OptKV("name", fmt.Sprintf("%d", k)), nil)
 		if cerr != nil {
 			t.Fatalf("got create error %v", cerr)
 		}
 		_ = str
 	}
+
 }
 
 func TestLookupALittle(t *testing.T) {
@@ -583,7 +584,7 @@ func TestLookupALittle(t *testing.T) {
 		for i := 0; i < 50; i++ {
 			uu := uuid.NewRandom()
 			col := fmt.Sprintf("%s.%03d", colprefix, k)
-			str, cerr := db.Create(ctx, uu, col, btrdb.M{"name": fmt.Sprintf("%d", i), "unit": fmt.Sprintf("%d", k)}, nil)
+			str, cerr := db.Create(ctx, uu, col, btrdb.OptKV("name", fmt.Sprintf("%d", i), "unit", fmt.Sprintf("%d", k)), nil)
 			if cerr != nil {
 				t.Fatalf("got create error %v", cerr)
 			}
@@ -641,7 +642,7 @@ func TestCreate(t *testing.T) {
 		for s := 0; s < 10; s++ {
 			uu := uuid.NewRandom()
 			coll := fmt.Sprintf("test/%x", uu[:])
-			str, err := db.Create(ctx, uu, coll, btrdb.M{"name": fmt.Sprintf("%d", s)}, nil)
+			str, err := db.Create(ctx, uu, coll, btrdb.OptKV("name", fmt.Sprintf("%d", s)), nil)
 			if err != nil {
 				t.Fatalf("got create error %v", err)
 			}
@@ -673,7 +674,13 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("got error querying tags: %v", err)
 			}
 
-			s, err := db.LookupStreams(ctx, coll, false, tags, nil)
+			ltags := make(map[string]string)
+			for k, v := range tags {
+				if v != nil {
+					ltags[k] = *v
+				}
+			}
+			s, err := db.LookupStreams(ctx, coll, false, ltags, nil)
 			if err != nil {
 				t.Fatalf("got error querying stream: %v", err)
 			}
@@ -704,7 +711,7 @@ func TestObliterate(t *testing.T) {
 
 	uu := uuid.NewRandom()
 	col := fmt.Sprintf("obl.%x", uu[:])
-	stream, err := db.Create(context.Background(), uu, col, btrdb.M{"name": "bar"}, nil)
+	stream, err := db.Create(context.Background(), uu, col, btrdb.OptKV("name", "bar"), nil)
 	if err != nil {
 		t.Fatalf("create error %v", err)
 	}
@@ -720,7 +727,6 @@ func TestObliterate(t *testing.T) {
 	if ferr != nil {
 		t.Fatalf("flush error %v", ferr)
 	}
-	time.Sleep(10 * time.Second)
 	rvals, _, cerr := stream.RawValues(context.Background(), 0, 100000, btrdb.LatestVersion)
 	rvall := []btrdb.RawPoint{}
 	for v := range rvals {
@@ -771,7 +777,7 @@ func TestObliterate(t *testing.T) {
 	}
 
 	//Try create with same uuid
-	_, err = db.Create(context.Background(), uu, col, btrdb.M{"name": "bar"}, nil)
+	_, err = db.Create(context.Background(), uu, col, btrdb.OptKV("name", "bar"), nil)
 	if err == nil {
 		t.Fatalf("got no error creating duplicate uuid")
 	} else {
@@ -799,7 +805,7 @@ func TestTagLookup(t *testing.T) {
 	uu := uuid.NewRandom()
 	col := fmt.Sprintf("ntest/%x/b", []byte(uu)[:8])
 
-	str, cerr := db.Create(ctx, uu, col, btrdb.M{"name": "aval", "unit": "bval"}, btrdb.M{"d": "dval"})
+	str, cerr := db.Create(ctx, uu, col, btrdb.OptKV("name", "aval", "unit", "bval"), btrdb.OptKV("d", "dval"))
 	if cerr != nil {
 		t.Fatalf("got create error %v", cerr)
 	}

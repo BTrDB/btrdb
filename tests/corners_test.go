@@ -1249,7 +1249,7 @@ func streamtoleafname(ctx context.Context, s *btrdb.Stream) (string, error) {
 	kvs := make([]string, len(tags))
 	i := 0
 	for key, value := range tags {
-		kvs[i] = key + "=" + value
+		kvs[i] = key + "=" + *value
 		i++
 	}
 
