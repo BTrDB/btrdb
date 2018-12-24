@@ -876,17 +876,6 @@
         }
       }
     },
-    "grpcinterfaceKeyValue": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
     "grpcinterfaceListCollectionsParams": {
       "type": "object",
       "properties": {
@@ -925,7 +914,7 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyValue"
+            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
           }
         },
         "annotations": {

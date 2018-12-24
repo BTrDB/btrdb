@@ -644,7 +644,7 @@ func (b *BTrDB) Info(ctx context.Context) (*MASH, error) {
 	return rv, err
 }
 
-func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string) (chan *Stream, chan error) {
+func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) (chan *Stream, chan error) {
 	var ep *Endpoint
 	var err error
 	for b.TestEpError(ep, err) {
@@ -702,7 +702,7 @@ func (b *BTrDB) StreamingSQLQuery(ctx context.Context, query string, params []st
 	return rv, errc
 }
 
-func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string) ([]*Stream, error) {
+func (b *BTrDB) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string) ([]*Stream, error) {
 	rv := []*Stream{}
 	cv, ce := b.StreamingLookupStreams(ctx, collection, isCollectionPrefix, tags, annotations)
 	for s := range cv {

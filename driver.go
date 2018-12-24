@@ -404,12 +404,14 @@ func streamFromLookupResult(lr *pb.StreamDescriptor, b *BTrDB) *Stream {
 }
 
 //LookupStreams is a low level function, rather use BTrDB.LookupStreams()
-func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]string, annotations map[string]*string, patchDB *BTrDB) (chan *Stream, chan error) {
-	ltags := []*pb.KeyValue{}
+func (b *Endpoint) LookupStreams(ctx context.Context, collection string, isCollectionPrefix bool, tags map[string]*string, annotations map[string]*string, patchDB *BTrDB) (chan *Stream, chan error) {
+	ltags := []*pb.KeyOptValue{}
 	for k, v := range tags {
-		kop := &pb.KeyValue{
-			Key:   k,
-			Value: v,
+		kop := &pb.KeyOptValue{
+			Key: k,
+		}
+		if v != nil {
+			kop.Val = &pb.OptValue{Value: *v}
 		}
 		ltags = append(ltags, kop)
 	}

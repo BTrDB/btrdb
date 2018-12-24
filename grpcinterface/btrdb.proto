@@ -241,7 +241,7 @@ message ListCollectionsResponse {
 message LookupStreamsParams {
   string collection = 1;
   bool isCollectionPrefix = 2;
-  repeated KeyValue tags = 3;
+  repeated KeyOptValue tags = 3;
   repeated KeyOptValue annotations = 4;
   Role role = 100;
 }
