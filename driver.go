@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BTrDB/btrdb-server/bte"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"gopkg.in/BTrDB/btrdb.v5/bte"
 	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
 )
 
