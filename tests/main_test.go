@@ -616,14 +616,14 @@ func TestLookupALittle(t *testing.T) {
 	if len(rvz) != 0 {
 		t.Fatalf("c expected %d streams, got %d", 0, len(rvz))
 	}
-	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"name": "23"}, nil)
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.OptKV("name", "23"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(rvz) != 20 {
 		t.Fatalf("d expected %d streams, got %d", 20, len(rvz))
 	}
-	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.M{"name": "16", "unit": "13"}, nil)
+	rvz, err = db.LookupStreams(ctx, colprefix, true, btrdb.OptKV("name", "16", "unit", "13"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -680,7 +680,7 @@ func TestCreate(t *testing.T) {
 					ltags[k] = *v
 				}
 			}
-			s, err := db.LookupStreams(ctx, coll, false, ltags, nil)
+			s, err := db.LookupStreams(ctx, coll, false, btrdb.OptKV(ltags), nil)
 			if err != nil {
 				t.Fatalf("got error querying stream: %v", err)
 			}
@@ -703,7 +703,7 @@ func TestObliterate(t *testing.T) {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
 
-	rv, err := db.LookupStreams(context.Background(), "obl.", true, btrdb.M{"name": "bar"}, nil)
+	rv, err := db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("name", "bar"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
@@ -739,7 +739,7 @@ func TestObliterate(t *testing.T) {
 		t.Fatalf("only got %d points, wanted 100000", len(rvall))
 	}
 
-	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.M{"name": "bar"}, nil)
+	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("name", "bar"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
@@ -785,7 +785,7 @@ func TestObliterate(t *testing.T) {
 	}
 
 	//Also try doing lookup
-	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.M{"name": "bar"}, nil)
+	rv, err = db.LookupStreams(context.Background(), "obl.", true, btrdb.OptKV("name", "bar"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}
@@ -813,7 +813,7 @@ func TestTagLookup(t *testing.T) {
 
 	// ltags := make(map[string]*string)
 
-	rv, err := db.LookupStreams(ctx, col, false, btrdb.M{"name": "aval", "unit": "bval"}, nil)
+	rv, err := db.LookupStreams(ctx, col, false, btrdb.OptKV("name", "aval", "unit", "bval"), nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v\n", err)
 	}

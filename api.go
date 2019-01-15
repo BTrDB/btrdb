@@ -667,9 +667,9 @@ func (b *BTrDB) StreamingLookupStreams(ctx context.Context, collection string, i
 }
 
 //Execute a metadata SQL query but buffer the results in memory
-func (b *BTrDB) SQLQuery(ctx context.Context, query string, params []string) ([]map[string]interface{}, error) {
+func (b *BTrDB) SQLQuery(ctx context.Context, query string, params ...string) ([]map[string]interface{}, error) {
 	rv := []map[string]interface{}{}
-	cv, ce := b.StreamingSQLQuery(ctx, query, params)
+	cv, ce := b.StreamingSQLQuery(ctx, query, params...)
 	for s := range cv {
 		rv = append(rv, s)
 	}
@@ -680,7 +680,7 @@ func (b *BTrDB) SQLQuery(ctx context.Context, query string, params []string) ([]
 }
 
 //Execute a metadata SQL query
-func (b *BTrDB) StreamingSQLQuery(ctx context.Context, query string, params []string) (chan map[string]interface{}, chan error) {
+func (b *BTrDB) StreamingSQLQuery(ctx context.Context, query string, params ...string) (chan map[string]interface{}, chan error) {
 	var ep *Endpoint
 	var err error
 	for b.TestEpError(ep, err) {
