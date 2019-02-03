@@ -22,7 +22,7 @@ import (
 	"context"
 
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 //OptKV is a utility function for use in SetAnnotations or LookupStreams that

@@ -13,7 +13,7 @@ import (
 
 	logging "github.com/op/go-logging"
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 var lg *logging.Logger

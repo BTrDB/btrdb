@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "grpcinterface/btrdb.proto",
-    "version": "5.0.0"
+    "title": "v5api/btrdb.proto",
+    "version": "5.1.0"
   },
   "schemes": [
     "http",
@@ -22,7 +22,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceAlignedWindowsResponse"
+              "$ref": "#/definitions/v5apiAlignedWindowsResponse"
             }
           }
         },
@@ -32,7 +32,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceAlignedWindowsParams"
+              "$ref": "#/definitions/v5apiAlignedWindowsParams"
             }
           }
         ],
@@ -48,7 +48,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceChangesResponse"
+              "$ref": "#/definitions/v5apiChangesResponse"
             }
           }
         },
@@ -58,7 +58,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceChangesParams"
+              "$ref": "#/definitions/v5apiChangesParams"
             }
           }
         ],
@@ -74,7 +74,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceCreateResponse"
+              "$ref": "#/definitions/v5apiCreateResponse"
             }
           }
         },
@@ -84,7 +84,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceCreateParams"
+              "$ref": "#/definitions/v5apiCreateParams"
             }
           }
         ],
@@ -100,7 +100,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceDeleteResponse"
+              "$ref": "#/definitions/v5apiDeleteResponse"
             }
           }
         },
@@ -110,7 +110,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceDeleteParams"
+              "$ref": "#/definitions/v5apiDeleteParams"
             }
           }
         ],
@@ -126,7 +126,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceFaultInjectResponse"
+              "$ref": "#/definitions/v5apiFaultInjectResponse"
             }
           }
         },
@@ -136,7 +136,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceFaultInjectParams"
+              "$ref": "#/definitions/v5apiFaultInjectParams"
             }
           }
         ],
@@ -152,7 +152,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceFlushResponse"
+              "$ref": "#/definitions/v5apiFlushResponse"
             }
           }
         },
@@ -162,7 +162,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceFlushParams"
+              "$ref": "#/definitions/v5apiFlushParams"
             }
           }
         ],
@@ -178,7 +178,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSQLQueryResponse"
+              "$ref": "#/definitions/v5apiSQLQueryResponse"
             }
           }
         },
@@ -188,7 +188,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSQLQueryParams"
+              "$ref": "#/definitions/v5apiSQLQueryParams"
             }
           }
         ],
@@ -204,7 +204,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceMetadataUsageResponse"
+              "$ref": "#/definitions/v5apiMetadataUsageResponse"
             }
           }
         },
@@ -214,7 +214,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceMetadataUsageParams"
+              "$ref": "#/definitions/v5apiMetadataUsageParams"
             }
           }
         ],
@@ -230,7 +230,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceInfoResponse"
+              "$ref": "#/definitions/v5apiInfoResponse"
             }
           }
         },
@@ -240,7 +240,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceInfoParams"
+              "$ref": "#/definitions/v5apiInfoParams"
             }
           }
         ],
@@ -256,7 +256,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceInsertResponse"
+              "$ref": "#/definitions/v5apiInsertResponse"
             }
           }
         },
@@ -266,7 +266,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceInsertParams"
+              "$ref": "#/definitions/v5apiInsertParams"
             }
           }
         ],
@@ -282,7 +282,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceListCollectionsResponse"
+              "$ref": "#/definitions/v5apiListCollectionsResponse"
             }
           }
         },
@@ -292,7 +292,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceListCollectionsParams"
+              "$ref": "#/definitions/v5apiListCollectionsParams"
             }
           }
         ],
@@ -308,7 +308,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceLookupStreamsResponse"
+              "$ref": "#/definitions/v5apiLookupStreamsResponse"
             }
           }
         },
@@ -318,7 +318,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceLookupStreamsParams"
+              "$ref": "#/definitions/v5apiLookupStreamsParams"
             }
           }
         ],
@@ -334,7 +334,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceNearestResponse"
+              "$ref": "#/definitions/v5apiNearestResponse"
             }
           }
         },
@@ -344,7 +344,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceNearestParams"
+              "$ref": "#/definitions/v5apiNearestParams"
             }
           }
         ],
@@ -360,7 +360,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceObliterateResponse"
+              "$ref": "#/definitions/v5apiObliterateResponse"
             }
           }
         },
@@ -370,7 +370,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceObliterateParams"
+              "$ref": "#/definitions/v5apiObliterateParams"
             }
           }
         ],
@@ -386,7 +386,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceRawValuesResponse"
+              "$ref": "#/definitions/v5apiRawValuesResponse"
             }
           }
         },
@@ -396,7 +396,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceRawValuesParams"
+              "$ref": "#/definitions/v5apiRawValuesParams"
             }
           }
         ],
@@ -412,7 +412,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSetStreamAnnotationsResponse"
+              "$ref": "#/definitions/v5apiSetStreamAnnotationsResponse"
             }
           }
         },
@@ -422,7 +422,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSetStreamAnnotationsParams"
+              "$ref": "#/definitions/v5apiSetStreamAnnotationsParams"
             }
           }
         ],
@@ -438,7 +438,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSetStreamTagsResponse"
+              "$ref": "#/definitions/v5apiSetStreamTagsResponse"
             }
           }
         },
@@ -448,7 +448,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceSetStreamTagsParams"
+              "$ref": "#/definitions/v5apiSetStreamTagsParams"
             }
           }
         ],
@@ -464,7 +464,7 @@
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceStreamInfoResponse"
+              "$ref": "#/definitions/v5apiStreamInfoResponse"
             }
           }
         },
@@ -474,7 +474,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceStreamInfoParams"
+              "$ref": "#/definitions/v5apiStreamInfoParams"
             }
           }
         ],
@@ -490,7 +490,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceWindowsResponse"
+              "$ref": "#/definitions/v5apiWindowsResponse"
             }
           }
         },
@@ -500,7 +500,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/grpcinterfaceWindowsParams"
+              "$ref": "#/definitions/v5apiWindowsParams"
             }
           }
         ],
@@ -520,7 +520,7 @@
       ],
       "default": "ALIGNED_WINDOWS_QUERY"
     },
-    "grpcinterfaceAlignedWindowsParams": {
+    "v5apiAlignedWindowsParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -545,11 +545,11 @@
         }
       }
     },
-    "grpcinterfaceAlignedWindowsResponse": {
+    "v5apiAlignedWindowsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -562,12 +562,12 @@
         "values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceStatPoint"
+            "$ref": "#/definitions/v5apiStatPoint"
           }
         }
       }
     },
-    "grpcinterfaceChangedRange": {
+    "v5apiChangedRange": {
       "type": "object",
       "properties": {
         "start": {
@@ -580,7 +580,7 @@
         }
       }
     },
-    "grpcinterfaceChangesParams": {
+    "v5apiChangesParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -601,11 +601,11 @@
         }
       }
     },
-    "grpcinterfaceChangesResponse": {
+    "v5apiChangesResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -618,12 +618,12 @@
         "ranges": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceChangedRange"
+            "$ref": "#/definitions/v5apiChangedRange"
           }
         }
       }
     },
-    "grpcinterfaceCreateParams": {
+    "v5apiCreateParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -636,26 +636,26 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         }
       }
     },
-    "grpcinterfaceCreateResponse": {
+    "v5apiCreateResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         }
       }
     },
-    "grpcinterfaceDeleteParams": {
+    "v5apiDeleteParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -672,11 +672,11 @@
         }
       }
     },
-    "grpcinterfaceDeleteResponse": {
+    "v5apiDeleteResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -688,7 +688,7 @@
         }
       }
     },
-    "grpcinterfaceFaultInjectParams": {
+    "v5apiFaultInjectParams": {
       "type": "object",
       "properties": {
         "type": {
@@ -701,11 +701,11 @@
         }
       }
     },
-    "grpcinterfaceFaultInjectResponse": {
+    "v5apiFaultInjectResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "rv": {
           "type": "string",
@@ -713,7 +713,7 @@
         }
       }
     },
-    "grpcinterfaceFlushParams": {
+    "v5apiFlushParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -722,11 +722,11 @@
         }
       }
     },
-    "grpcinterfaceFlushResponse": {
+    "v5apiFlushResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -738,7 +738,7 @@
         }
       }
     },
-    "grpcinterfaceGenerateCSVParams": {
+    "v5apiGenerateCSVParams": {
       "type": "object",
       "properties": {
         "queryType": {
@@ -767,16 +767,16 @@
         "streams": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceStreamCSVConfig"
+            "$ref": "#/definitions/v5apiStreamCSVConfig"
           }
         }
       }
     },
-    "grpcinterfaceGenerateCSVResponse": {
+    "v5apiGenerateCSVResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "isHeader": {
           "type": "boolean",
@@ -790,17 +790,17 @@
         }
       }
     },
-    "grpcinterfaceInfoParams": {
+    "v5apiInfoParams": {
       "type": "object"
     },
-    "grpcinterfaceInfoResponse": {
+    "v5apiInfoResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "mash": {
-          "$ref": "#/definitions/grpcinterfaceMash"
+          "$ref": "#/definitions/v5apiMash"
         },
         "majorVersion": {
           "type": "integer",
@@ -814,11 +814,11 @@
           "type": "string"
         },
         "proxy": {
-          "$ref": "#/definitions/grpcinterfaceProxyInfo"
+          "$ref": "#/definitions/v5apiProxyInfo"
         }
       }
     },
-    "grpcinterfaceInsertParams": {
+    "v5apiInsertParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -832,16 +832,16 @@
         "values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceRawPoint"
+            "$ref": "#/definitions/v5apiRawPoint"
           }
         }
       }
     },
-    "grpcinterfaceInsertResponse": {
+    "v5apiInsertResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -853,7 +853,7 @@
         }
       }
     },
-    "grpcinterfaceKeyCount": {
+    "v5apiKeyCount": {
       "type": "object",
       "properties": {
         "key": {
@@ -865,33 +865,33 @@
         }
       }
     },
-    "grpcinterfaceKeyOptValue": {
+    "v5apiKeyOptValue": {
       "type": "object",
       "properties": {
         "key": {
           "type": "string"
         },
         "val": {
-          "$ref": "#/definitions/grpcinterfaceOptValue"
+          "$ref": "#/definitions/v5apiOptValue"
         }
       }
     },
-    "grpcinterfaceListCollectionsParams": {
+    "v5apiListCollectionsParams": {
       "type": "object",
       "properties": {
         "prefix": {
           "type": "string"
         },
         "role": {
-          "$ref": "#/definitions/grpcinterfaceRole"
+          "$ref": "#/definitions/v5apiRole"
         }
       }
     },
-    "grpcinterfaceListCollectionsResponse": {
+    "v5apiListCollectionsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "collections": {
           "type": "array",
@@ -901,7 +901,7 @@
         }
       }
     },
-    "grpcinterfaceLookupStreamsParams": {
+    "v5apiLookupStreamsParams": {
       "type": "object",
       "properties": {
         "collection": {
@@ -914,35 +914,35 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "role": {
-          "$ref": "#/definitions/grpcinterfaceRole"
+          "$ref": "#/definitions/v5apiRole"
         }
       }
     },
-    "grpcinterfaceLookupStreamsResponse": {
+    "v5apiLookupStreamsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "results": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceStreamDescriptor"
+            "$ref": "#/definitions/v5apiStreamDescriptor"
           }
         }
       }
     },
-    "grpcinterfaceMash": {
+    "v5apiMash": {
       "type": "object",
       "properties": {
         "revision": {
@@ -971,12 +971,12 @@
         "members": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceMember"
+            "$ref": "#/definitions/v5apiMember"
           }
         }
       }
     },
-    "grpcinterfaceMember": {
+    "v5apiMember": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1022,38 +1022,38 @@
         }
       }
     },
-    "grpcinterfaceMetadataUsageParams": {
+    "v5apiMetadataUsageParams": {
       "type": "object",
       "properties": {
         "prefix": {
           "type": "string"
         },
         "role": {
-          "$ref": "#/definitions/grpcinterfaceRole"
+          "$ref": "#/definitions/v5apiRole"
         }
       }
     },
-    "grpcinterfaceMetadataUsageResponse": {
+    "v5apiMetadataUsageResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyCount"
+            "$ref": "#/definitions/v5apiKeyCount"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyCount"
+            "$ref": "#/definitions/v5apiKeyCount"
           }
         }
       }
     },
-    "grpcinterfaceNearestParams": {
+    "v5apiNearestParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1074,11 +1074,11 @@
         }
       }
     },
-    "grpcinterfaceNearestResponse": {
+    "v5apiNearestResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -1089,11 +1089,11 @@
           "format": "uint64"
         },
         "value": {
-          "$ref": "#/definitions/grpcinterfaceRawPoint"
+          "$ref": "#/definitions/v5apiRawPoint"
         }
       }
     },
-    "grpcinterfaceObliterateParams": {
+    "v5apiObliterateParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1102,15 +1102,15 @@
         }
       }
     },
-    "grpcinterfaceObliterateResponse": {
+    "v5apiObliterateResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         }
       }
     },
-    "grpcinterfaceOptValue": {
+    "v5apiOptValue": {
       "type": "object",
       "properties": {
         "value": {
@@ -1118,7 +1118,7 @@
         }
       }
     },
-    "grpcinterfaceProxyInfo": {
+    "v5apiProxyInfo": {
       "type": "object",
       "properties": {
         "proxyEndpoints": {
@@ -1129,7 +1129,7 @@
         }
       }
     },
-    "grpcinterfaceRawPoint": {
+    "v5apiRawPoint": {
       "type": "object",
       "properties": {
         "time": {
@@ -1142,7 +1142,7 @@
         }
       }
     },
-    "grpcinterfaceRawValuesParams": {
+    "v5apiRawValuesParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1163,11 +1163,11 @@
         }
       }
     },
-    "grpcinterfaceRawValuesResponse": {
+    "v5apiRawValuesResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -1180,12 +1180,12 @@
         "values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceRawPoint"
+            "$ref": "#/definitions/v5apiRawPoint"
           }
         }
       }
     },
-    "grpcinterfaceRole": {
+    "v5apiRole": {
       "type": "object",
       "properties": {
         "name": {
@@ -1193,7 +1193,7 @@
         }
       }
     },
-    "grpcinterfaceSQLQueryParams": {
+    "v5apiSQLQueryParams": {
       "type": "object",
       "properties": {
         "query": {
@@ -1206,15 +1206,15 @@
           }
         },
         "role": {
-          "$ref": "#/definitions/grpcinterfaceRole"
+          "$ref": "#/definitions/v5apiRole"
         }
       }
     },
-    "grpcinterfaceSQLQueryResponse": {
+    "v5apiSQLQueryResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "SQLQueryRow": {
           "type": "array",
@@ -1225,7 +1225,7 @@
         }
       }
     },
-    "grpcinterfaceSetStreamAnnotationsParams": {
+    "v5apiSetStreamAnnotationsParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1239,7 +1239,7 @@
         "changes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "removals": {
@@ -1250,15 +1250,15 @@
         }
       }
     },
-    "grpcinterfaceSetStreamAnnotationsResponse": {
+    "v5apiSetStreamAnnotationsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         }
       }
     },
-    "grpcinterfaceSetStreamTagsParams": {
+    "v5apiSetStreamTagsParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1272,7 +1272,7 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "collection": {
@@ -1286,15 +1286,15 @@
         }
       }
     },
-    "grpcinterfaceSetStreamTagsResponse": {
+    "v5apiSetStreamTagsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         }
       }
     },
-    "grpcinterfaceStatPoint": {
+    "v5apiStatPoint": {
       "type": "object",
       "properties": {
         "time": {
@@ -1323,7 +1323,7 @@
         }
       }
     },
-    "grpcinterfaceStatus": {
+    "v5apiStatus": {
       "type": "object",
       "properties": {
         "code": {
@@ -1334,11 +1334,11 @@
           "type": "string"
         },
         "mash": {
-          "$ref": "#/definitions/grpcinterfaceMash"
+          "$ref": "#/definitions/v5apiMash"
         }
       }
     },
-    "grpcinterfaceStreamCSVConfig": {
+    "v5apiStreamCSVConfig": {
       "type": "object",
       "properties": {
         "version": {
@@ -1354,7 +1354,7 @@
         }
       }
     },
-    "grpcinterfaceStreamDescriptor": {
+    "v5apiStreamDescriptor": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1367,13 +1367,13 @@
         "tags": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "annotations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceKeyOptValue"
+            "$ref": "#/definitions/v5apiKeyOptValue"
           }
         },
         "propertyVersion": {
@@ -1382,7 +1382,7 @@
         }
       }
     },
-    "grpcinterfaceStreamInfoParams": {
+    "v5apiStreamInfoParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1398,15 +1398,15 @@
           "format": "boolean"
         },
         "role": {
-          "$ref": "#/definitions/grpcinterfaceRole"
+          "$ref": "#/definitions/v5apiRole"
         }
       }
     },
-    "grpcinterfaceStreamInfoResponse": {
+    "v5apiStreamInfoResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -1417,11 +1417,11 @@
           "format": "uint64"
         },
         "descriptor": {
-          "$ref": "#/definitions/grpcinterfaceStreamDescriptor"
+          "$ref": "#/definitions/v5apiStreamDescriptor"
         }
       }
     },
-    "grpcinterfaceWindowsParams": {
+    "v5apiWindowsParams": {
       "type": "object",
       "properties": {
         "uuid": {
@@ -1450,11 +1450,11 @@
         }
       }
     },
-    "grpcinterfaceWindowsResponse": {
+    "v5apiWindowsResponse": {
       "type": "object",
       "properties": {
         "stat": {
-          "$ref": "#/definitions/grpcinterfaceStatus"
+          "$ref": "#/definitions/v5apiStatus"
         },
         "versionMajor": {
           "type": "string",
@@ -1467,7 +1467,7 @@
         "values": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/grpcinterfaceStatPoint"
+            "$ref": "#/definitions/v5apiStatPoint"
           }
         }
       }

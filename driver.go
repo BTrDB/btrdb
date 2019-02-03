@@ -1,8 +1,8 @@
 package btrdb
 
-//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --go_out=plugins=grpc:. grpcinterface/btrdb.proto
-//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  grpcinterface/btrdb.proto
-//don't do this automagically protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  grpcinterface/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --go_out=plugins=grpc:. v5api/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  v5api/btrdb.proto
+//don't automatic go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  v5api/btrdb.proto
 import (
 	"context"
 	"crypto/tls"
@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"gopkg.in/BTrDB/btrdb.v5/bte"
-	pb "gopkg.in/BTrDB/btrdb.v5/grpcinterface"
+	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 //PropertyVersion is the version of a stream annotations and tags. It begins at 1
