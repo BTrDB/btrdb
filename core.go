@@ -44,7 +44,6 @@ type BTrDB struct {
 	activeMash atomic.Value
 
 	isproxied bool
-	proxies   []string
 
 	closed bool
 
@@ -109,15 +108,13 @@ func ConnectAuth(ctx context.Context, apikey string, endpoints ...string) (*BTrD
 		if inf.GetProxy() != nil {
 			//This is a proxied BTrDB cluster
 			b.isproxied = true
-			b.proxies = inf.GetProxy().GetProxyEndpoints()
 		} else {
 			b.activeMash.Store(mash)
 		}
 		ep.Disconnect()
 		break
 	}
-	if (b.isproxied && len(b.proxies) == 0) ||
-		(!b.isproxied && b.activeMash.Load() == nil) {
+	if !b.isproxied && b.activeMash.Load() == nil {
 		return nil, fmt.Errorf("Could not connect to cluster via provided endpoints")
 	}
 	return b, nil
@@ -189,7 +186,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 			return ep, nil
 		}
 		//We need to connect to endpoint
-		nep, err := ConnectEndpointAuth(ctx, b.apikey, b.proxies...)
+		nep, err := ConnectEndpointAuth(ctx, b.apikey, b.bootstraps...)
 		if err != nil {
 			return nil, err
 		}
@@ -238,12 +235,12 @@ func (b *BTrDB) GetAnyEndpoint(ctx context.Context) (*Endpoint, error) {
 
 func (b *BTrDB) ResyncMash() {
 	if b.isproxied {
-		b.resyncProxies()
+		b.resyncProxied()
 	} else {
 		b.resyncInternalMash()
 	}
 }
-func (b *BTrDB) resyncProxies() {
+func (b *BTrDB) resyncProxied() {
 	b.epmu.Lock()
 	defer b.epmu.Unlock()
 	b.dropEpcache()
