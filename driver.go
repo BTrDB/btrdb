@@ -25,6 +25,9 @@ import (
 //or SetStreamTags call. An PropertyVersion of 0 means "any version"
 type PropertyVersion uint64
 
+//How long we try to connect to an endpoint before trying the next one
+const EndpointTimeout = 5*time.Second
+
 //Endpoint is a low level connection to a single server. Rather use
 //BTrDB which manages creating and destroying Endpoint objects as required
 type Endpoint struct {
@@ -81,11 +84,11 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 		var tmt time.Duration
 		if ok {
 			tmt = dl.Sub(time.Now())
-			if tmt > 2*time.Second {
-				tmt = 2 * time.Second
+			if tmt > EndpointTimeout {
+				tmt = EndpointTimeout
 			}
 		} else {
-			tmt = 2 * time.Second
+			tmt = EndpointTimeout
 		}
 		addrport := strings.SplitN(a, ":", 2)
 		if len(addrport) != 2 {
