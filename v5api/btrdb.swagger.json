@@ -173,12 +173,12 @@
     },
     "/v5/generatecsv": {
       "post": {
-        "operationId": "SQLQuery",
+        "operationId": "GenerateCSV",
         "responses": {
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiSQLQueryResponse"
+              "$ref": "#/definitions/v5apiGenerateCSVResponse"
             }
           }
         },
@@ -188,7 +188,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v5apiSQLQueryParams"
+              "$ref": "#/definitions/v5apiGenerateCSVParams"
             }
           }
         ],
@@ -449,6 +449,32 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v5apiSetStreamTagsParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v5/sqlquery": {
+      "post": {
+        "operationId": "SQLQuery",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/v5apiSQLQueryResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v5apiSQLQueryParams"
             }
           }
         ],

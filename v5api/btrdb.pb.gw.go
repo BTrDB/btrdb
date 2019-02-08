@@ -1012,7 +1012,7 @@ var (
 
 	pattern_BTrDB_GenerateCSV_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "generatecsv"}, ""))
 
-	pattern_BTrDB_SQLQuery_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "generatecsv"}, ""))
+	pattern_BTrDB_SQLQuery_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "sqlquery"}, ""))
 )
 
 var (

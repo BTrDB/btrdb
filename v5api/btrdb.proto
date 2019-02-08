@@ -125,7 +125,7 @@ service BTrDB {
 
   rpc SQLQuery(SQLQueryParams) returns (stream SQLQueryResponse) {
   option (google.api.http) = {
-    post: "/v5/generatecsv"
+    post: "/v5/sqlquery"
       body: "*"
     };
   }
