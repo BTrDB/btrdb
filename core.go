@@ -161,6 +161,7 @@ func (b *BTrDB) EndpointForHash(ctx context.Context, hash uint32) (*Endpoint, er
 	//We need to connect to endpoint
 	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...)
 	if err != nil {
+		b.epmu.Unlock()
 		return nil, err
 	}
 	b.epcache[hash] = nep
@@ -373,6 +374,7 @@ func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 	go func() {
 		for e := range err {
 			//if e is special invalidate ep
+			b.TestEpError(ep, e)
 			rv <- e
 		}
 		close(rv)
