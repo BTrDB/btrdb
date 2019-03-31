@@ -54,6 +54,12 @@ type BTrDB struct {
 	bootstraps []string
 
 	apikey string
+
+	//Must hold this when evaluating if an endpoint has failed and
+	//requires a resync
+	resyncMu sync.Mutex
+	//Incremented every time there is a resync
+	numResyncs int64
 }
 
 func newBTrDB() *BTrDB {
@@ -209,6 +215,7 @@ func (b *BTrDB) EndpointFor(ctx context.Context, uuid uuid.UUID) (*Endpoint, err
 	//We need to connect to endpoint
 	nep, err := ConnectEndpointAuth(ctx, b.apikey, addrs...) //XX
 	if err != nil {
+		b.epmu.Unlock()
 		return nil, err
 	}
 	b.epcache[hash] = nep
@@ -298,10 +305,14 @@ func (b *BTrDB) resyncInternalMash() {
 	//Try clients already in the MASH
 	cm := b.activeMash.Load().(*MASH)
 	for _, mbr := range cm.Members {
+		if !mbr.In {
+			continue
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		ep, err := b.EndpointForHash(ctx, mbr.Hash)
 		if err != nil {
 			lg.Warningf("obtaining endpoint for hash error: %v", err)
+			cancel()
 			continue
 		}
 		mash, _, err := ep.Info(ctx)
@@ -320,6 +331,7 @@ func (b *BTrDB) resyncInternalMash() {
 //This returns true if you should redo your operation (and get new ep)
 //and false if you should return the last value/error you got
 func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
+	startNumResyncs := atomic.LoadInt64(&b.numResyncs)
 	if ep == nil && err == nil {
 		return true
 	}
@@ -330,39 +342,42 @@ func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
 		return false
 	}
 
+	mustResync := false
+
 	if strings.Contains(err.Error(), "getsockopt: connection refused") {
+		mustResync = true
 		//why grpc no use proper code :(
-		time.Sleep(300 * time.Millisecond)
 		lg.Warningf("Got conn refused, resyncing silently")
-		b.ResyncMash()
-		return true
-	}
-	if strings.Contains(err.Error(), "Endpoint is unreachable on all addresses") {
-		time.Sleep(300 * time.Millisecond)
+	} else if strings.Contains(err.Error(), "Endpoint is unreachable on all addresses") {
+		mustResync = true
 		lg.Warningf("Got conn refused, resyncing silently")
-		b.ResyncMash()
-		return true
-	}
-	if grpc.Code(err) == codes.Unavailable {
-		time.Sleep(300 * time.Millisecond)
+	} else if grpc.Code(err) == codes.Unavailable {
+		mustResync = true
 		lg.Warningf("Got unavailable, resyncing mash silently")
-		b.ResyncMash()
-		return true
-	}
-	ce := ToCodedError(err)
-	if ce.Code == 405 {
-		time.Sleep(300 * time.Millisecond)
-		lg.Warningf("Got 405 (wrong endpoint) silently retrying")
-		b.ResyncMash()
-		return true
-	}
-	if ce.Code == 419 {
-		time.Sleep(300 * time.Millisecond)
-		lg.Warningf("Got 419 (cluster degraded) silently retrying")
-		b.ResyncMash()
-		return true
+	} else {
+		ce := ToCodedError(err)
+		if ce.Code == 405 {
+			mustResync = true
+			lg.Warningf("Got 405 (wrong endpoint) silently retrying")
+		}
+		if ce.Code == 419 {
+			mustResync = true
+			lg.Warningf("Got 419 (cluster degraded) silently retrying")
+		}
 	}
 
+	if mustResync {
+		//This is to avoid tight resync loops
+		time.Sleep(300 * time.Millisecond)
+		b.resyncMu.Lock()
+		//No other goroutine has done a resync since we started this testEpError
+		if b.numResyncs == startNumResyncs {
+			b.ResyncMash()
+		}
+		b.numResyncs++
+		b.resyncMu.Unlock()
+		return true
+	}
 	return false
 }
 

@@ -26,7 +26,7 @@ import (
 type PropertyVersion uint64
 
 //How long we try to connect to an endpoint before trying the next one
-const EndpointTimeout = 5*time.Second
+const EndpointTimeout = 5 * time.Second
 
 //Endpoint is a low level connection to a single server. Rather use
 //BTrDB which manages creating and destroying Endpoint objects as required
