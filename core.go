@@ -373,8 +373,8 @@ func (b *BTrDB) TestEpError(ep *Endpoint, err error) bool {
 		//No other goroutine has done a resync since we started this testEpError
 		if b.numResyncs == startNumResyncs {
 			b.ResyncMash()
+			b.numResyncs++
 		}
-		b.numResyncs++
 		b.resyncMu.Unlock()
 		return true
 	}
