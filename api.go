@@ -1,7 +1,7 @@
 // Package btrdb implementes a golang client driver for btrdb
 //
 // For functions returning value, version and error channels, please pay attention
-// to the following concurrenct pattern:
+// to the following concurrency pattern:
 //
 //  - The value channel must be completely consumed, always.
 //  - The version channel need not be consumed if not required. Only one value will ever be written to the version channel.
