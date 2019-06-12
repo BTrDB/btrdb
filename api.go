@@ -20,6 +20,7 @@ package btrdb
 
 import (
 	"context"
+	"time"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
@@ -535,6 +536,23 @@ func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backwa
 		rv, ver, err = ep.Nearest(ctx, s.uuid, time, version, backward)
 	}
 	return
+}
+
+// Earliest returns the point nearest to the specified start time searching forward such that the
+// returned point will be >= after. This function is therefore essentially synonymous with the
+// Nearest function.
+func (s *Stream) Earliest(ctx context.Context, after int64, version uint64) (rv RawPoint, ver uint64, err error) {
+	return s.Nearest(ctx, after, version, false)
+}
+
+// Latest returns the point nearest to the specified end time, searching backward such that the
+// returned point will be <= before. If before is not specified, then the current timestamp is used
+// as the starting point to search from.
+func (s *Stream) Latest(ctx context.Context, before int64, version uint64) (rv RawPoint, ver uint64, err error) {
+	if before == 0 {
+		before = time.Now().UnixNano()
+	}
+	return stream.Nearest(ctx, before, version, true)
 }
 
 func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint64, resolution uint8) (crv chan ChangedRange, cver chan uint64, cerr chan error) {
