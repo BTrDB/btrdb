@@ -20,10 +20,15 @@ package btrdb
 
 import (
 	"context"
-	"time"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
+)
+
+// Maximum window of time that can be stored in a BTrDB tree
+const (
+	MinimumTime = -(16 << 56)
+	MaximumTime = (48 << 56)
 )
 
 //OptKV is a utility function for use in SetAnnotations or LookupStreams that
@@ -542,6 +547,9 @@ func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backwa
 // returned point will be >= after. This function is therefore essentially synonymous with the
 // Nearest function.
 func (s *Stream) Earliest(ctx context.Context, after int64, version uint64) (rv RawPoint, ver uint64, err error) {
+	if after == 0 {
+		after = MinimumTime
+	}
 	return s.Nearest(ctx, after, version, false)
 }
 
@@ -550,7 +558,7 @@ func (s *Stream) Earliest(ctx context.Context, after int64, version uint64) (rv 
 // as the starting point to search from.
 func (s *Stream) Latest(ctx context.Context, before int64, version uint64) (rv RawPoint, ver uint64, err error) {
 	if before == 0 {
-		before = time.Now().UnixNano()
+		before = MaximumTime
 	}
 	return stream.Nearest(ctx, before, version, true)
 }
