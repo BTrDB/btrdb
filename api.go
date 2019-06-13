@@ -25,6 +25,12 @@ import (
 	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
+// Maximum window of time that can be stored in a BTrDB tree
+const (
+	MinimumTime = -(16 << 56)
+	MaximumTime = (48 << 56) - 1
+)
+
 //OptKV is a utility function for use in SetAnnotations or LookupStreams that
 //turns a list of arguments into a map[string]*string. Typical use:
 //  OptKV("key","value", //Set or match key=vale
@@ -163,8 +169,7 @@ func (s *Stream) Tags(ctx context.Context) (map[string]*string, error) {
 	return s.tags, nil
 }
 
-//If a stream has changed tags, you will need to call this to load the new
-//tags
+// If a stream has changed tags, you will need to call this to load the new tags
 func (s *Stream) Refresh(ctx context.Context) error {
 	return s.refreshMeta(ctx)
 }
@@ -535,6 +540,21 @@ func (s *Stream) Nearest(ctx context.Context, time int64, version uint64, backwa
 		rv, ver, err = ep.Nearest(ctx, s.uuid, time, version, backward)
 	}
 	return
+}
+
+// Earliest returns the point nearest to the specified start time searching forward such that the
+// returned point will be >= after. To find the earliest point that exists in a stream, use:
+// stream.Earliest(context.Background(), btrdb.MinimumTime, 0).
+func (s *Stream) Earliest(ctx context.Context, after int64, version uint64) (rv RawPoint, ver uint64, err error) {
+	return s.Nearest(ctx, after, version, false)
+}
+
+// Latest returns the point nearest to the specified end time, searching backward such that the
+// returned point will be < before. To find the latest point that exists in a stream, use:
+// stream.Latest(context.Background(), btrdb.MaximumTime, 0). Another common usage is to find the
+// point closest to now: stream.Latest(context.Background(), time.Now().UnixNano(), 0)
+func (s *Stream) Latest(ctx context.Context, before int64, version uint64) (rv RawPoint, ver uint64, err error) {
+	return s.Nearest(ctx, before, version, true)
 }
 
 func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint64, resolution uint8) (crv chan ChangedRange, cver chan uint64, cerr chan error) {
