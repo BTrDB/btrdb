@@ -114,9 +114,6 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 			dialopts = append(dialopts, grpc.WithInsecure())
 		}
 		if apikey != "" {
-			if !secure {
-				fmt.Printf("WARNING: you are using API key authentication, but are using the insecure (unencrypted) API port. This is very dangerous and should never be done. Try connecting to port 4411 instead.\n")
-			}
 			dialopts = append(dialopts, grpc.WithPerRPCCredentials(apikeyCred(apikey)))
 		}
 		conn, err := grpc.Dial(a, dialopts...)
