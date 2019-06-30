@@ -280,6 +280,9 @@ const OperationNotAllowed = 447
 // When there is an error with TLS certificates
 const TLSError = 448
 
+// Error when interacting with a selector
+const SelectorError = 449
+
 // Used for assert statements
 const InvariantFailure = 500
 
