@@ -28,7 +28,7 @@ import (
 // Maximum window of time that can be stored in a BTrDB tree
 const (
 	MinimumTime = -(16 << 56)
-	MaximumTime = (48 << 56) - 1
+	MaximumTime = (48 << 56)
 )
 
 //OptKV is a utility function for use in SetAnnotations or LookupStreams that
@@ -231,6 +231,15 @@ func (s *Stream) Version(ctx context.Context) (uint64, error) {
 		return ver, nil
 	}
 	return 0, err
+}
+
+//Count the total number of points currently in the stream, efficiently.
+func (s *Stream) Count(ctx context.Context, version uint64) (npoints uint64, err error) {
+	points, _, echan := s.AlignedWindows(ctx, MinimumTime, MaximumTime, 62, version)
+	for point := range points {
+		npoints += point.Count
+	}
+	return npoints, <-echan
 }
 
 //InsertTV allows insertion of two equal length arrays, one containing times and
