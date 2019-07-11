@@ -20,6 +20,7 @@ package btrdb
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pborman/uuid"
 	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
@@ -140,7 +141,7 @@ func (s *Stream) Exists(ctx context.Context) (bool, error) {
 		return true, nil
 	}
 	err := s.refreshMeta(ctx)
-	if err != nil && ToCodedError(err).Code == 404 {
+	if err != nil && (ToCodedError(err).Code == 404 || strings.Contains(err.Error(), "[404] stream does not exist")) {
 		return false, nil
 	}
 	if err != nil {
