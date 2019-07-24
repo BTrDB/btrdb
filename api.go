@@ -323,8 +323,8 @@ func (s *Stream) Obliterate(ctx context.Context) error {
 	return nil
 }
 
-//CompareAndSetAnnotation will make the changes in the given map (where a nil pointer means delete) as long as the
-//annotation version matches
+//CompareAndSetAnnotation will make the changes in the given map as long as the
+//annotation version matches. To remove a key, specify it in the "remove" list
 func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyVersion, changes map[string]*string, remove []string) error {
 	var ep *Endpoint
 	var err error
