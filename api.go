@@ -47,7 +47,8 @@ func OptKV(iz ...interface{}) map[string]*string {
 		}
 		rv := make(map[string]*string)
 		for k, v := range arg {
-			rv[k] = &v
+			cv := v
+			rv[k] = &cv
 		}
 		return rv
 	}
