@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "v5api/btrdb.proto",
-    "version": "5.1.0"
+    "version": "5.7.2"
   },
   "schemes": [
     "http",
@@ -189,6 +189,32 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v5apiGenerateCSVParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v5/getcompactionconfig": {
+      "post": {
+        "operationId": "GetCompactionConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/v5apiGetCompactionConfigResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v5apiGetCompactionConfigParams"
             }
           }
         ],
@@ -397,6 +423,32 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v5apiRawValuesParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v5/setcompactionconfig": {
+      "post": {
+        "operationId": "SetCompactionConfig",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/v5apiSetCompactionConfigResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v5apiSetCompactionConfigParams"
             }
           }
         ],
@@ -816,6 +868,46 @@
         }
       }
     },
+    "v5apiGetCompactionConfigParams": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "byte",
+          "title": "Which stream to query"
+        }
+      }
+    },
+    "v5apiGetCompactionConfigResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/v5apiStatus"
+        },
+        "LatestMajorVersion": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The latest version of the stream, as returned by StreamInfo"
+        },
+        "CompactedVersion": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Accessing versions LESS than this is not allowed"
+        },
+        "reducedResolutionRanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v5apiReducedResolutionRange"
+          },
+          "description": "For every timestamp \u003e= Start and \u003c End in this list,\nwe cannot traverse the tree \u003c Resolution."
+        },
+        "targetArchiveHorizon": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Addresses less than this will be moved to the archive storage soon"
+        }
+      }
+    },
     "v5apiInfoParams": {
       "type": "object"
     },
@@ -1211,6 +1303,23 @@
         }
       }
     },
+    "v5apiReducedResolutionRange": {
+      "type": "object",
+      "properties": {
+        "Start": {
+          "type": "string",
+          "format": "int64"
+        },
+        "End": {
+          "type": "string",
+          "format": "int64"
+        },
+        "Resolution": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "v5apiRole": {
       "type": "object",
       "properties": {
@@ -1248,6 +1357,41 @@
             "type": "string",
             "format": "byte"
           }
+        }
+      }
+    },
+    "v5apiSetCompactionConfigParams": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "byte",
+          "title": "Which stream to configure"
+        },
+        "CompactedVersion": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Accessing versions LESS than this is not allowed"
+        },
+        "reducedResolutionRanges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v5apiReducedResolutionRange"
+          },
+          "title": "For every timestamp \u003e= Start and \u003c End in this list,\nwe cannot traverse the tree \u003c Resolution.\nThese ranges are the new ones you want to add, not the full list"
+        },
+        "targetArchiveHorizon": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Addresses less than this will be moved to the archive storage soon\nYou can't set this to less than it is, so zero means leave as is"
+        }
+      }
+    },
+    "v5apiSetCompactionConfigResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/v5apiStatus"
         }
       }
     },

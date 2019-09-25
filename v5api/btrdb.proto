@@ -129,6 +129,20 @@ service BTrDB {
       body: "*"
     };
   }
+
+  rpc SetCompactionConfig(SetCompactionConfigParams) returns (SetCompactionConfigResponse) {
+  option (google.api.http) = {
+    post: "/v5/setcompactionconfig"
+      body: "*"
+    };
+  }
+  rpc GetCompactionConfig(GetCompactionConfigParams) returns (GetCompactionConfigResponse) {
+  option (google.api.http) = {
+    post: "/v5/getcompactionconfig"
+      body: "*"
+    };
+  }
+
 }
 
 message RawValuesParams {
@@ -420,4 +434,53 @@ message SQLQueryResponse {
 
 message Role {
   string name = 1;
+}
+
+message SetCompactionConfigParams {
+  //Which stream to configure
+  bytes uuid = 1;
+
+  //Accessing versions LESS than this is not allowed
+  uint64 CompactedVersion = 2;
+
+  //For every timestamp >= Start and < End in this list,
+  //we cannot traverse the tree < Resolution.
+  //These ranges are the new ones you want to add, not the full list
+  repeated ReducedResolutionRange reducedResolutionRanges = 3;
+
+  // Addresses less than this will be moved to the archive storage soon
+  // You can't set this to less than it is, so zero means leave as is
+  uint64 targetArchiveHorizon = 4;
+}
+
+message SetCompactionConfigResponse {
+  Status stat = 1;
+}
+
+message GetCompactionConfigParams {
+  //Which stream to query
+  bytes uuid = 1;
+}
+
+message GetCompactionConfigResponse {
+  Status stat = 1;
+
+  //The latest version of the stream, as returned by StreamInfo
+  uint64 LatestMajorVersion = 2;
+
+  //Accessing versions LESS than this is not allowed
+  uint64 CompactedVersion = 3;
+
+  //For every timestamp >= Start and < End in this list,
+  //we cannot traverse the tree < Resolution.
+  repeated ReducedResolutionRange reducedResolutionRanges = 4;
+
+  // Addresses less than this will be moved to the archive storage soon
+  uint64 targetArchiveHorizon = 5;
+}
+
+message ReducedResolutionRange {
+  int64 Start = 1;
+  int64 End = 2;
+  uint32 Resolution = 3;
 }
