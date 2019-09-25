@@ -342,7 +342,7 @@ func (s *Stream) CompareAndSetAnnotation(ctx context.Context, expected PropertyV
 	return nil
 }
 
-//CompareAndSetAnnotation will update a stream's collection name and tags if the property version matches
+//CompareAndSetTags will update a stream's collection name and tags if the property version matches
 func (s *Stream) CompareAndSetTags(ctx context.Context, expected PropertyVersion, collection string, changes map[string]*string) error {
 	var ep *Endpoint
 	var err error
@@ -568,6 +568,8 @@ func (s *Stream) Latest(ctx context.Context, before int64, version uint64) (rv R
 	return s.Nearest(ctx, before, version, true)
 }
 
+// Changes returns the time intervals that have been altered between the two given versions. The precision of these time intervals is given by
+// resolution (in log nanoseconds). The intervals will be rounded bigger if resolution is >0 but the calculation will be faster
 func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint64, resolution uint8) (crv chan ChangedRange, cver chan uint64, cerr chan error) {
 	var ep *Endpoint
 	var err error
@@ -592,6 +594,36 @@ func (s *Stream) Changes(ctx context.Context, fromVersion uint64, toVersion uint
 	return rv, cver, errc
 }
 
+//GetCompactionConfig returns the compaction configuration for the given stream
+func (s *Stream) GetCompactionConfig(ctx context.Context) (cfg *CompactionConfig, majVersion uint64, err error) {
+	var ep *Endpoint
+	for s.b.TestEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		cfg, majVersion, err = ep.GetCompactionConfig(ctx, s.uuid)
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+//SetCompactionConfig sets the compaction configuration for the given stream
+func (s *Stream) SetCompactionConfig(ctx context.Context, cfg *CompactionConfig) (err error) {
+	var ep *Endpoint
+	for s.b.TestEpError(ep, err) {
+		ep, err = s.b.EndpointFor(ctx, s.uuid)
+		if err != nil {
+			continue
+		}
+		err = ep.SetCompactionConfig(ctx, s.uuid, cfg)
+	}
+	return
+}
+
+//Create a new stream with the given uuid, collection tags and annotations
 func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tags map[string]*string, annotations map[string]*string) (*Stream, error) {
 	var ep *Endpoint
 	var err error
@@ -626,6 +658,7 @@ func (b *BTrDB) Create(ctx context.Context, uu uuid.UUID, collection string, tag
 	return rv, nil
 }
 
+//ListCollections returns all collections on the server having the given prefix. It is preferable to use the streaming form
 func (b *BTrDB) ListCollections(ctx context.Context, prefix string) ([]string, error) {
 	rv := []string{}
 	rvc, rve := b.StreamingListCollections(ctx, prefix)

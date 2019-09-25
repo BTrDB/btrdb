@@ -772,6 +772,77 @@ func (b *Endpoint) Nearest(ctx context.Context, uu uuid.UUID, time int64, versio
 	return RawPoint{Time: rv.Value.Time, Value: rv.Value.Value}, rv.VersionMajor, nil
 }
 
+type ReducedResolutionRange struct {
+	Start      int64
+	End        int64
+	Resolution uint32
+}
+
+type CompactionConfig struct {
+	// Accessing versions LESS than this is not allowed
+	CompactedVersion uint64
+	// For every timestamp >= Start and < End in this list,
+	// we cannot traverse the tree < Resolution.
+	// These ranges are the new ones you want to add, not the full list
+	ReducedResolutionRanges []*ReducedResolutionRange
+	// Addresses less than this will be moved to the archive storage soon
+	// You can't set this to less than it is, so zero means leave as is
+	TargetArchiveHorizon uint64
+}
+
+//SetCompactionConfig is a low level function, use Stream.SetCompactionConfig instead
+func (b *Endpoint) SetCompactionConfig(ctx context.Context, uu uuid.UUID, cfg *CompactionConfig) error {
+	rrz := make([]*pb.ReducedResolutionRange, len(cfg.ReducedResolutionRanges))
+	for i, r := range cfg.ReducedResolutionRanges {
+		rrz[i] = &pb.ReducedResolutionRange{
+			Start:      r.Start,
+			End:        r.End,
+			Resolution: r.Resolution,
+		}
+	}
+	rv, err := b.g.SetCompactionConfig(ctx, &pb.SetCompactionConfigParams{
+		Uuid:                    uu,
+		CompactedVersion:        cfg.CompactedVersion,
+		ReducedResolutionRanges: rrz,
+		TargetArchiveHorizon:    cfg.TargetArchiveHorizon,
+	})
+	if err != nil {
+		return err
+	}
+	if rv.Stat != nil {
+		return &CodedError{rv.Stat}
+	}
+	return nil
+}
+
+//GetCompactionConfig is a low level function, use Stream.GetCompactionConfig instead
+func (b *Endpoint) GetCompactionConfig(ctx context.Context, uu uuid.UUID) (cfg *CompactionConfig, majVersion uint64, err error) {
+	rv, err := b.g.GetCompactionConfig(ctx, &pb.GetCompactionConfigParams{
+		Uuid: uu,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	if rv.Stat != nil {
+		return nil, 0, &CodedError{rv.Stat}
+	}
+
+	rrz := make([]*ReducedResolutionRange, len(rv.ReducedResolutionRanges))
+	for i, r := range rv.ReducedResolutionRanges {
+		rrz[i] = &ReducedResolutionRange{
+			Start:      r.Start,
+			End:        r.End,
+			Resolution: r.Resolution,
+		}
+	}
+	cfg = &CompactionConfig{
+		CompactedVersion:        rv.CompactedVersion,
+		ReducedResolutionRanges: rrz,
+		TargetArchiveHorizon:    rv.TargetArchiveHorizon,
+	}
+	return cfg, rv.LatestMajorVersion, nil
+}
+
 type ChangedRange struct {
 	Version uint64
 	Start   int64
