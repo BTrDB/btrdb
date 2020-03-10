@@ -147,6 +147,10 @@ func (b *Endpoint) GetGRPC() pb.BTrDBClient {
 	return b.g
 }
 
+func (b *Endpoint) GetClientConnection() *grpc.ClientConn {
+	return b.conn
+}
+
 //Disconnect will close the underlying GRPC connection. The endpoint cannot be used
 //after calling this method.
 func (b *Endpoint) Disconnect() error {
