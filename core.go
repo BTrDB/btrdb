@@ -70,11 +70,12 @@ func newBTrDB() *BTrDB {
 //window must be determined from context (e.g the parameters passed to AlignedWindow or Window methods)
 type StatPoint struct {
 	//The time of the start of the window, in nanoseconds since the epoch UTC
-	Time  int64
-	Min   float64
-	Mean  float64
-	Max   float64
-	Count uint64
+	Time   int64
+	Min    float64
+	Mean   float64
+	Max    float64
+	Count  uint64
+	StdDev float64
 }
 
 //Connect takes a list of endpoints and returns a BTrDB handle.

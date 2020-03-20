@@ -625,11 +625,12 @@ func (b *Endpoint) AlignedWindows(ctx context.Context, uu uuid.UUID, start int64
 			}
 			for _, x := range rawv.Values {
 				rvc <- StatPoint{
-					Time:  x.Time,
-					Min:   x.Min,
-					Mean:  x.Mean,
-					Max:   x.Max,
-					Count: x.Count,
+					Time:   x.Time,
+					Min:    x.Min,
+					Mean:   x.Mean,
+					Max:    x.Max,
+					Count:  x.Count,
+					StdDev: x.Stddev,
 				}
 			}
 		}
@@ -687,11 +688,12 @@ func (b *Endpoint) Windows(ctx context.Context, uu uuid.UUID, start int64, end i
 			}
 			for _, x := range rawv.Values {
 				rvc <- StatPoint{
-					Time:  x.Time,
-					Min:   x.Min,
-					Mean:  x.Mean,
-					Max:   x.Max,
-					Count: x.Count,
+					Time:   x.Time,
+					Min:    x.Min,
+					Mean:   x.Mean,
+					Max:    x.Max,
+					Count:  x.Count,
+					StdDev: x.Stddev,
 				}
 			}
 		}
