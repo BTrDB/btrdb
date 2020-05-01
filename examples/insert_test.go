@@ -8,7 +8,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/BTrDB/btrdb"
+	btrdb "github.com/BTrDB/btrdb/v5"
 )
 
 func TestInsertingProceduralData(t *testing.T) {
@@ -31,12 +31,14 @@ func TestInsertingProceduralData(t *testing.T) {
 	//not small numbers of big collections
 	collection := fmt.Sprintf("test/inserting_procedural_data.%d", time.Now().UnixNano())
 	//Tags are used to identify streams within a collection
-	tags := btrdb.M{"key": "value", "anotherkey": "anothervalue"}
+	val := "value"
+	anotherVal := "anothervalue"
+	tags := map[string]*string{"key": &val, "anotherkey": &anotherVal}
 	//The annotation is used to store (mutable) extra data with the stream. It
 	//is technically just a byte array, but we prefer people use msgpacked objects.
 	//the tooling is not quite there to make this easy, so its ok to make this nil
 	//for now
-	var annotation map[string]string = nil
+	var annotation map[string]*string = nil
 
 	stream, err := db.Create(context.TODO(), uu, collection, tags, annotation)
 	if err != nil {
