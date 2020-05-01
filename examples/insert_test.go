@@ -3,6 +3,7 @@ package examples
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	//"server1:4410;server2:4410..."
 	//Note that not all endpoints need be listed, but it will make this
 	//program more resilient if you specify more or all of the endpoints
-	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	db, err := btrdb.ConnectAuth(context.TODO(), os.Getenv("BTRDB_APIKEY"), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
