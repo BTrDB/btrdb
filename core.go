@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
+	pb "github.com/BTrDB/btrdb/v5/v5api"
 	logging "github.com/op/go-logging"
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 var lg *logging.Logger
