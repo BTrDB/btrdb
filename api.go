@@ -22,8 +22,8 @@ import (
 	"context"
 	"strings"
 
+	pb "github.com/BTrDB/btrdb/v5/v5api"
 	"github.com/pborman/uuid"
-	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 // Maximum window of time that can be stored in a BTrDB tree

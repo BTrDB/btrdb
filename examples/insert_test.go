@@ -3,12 +3,13 @@ package examples
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/pborman/uuid"
 
-	"github.com/BTrDB/btrdb"
+	btrdb "github.com/BTrDB/btrdb/v5"
 )
 
 func TestInsertingProceduralData(t *testing.T) {
@@ -19,7 +20,7 @@ func TestInsertingProceduralData(t *testing.T) {
 	//"server1:4410;server2:4410..."
 	//Note that not all endpoints need be listed, but it will make this
 	//program more resilient if you specify more or all of the endpoints
-	db, err := btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
+	db, err := btrdb.ConnectAuth(context.TODO(), os.Getenv("BTRDB_APIKEY"), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		t.Fatalf("Unexpected connection error: %v", err)
 	}
@@ -31,12 +32,14 @@ func TestInsertingProceduralData(t *testing.T) {
 	//not small numbers of big collections
 	collection := fmt.Sprintf("test/inserting_procedural_data.%d", time.Now().UnixNano())
 	//Tags are used to identify streams within a collection
-	tags := btrdb.M{"key": "value", "anotherkey": "anothervalue"}
+	val := "value"
+	anotherVal := "anothervalue"
+	tags := map[string]*string{"key": &val, "anotherkey": &anotherVal}
 	//The annotation is used to store (mutable) extra data with the stream. It
 	//is technically just a byte array, but we prefer people use msgpacked objects.
 	//the tooling is not quite there to make this easy, so its ok to make this nil
 	//for now
-	var annotation map[string]string = nil
+	var annotation map[string]*string = nil
 
 	stream, err := db.Create(context.TODO(), uu, collection, tags, annotation)
 	if err != nil {

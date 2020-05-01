@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BTrDB/btrdb/v5/bte"
+	pb "github.com/BTrDB/btrdb/v5/v5api"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"gopkg.in/BTrDB/btrdb.v5/bte"
-	pb "gopkg.in/BTrDB/btrdb.v5/v5api"
 )
 
 //PropertyVersion is the version of a stream annotations and tags. It begins at 1
