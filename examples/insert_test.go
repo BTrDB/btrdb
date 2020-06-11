@@ -31,17 +31,13 @@ func TestInsertingProceduralData(t *testing.T) {
 	//with a single device or service. BTrDB is designed for lots of small collections
 	//not small numbers of big collections
 	collection := fmt.Sprintf("test/inserting_procedural_data.%d", time.Now().UnixNano())
-	//Tags are used to identify streams within a collection
-	val := "value"
-	anotherVal := "anothervalue"
-	tags := map[string]*string{"key": &val, "anotherkey": &anotherVal}
 	//The annotation is used to store (mutable) extra data with the stream. It
 	//is technically just a byte array, but we prefer people use msgpacked objects.
 	//the tooling is not quite there to make this easy, so its ok to make this nil
 	//for now
 	var annotation map[string]*string = nil
 
-	stream, err := db.Create(context.TODO(), uu, collection, tags, annotation)
+	stream, err := db.Create(context.TODO(), uu, collection, btrdb.OptKV("name", "test"), annotation)
 	if err != nil {
 		t.Fatalf("Unexpected creation error: %v", err)
 	}
