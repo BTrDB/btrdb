@@ -10,14 +10,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/BTrDB/btrdb/v5/bte"
-	pb "github.com/BTrDB/btrdb/v5/v5api"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/BTrDB/btrdb/v5/bte"
+	pb "github.com/BTrDB/btrdb/v5/v5api"
 )
 
 //PropertyVersion is the version of a stream annotations and tags. It begins at 1
@@ -99,14 +101,19 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 		if addrport[1] == "4411" {
 			secure = true
 		}
+		securePorts := strings.Split(os.Getenv("BTRDB_SECURE_PORTS"),",")
+		for _, portString := range securePorts {
+			if addrport[1] == portString {
+				secure = true
+				break
+			}
+		}
 		dc := grpc.NewGZIPDecompressor()
 		dialopts := []grpc.DialOption{
+			grpc.WithDecompressor(dc),
 			grpc.WithTimeout(tmt),
 			grpc.FailOnNonTempDialError(true),
-			grpc.WithBlock(),
-			grpc.WithDecompressor(dc),
-			grpc.WithInitialWindowSize(1 * 1024 * 1024),
-			grpc.WithInitialConnWindowSize(1 * 1024 * 1024)}
+			grpc.WithBlock()}
 
 		if secure {
 			dialopts = append(dialopts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
