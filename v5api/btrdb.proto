@@ -287,9 +287,16 @@ message ChangesResponse {
   uint64 versionMinor = 3;
   repeated ChangedRange ranges = 4;
 }
+enum MergePolicy {
+  NEVER = 0;	// Never merge
+  EQUAL = 1;	// Merge identical (key, value) pairs
+  RETAIN = 2;	// When timestamps are equal, keep old value
+  REPLACE = 3;	// When timestamps are equal, keep new value
+}
 message InsertParams {
   bytes uuid = 1;
   bool sync = 2;
+  MergePolicy merge_policy = 4;
   repeated RawPoint values = 3;
 }
 message InsertResponse {

@@ -359,11 +359,8 @@ func (s *Stream) CompareAndSetTags(ctx context.Context, expected PropertyVersion
 	return nil
 }
 
-//Insert inserts the given array of RawPoint values. If the
-//array is larger than appropriate, this function will automatically chunk the inserts.
-//As a consequence, the insert is not necessarily atomic, but can be used with
-//very large arrays.
-func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
+//InsertUnique acts like Insert, but allows specifying a merge policy.
+func (s *Stream) InsertUnique(ctx context.Context, vals []RawPoint, mp MergePolicy) error {
 	var ep *Endpoint
 	var err error
 	batchsize := 50000
@@ -387,7 +384,7 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 			if err != nil {
 				continue
 			}
-			err = ep.Insert(ctx, s.uuid, pbraws)
+			err = ep.InsertUnique(ctx, s.uuid, pbraws, mp)
 		}
 		if err != nil {
 			return err
@@ -395,6 +392,15 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 		vals = vals[end:]
 	}
 	return nil
+
+}
+
+//Insert inserts the given array of RawPoint values. If the
+//array is larger than appropriate, this function will automatically chunk the inserts.
+//As a consequence, the insert is not necessarily atomic, but can be used with
+//very large arrays.
+func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
+	return s.InsertUnique(ctx, vals, MPNever)
 }
 
 //InsertF will call the given time and val functions to get each value of the
