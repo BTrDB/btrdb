@@ -43,6 +43,14 @@ type RawPoint struct {
 	Value float64
 }
 
+type MergePolicy = int
+
+const (
+	MPNever = MergePolicy(iota)
+	MPEqual
+	MPRetain
+	MPReplace
+)
 var forceEp = errors.New("Not really an error, you should not see this")
 
 type apikeyCred string
@@ -157,12 +165,19 @@ func (b *Endpoint) Disconnect() error {
 	return b.conn.Close()
 }
 
-//Insert is a low level function, rather use Stream.Insert()
-func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
+func (b *Endpoint) InsertUnique(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint, mp MergePolicy) error {
+	policy := pb.MergePolicy_NEVER
+	switch mp {
+	case MPNever:	policy = pb.MergePolicy_NEVER
+	case MPEqual:	policy = pb.MergePolicy_EQUAL
+	case MPRetain:	policy = pb.MergePolicy_RETAIN
+	case MPReplace:	policy = pb.MergePolicy_REPLACE
+	}
 	rv, err := b.g.Insert(ctx, &pb.InsertParams{
 		Uuid:   uu,
 		Sync:   false,
 		Values: values,
+		MergePolicy: policy,
 	})
 	if err != nil {
 		return err
@@ -171,6 +186,11 @@ func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoi
 		return &CodedError{rv.GetStat()}
 	}
 	return nil
+}
+
+//Insert is a low level function, rather use Stream.Insert()
+func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
+	return b.InsertUnique(ctx, uu, values, MPNever)
 }
 
 //FaultInject is a debugging function that allows specific low level control of the endpoint.
