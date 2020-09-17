@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "v5api/btrdb.proto",
-    "version": "5.7.2"
+    "version": "5.12.0"
   },
   "schemes": [
     "http",
@@ -20,9 +20,9 @@
         "operationId": "AlignedWindows",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiAlignedWindowsResponse"
+              "$ref": "#/x-stream-definitions/v5apiAlignedWindowsResponse"
             }
           }
         },
@@ -46,9 +46,9 @@
         "operationId": "Changes",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiChangesResponse"
+              "$ref": "#/x-stream-definitions/v5apiChangesResponse"
             }
           }
         },
@@ -72,7 +72,7 @@
         "operationId": "Create",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiCreateResponse"
             }
@@ -98,7 +98,7 @@
         "operationId": "Delete",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiDeleteResponse"
             }
@@ -124,7 +124,7 @@
         "operationId": "FaultInject",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiFaultInjectResponse"
             }
@@ -150,7 +150,7 @@
         "operationId": "Flush",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiFlushResponse"
             }
@@ -176,9 +176,9 @@
         "operationId": "GenerateCSV",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiGenerateCSVResponse"
+              "$ref": "#/x-stream-definitions/v5apiGenerateCSVResponse"
             }
           }
         },
@@ -202,7 +202,7 @@
         "operationId": "GetCompactionConfig",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiGetCompactionConfigResponse"
             }
@@ -228,7 +228,7 @@
         "operationId": "GetMetadataUsage",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiMetadataUsageResponse"
             }
@@ -254,7 +254,7 @@
         "operationId": "Info",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiInfoResponse"
             }
@@ -280,7 +280,7 @@
         "operationId": "Insert",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiInsertResponse"
             }
@@ -306,9 +306,9 @@
         "operationId": "ListCollections",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiListCollectionsResponse"
+              "$ref": "#/x-stream-definitions/v5apiListCollectionsResponse"
             }
           }
         },
@@ -332,9 +332,9 @@
         "operationId": "LookupStreams",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiLookupStreamsResponse"
+              "$ref": "#/x-stream-definitions/v5apiLookupStreamsResponse"
             }
           }
         },
@@ -358,7 +358,7 @@
         "operationId": "Nearest",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiNearestResponse"
             }
@@ -384,7 +384,7 @@
         "operationId": "Obliterate",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiObliterateResponse"
             }
@@ -410,9 +410,9 @@
         "operationId": "RawValues",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiRawValuesResponse"
+              "$ref": "#/x-stream-definitions/v5apiRawValuesResponse"
             }
           }
         },
@@ -436,7 +436,7 @@
         "operationId": "SetCompactionConfig",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiSetCompactionConfigResponse"
             }
@@ -462,7 +462,7 @@
         "operationId": "SetStreamAnnotations",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiSetStreamAnnotationsResponse"
             }
@@ -488,7 +488,7 @@
         "operationId": "SetStreamTags",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiSetStreamTagsResponse"
             }
@@ -514,9 +514,9 @@
         "operationId": "SQLQuery",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiSQLQueryResponse"
+              "$ref": "#/x-stream-definitions/v5apiSQLQueryResponse"
             }
           }
         },
@@ -540,7 +540,7 @@
         "operationId": "StreamInfo",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v5apiStreamInfoResponse"
             }
@@ -566,9 +566,9 @@
         "operationId": "Windows",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v5apiWindowsResponse"
+              "$ref": "#/x-stream-definitions/v5apiWindowsResponse"
             }
           }
         },
@@ -597,6 +597,43 @@
         "RAW_QUERY"
       ],
       "default": "ALIGNED_WINDOWS_QUERY"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
     },
     "v5apiAlignedWindowsParams": {
       "type": "object",
@@ -947,6 +984,9 @@
           "type": "boolean",
           "format": "boolean"
         },
+        "merge_policy": {
+          "$ref": "#/definitions/v5apiMergePolicy"
+        },
         "values": {
           "type": "array",
           "items": {
@@ -1139,6 +1179,16 @@
           "type": "string"
         }
       }
+    },
+    "v5apiMergePolicy": {
+      "type": "string",
+      "enum": [
+        "NEVER",
+        "EQUAL",
+        "RETAIN",
+        "REPLACE"
+      ],
+      "default": "NEVER"
     },
     "v5apiMetadataUsageParams": {
       "type": "object",
@@ -1641,6 +1691,104 @@
           }
         }
       }
+    }
+  },
+  "x-stream-definitions": {
+    "v5apiAlignedWindowsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiAlignedWindowsResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiAlignedWindowsResponse"
+    },
+    "v5apiChangesResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiChangesResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiChangesResponse"
+    },
+    "v5apiGenerateCSVResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiGenerateCSVResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiGenerateCSVResponse"
+    },
+    "v5apiListCollectionsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiListCollectionsResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiListCollectionsResponse"
+    },
+    "v5apiLookupStreamsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiLookupStreamsResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiLookupStreamsResponse"
+    },
+    "v5apiRawValuesResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiRawValuesResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiRawValuesResponse"
+    },
+    "v5apiSQLQueryResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiSQLQueryResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiSQLQueryResponse"
+    },
+    "v5apiWindowsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v5apiWindowsResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v5apiWindowsResponse"
     }
   }
 }
