@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package v5api;
 
+option go_package = "v5api;v5api";
+
 import "google/api/annotations.proto";
 
 service BTrDB {

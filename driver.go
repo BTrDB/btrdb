@@ -1,8 +1,8 @@
 package btrdb
 
-//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --go_out=plugins=grpc:. v5api/btrdb.proto
-//go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  v5api/btrdb.proto
-//don't automatic go:generate protoc -I/usr/local/include -I. -I$GOPATH/src -I$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  v5api/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --go_out=plugins=grpc:. v5api/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  v5api/btrdb.proto
+//don't automatically go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  v5api/btrdb.proto
 import (
 	"context"
 	"crypto/tls"
