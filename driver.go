@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -104,9 +105,16 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 			continue
 		}
 		secure := false
-		if addrport[1] == "4411" {
+
+		switch {
+		case os.Getenv("BTRDB_FORCE_SECURE") == "YES":
 			secure = true
+		case addrport[1] == "4411" && os.Getenv("BTRDB_FORCE_INSECURE") != "YES":
+			secure = true
+		default:
+			secure = false
 		}
+
 		dc := grpc.NewGZIPDecompressor()
 		dialopts := []grpc.DialOption{
 			grpc.WithTimeout(tmt),
