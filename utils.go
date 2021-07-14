@@ -26,12 +26,14 @@ func (ce *CodedError) Error() string {
 //ToCodedError can be used to convert any error into a CodedError. If the
 //error object is actually not coded, it will receive code 501.
 func ToCodedError(e error) *CodedError {
-	ce, ok := e.(*CodedError)
-	if ok {
+	if e == nil {
+		return nil
+	} else if ce, ok := e.(*CodedError); ok {
 		return ce
+	} else {
+		s := pb.Status{Code: 501, Msg: e.Error()}
+		return &CodedError{&s}
 	}
-	s := pb.Status{Code: 501, Msg: e.Error()}
-	return &CodedError{&s}
 }
 
 //LatestVersion can be passed to any functions taking a version to use the
