@@ -1,8 +1,8 @@
 package btrdb
 
-//go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --go_out=plugins=grpc:. v5api/btrdb.proto
-//go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:.  v5api/btrdb.proto
-//don't automatically go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  v5api/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. --go_out=plugins=grpc:. ./v5api/btrdb.proto
+//go:generate protoc -I/usr/local/include -I. --grpc-gateway_out=logtostderr=true:.  ./v5api/btrdb.proto
+//don't automatically go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  ./v5api/btrdb.proto
 import (
 	"context"
 	"crypto/tls"
@@ -42,6 +42,11 @@ type RawPoint struct {
 	Time int64
 	//Value. Units are stream-dependent
 	Value float64
+}
+
+type InsertParams struct {
+	RoundBits	*int
+	MergePolicy	MergePolicy
 }
 
 type MergePolicy = int
@@ -173,19 +178,28 @@ func (b *Endpoint) Disconnect() error {
 	return b.conn.Close()
 }
 
-func (b *Endpoint) InsertUnique(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint, mp MergePolicy) error {
+func (b *Endpoint) InsertGeneric(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint, p *InsertParams) error {
 	policy := pb.MergePolicy_NEVER
-	switch mp {
-	case MPNever:	policy = pb.MergePolicy_NEVER
-	case MPEqual:	policy = pb.MergePolicy_EQUAL
-	case MPRetain:	policy = pb.MergePolicy_RETAIN
-	case MPReplace:	policy = pb.MergePolicy_REPLACE
+	rounding := (*pb.RoundSpec)(nil)
+	if p != nil {
+		if p.RoundBits != nil {
+			rounding = &pb.RoundSpec {
+				Spec: &pb.RoundSpec_Bits{int32(*p.RoundBits)},
+			}
+		}
+		switch p.MergePolicy {
+		case MPNever:	policy = pb.MergePolicy_NEVER
+		case MPEqual:	policy = pb.MergePolicy_EQUAL
+		case MPRetain:	policy = pb.MergePolicy_RETAIN
+		case MPReplace:	policy = pb.MergePolicy_REPLACE
+		}
 	}
 	rv, err := b.g.Insert(ctx, &pb.InsertParams{
 		Uuid:   uu,
 		Sync:   false,
 		Values: values,
 		MergePolicy: policy,
+		Rounding: rounding,
 	})
 	if err != nil {
 		return err
@@ -196,9 +210,13 @@ func (b *Endpoint) InsertUnique(ctx context.Context, uu uuid.UUID, values []*pb.
 	return nil
 }
 
+func (b *Endpoint) InsertUnique(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint, mp MergePolicy) error {
+	return b.InsertGeneric(ctx, uu, values, &InsertParams{MergePolicy: mp})
+}
+
 //Insert is a low level function, rather use Stream.Insert()
 func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
-	return b.InsertUnique(ctx, uu, values, MPNever)
+	return b.InsertGeneric(ctx, uu, values, nil)
 }
 
 //FaultInject is a debugging function that allows specific low level control of the endpoint.
