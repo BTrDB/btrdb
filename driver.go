@@ -120,12 +120,10 @@ func ConnectEndpointAuth(ctx context.Context, apikey string, addresses ...string
 			secure = false
 		}
 
-		dc := grpc.NewGZIPDecompressor()
 		dialopts := []grpc.DialOption{
 			grpc.WithTimeout(tmt),
 			grpc.FailOnNonTempDialError(true),
 			grpc.WithBlock(),
-			grpc.WithDecompressor(dc),
 			grpc.WithInitialWindowSize(1 * 1024 * 1024),
 			grpc.WithInitialConnWindowSize(1 * 1024 * 1024)}
 
