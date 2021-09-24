@@ -1,7 +1,5 @@
 package btrdb
 
-//go:generate protoc -I/usr/local/include -I. --go_out=plugins=grpc:. ./v5api/btrdb.proto
-//go:generate protoc -I/usr/local/include -I. --grpc-gateway_out=logtostderr=true:.  ./v5api/btrdb.proto
 //don't automatically go:generate protoc -I/usr/local/include -I. -Igrpc-gateway/third_party/googleapis --swagger_out=logtostderr=true:.  ./v5api/btrdb.proto
 import (
 	"context"
@@ -45,8 +43,8 @@ type RawPoint struct {
 }
 
 type InsertParams struct {
-	RoundBits	*int
-	MergePolicy	MergePolicy
+	RoundBits   *int
+	MergePolicy MergePolicy
 }
 
 type MergePolicy = int
@@ -57,6 +55,7 @@ const (
 	MPRetain
 	MPReplace
 )
+
 var forceEp = errors.New("Not really an error, you should not see this")
 
 type apikeyCred string
@@ -181,23 +180,27 @@ func (b *Endpoint) InsertGeneric(ctx context.Context, uu uuid.UUID, values []*pb
 	rounding := (*pb.RoundSpec)(nil)
 	if p != nil {
 		if p.RoundBits != nil {
-			rounding = &pb.RoundSpec {
+			rounding = &pb.RoundSpec{
 				Spec: &pb.RoundSpec_Bits{int32(*p.RoundBits)},
 			}
 		}
 		switch p.MergePolicy {
-		case MPNever:	policy = pb.MergePolicy_NEVER
-		case MPEqual:	policy = pb.MergePolicy_EQUAL
-		case MPRetain:	policy = pb.MergePolicy_RETAIN
-		case MPReplace:	policy = pb.MergePolicy_REPLACE
+		case MPNever:
+			policy = pb.MergePolicy_NEVER
+		case MPEqual:
+			policy = pb.MergePolicy_EQUAL
+		case MPRetain:
+			policy = pb.MergePolicy_RETAIN
+		case MPReplace:
+			policy = pb.MergePolicy_REPLACE
 		}
 	}
 	rv, err := b.g.Insert(ctx, &pb.InsertParams{
-		Uuid:   uu,
-		Sync:   false,
-		Values: values,
+		Uuid:        uu,
+		Sync:        false,
+		Values:      values,
 		MergePolicy: policy,
-		Rounding: rounding,
+		Rounding:    rounding,
 	})
 	if err != nil {
 		return err
