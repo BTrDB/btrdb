@@ -572,7 +572,7 @@ func (s *Stream) Earliest(ctx context.Context, after int64, version uint64) (rv 
 
 // Latest returns the point nearest to the specified end time, searching backward such that the
 // returned point will be < before. To find the latest point that exists in a stream, use:
-// stream.Latest(context.Background(), btrdb.MaximumTime, 0). Another common usage is to find the
+// stream.Latest(context.Background(), btrdb.MaximumTime-1, 0). Another common usage is to find the
 // point closest to now: stream.Latest(context.Background(), time.Now().UnixNano(), 0)
 func (s *Stream) Latest(ctx context.Context, before int64, version uint64) (rv RawPoint, ver uint64, err error) {
 	return s.Nearest(ctx, before, version, true)
