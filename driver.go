@@ -218,8 +218,8 @@ func (b *Endpoint) InsertUnique(ctx context.Context, uu uuid.UUID, values []*pb.
 }
 
 //Insert is a low level function, rather use Stream.Insert()
-func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint) error {
-	return b.InsertGeneric(ctx, uu, values, nil)
+func (b *Endpoint) Insert(ctx context.Context, uu uuid.UUID, values []*pb.RawPoint, p *InsertParams) error {
+	return b.InsertGeneric(ctx, uu, values, p)
 }
 
 //FaultInject is a debugging function that allows specific low level control of the endpoint.
