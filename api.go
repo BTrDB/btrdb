@@ -250,7 +250,7 @@ func (s *Stream) Count(ctx context.Context, version uint64) (npoints uint64, err
 //arrays are larger than appropriate, this function will automatically chunk the inserts.
 //As a consequence, the insert is not necessarily atomic, but can be used with
 //very large arrays.
-func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) error {
+func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64, p *InsertParams) error {
 	if len(times) != len(values) {
 		return ErrorWrongArgs
 	}
@@ -278,7 +278,7 @@ func (s *Stream) InsertTV(ctx context.Context, times []int64, values []float64) 
 			if err != nil {
 				continue
 			}
-			err = ep.Insert(ctx, s.uuid, pbraws)
+			err = ep.Insert(ctx, s.uuid, pbraws, p)
 		}
 		if err != nil {
 			return err
@@ -413,7 +413,7 @@ func (s *Stream) Insert(ctx context.Context, vals []RawPoint) error {
 //size is larger than appropriate, this function will automatically chunk the inserts.
 //As a consequence, the insert is not necessarily atomic, but can be used with
 //very large size.
-func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, val func(int) float64) error {
+func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, val func(int) float64, p *InsertParams) error {
 	var ep *Endpoint
 	var err error
 	batchsize := 50000
@@ -438,7 +438,7 @@ func (s *Stream) InsertF(ctx context.Context, length int, time func(int) int64, 
 			if err != nil {
 				continue
 			}
-			err = ep.Insert(ctx, s.uuid, pbraws)
+			err = ep.Insert(ctx, s.uuid, pbraws, p)
 		}
 		if err != nil {
 			return err
