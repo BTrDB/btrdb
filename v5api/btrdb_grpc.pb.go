@@ -38,6 +38,7 @@ type BTrDBClient interface {
 	GetMetadataUsage(ctx context.Context, in *MetadataUsageParams, opts ...grpc.CallOption) (*MetadataUsageResponse, error)
 	GenerateCSV(ctx context.Context, in *GenerateCSVParams, opts ...grpc.CallOption) (BTrDB_GenerateCSVClient, error)
 	SQLQuery(ctx context.Context, in *SQLQueryParams, opts ...grpc.CallOption) (BTrDB_SQLQueryClient, error)
+	Subscribe(ctx context.Context, in *SubscriptionParams, opts ...grpc.CallOption) (BTrDB_SubscribeClient, error)
 	SetCompactionConfig(ctx context.Context, in *SetCompactionConfigParams, opts ...grpc.CallOption) (*SetCompactionConfigResponse, error)
 	GetCompactionConfig(ctx context.Context, in *GetCompactionConfigParams, opts ...grpc.CallOption) (*GetCompactionConfigResponse, error)
 }
@@ -414,6 +415,38 @@ func (x *bTrDBSQLQueryClient) Recv() (*SQLQueryResponse, error) {
 	return m, nil
 }
 
+func (c *bTrDBClient) Subscribe(ctx context.Context, in *SubscriptionParams, opts ...grpc.CallOption) (BTrDB_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[8], "/v5api.BTrDB/Subscribe", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &bTrDBSubscribeClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type BTrDB_SubscribeClient interface {
+	Recv() (*SubscriptionResp, error)
+	grpc.ClientStream
+}
+
+type bTrDBSubscribeClient struct {
+	grpc.ClientStream
+}
+
+func (x *bTrDBSubscribeClient) Recv() (*SubscriptionResp, error) {
+	m := new(SubscriptionResp)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *bTrDBClient) SetCompactionConfig(ctx context.Context, in *SetCompactionConfigParams, opts ...grpc.CallOption) (*SetCompactionConfigResponse, error) {
 	out := new(SetCompactionConfigResponse)
 	err := c.cc.Invoke(ctx, "/v5api.BTrDB/SetCompactionConfig", in, out, opts...)
@@ -456,6 +489,7 @@ type BTrDBServer interface {
 	GetMetadataUsage(context.Context, *MetadataUsageParams) (*MetadataUsageResponse, error)
 	GenerateCSV(*GenerateCSVParams, BTrDB_GenerateCSVServer) error
 	SQLQuery(*SQLQueryParams, BTrDB_SQLQueryServer) error
+	Subscribe(*SubscriptionParams, BTrDB_SubscribeServer) error
 	SetCompactionConfig(context.Context, *SetCompactionConfigParams) (*SetCompactionConfigResponse, error)
 	GetCompactionConfig(context.Context, *GetCompactionConfigParams) (*GetCompactionConfigResponse, error)
 	mustEmbedUnimplementedBTrDBServer()
@@ -524,6 +558,9 @@ func (UnimplementedBTrDBServer) GenerateCSV(*GenerateCSVParams, BTrDB_GenerateCS
 }
 func (UnimplementedBTrDBServer) SQLQuery(*SQLQueryParams, BTrDB_SQLQueryServer) error {
 	return status.Errorf(codes.Unimplemented, "method SQLQuery not implemented")
+}
+func (UnimplementedBTrDBServer) Subscribe(*SubscriptionParams, BTrDB_SubscribeServer) error {
+	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
 func (UnimplementedBTrDBServer) SetCompactionConfig(context.Context, *SetCompactionConfigParams) (*SetCompactionConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetCompactionConfig not implemented")
@@ -928,6 +965,27 @@ func (x *bTrDBSQLQueryServer) Send(m *SQLQueryResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _BTrDB_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SubscriptionParams)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BTrDBServer).Subscribe(m, &bTrDBSubscribeServer{stream})
+}
+
+type BTrDB_SubscribeServer interface {
+	Send(*SubscriptionResp) error
+	grpc.ServerStream
+}
+
+type bTrDBSubscribeServer struct {
+	grpc.ServerStream
+}
+
+func (x *bTrDBSubscribeServer) Send(m *SubscriptionResp) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _BTrDB_SetCompactionConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetCompactionConfigParams)
 	if err := dec(in); err != nil {
@@ -1067,6 +1125,11 @@ var BTrDB_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "SQLQuery",
 			Handler:       _BTrDB_SQLQuery_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "Subscribe",
+			Handler:       _BTrDB_Subscribe_Handler,
 			ServerStreams: true,
 		},
 	},

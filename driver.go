@@ -957,3 +957,30 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 	}()
 	return rvc, rvv, rve
 }
+
+func (b *Endpoint) SubscribeTo(ctx context.Context, uuid uuid.UUID) chan *RawPoint {
+	stream, err := b.g.Subscribe(ctx, &pb.SubscriptionParams{
+		Uuid: uuid,
+	})
+
+	rvc := make(chan *RawPoint, 100)
+	if err != nil {
+		close(rvc)
+		return rvc
+	}
+
+	go func() {
+		for {
+			rp, err := stream.Recv()
+			if err != nil || rp.Stat != nil {
+				close(rvc)
+				return
+			}
+			for _, p := range rp.Values {
+				rvc <- &RawPoint{Time: p.Time, Value: p.Value}
+			}
+		}
+	}()
+
+	return rvc
+}
