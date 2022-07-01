@@ -415,6 +415,9 @@ type SubRecord struct {
 }
 
 func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions, error) {
+	if len(id) == 0 {
+		return nil, fmt.Errorf("no ids provided")
+	}
 	subs := &Subscriptions{}
 	for _, v := range id {
 		s := sub{v, nil}
