@@ -397,3 +397,79 @@ func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 	}()
 	return rv
 }
+
+type sub struct {
+	id uuid.UUID
+	c  []chan *RawPoint
+}
+
+type Subscriptions struct {
+	feed chan SubRecord
+	err  chan error
+	s    []sub
+}
+
+type SubRecord struct {
+	ID  uuid.UUID
+	Val *RawPoint
+}
+
+func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions, error) {
+	if len(id) == 0 {
+		return nil, fmt.Errorf("no ids provided")
+	}
+	subs := &Subscriptions{}
+	for _, v := range id {
+		s := sub{v, nil}
+		var err error
+		var ep *Endpoint
+		for b.TestEpError(ep, err) {
+			ep, err = b.EndpointFor(ctx, v)
+			if err != nil {
+				continue
+			}
+			s.c = append(s.c, ep.SubscribeTo(ctx, v))
+		}
+		if err != nil {
+			return nil, err
+		}
+		subs.s = append(subs.s, s)
+	}
+	subs.feed = make(chan SubRecord, 100)
+	subs.err = make(chan error)
+	go subs.watch(ctx)
+	return subs, nil
+}
+
+func (subs *Subscriptions) watch(ctx context.Context) {
+	for {
+		for _, s := range subs.s {
+			for _, c := range s.c {
+				select {
+				case <-ctx.Done():
+					subs.err <- ctx.Err()
+					return
+				case rp, more := <-c:
+					if !more && rp == nil {
+						close(subs.feed)
+						subs.err <- fmt.Errorf("connection broke")
+						return
+					}
+					subs.feed <- SubRecord{s.id, rp}
+				default:
+				}
+			}
+		}
+	}
+}
+
+func (subs *Subscriptions) Next(ctx context.Context) (*SubRecord, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case err := <-subs.err:
+		return nil, err
+	case sr := <-subs.feed:
+		return &sr, nil
+	}
+}

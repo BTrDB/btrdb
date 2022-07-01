@@ -130,6 +130,13 @@ service BTrDB {
     };
   }
 
+  rpc Subscribe(SubscriptionParams) returns (stream SubscriptionResp) {
+  option (google.api.http) = {
+      post: "/v5/subscribe"
+        body: "*"
+    };
+  }
+
   rpc SetCompactionConfig(SetCompactionConfigParams) returns (SetCompactionConfigResponse) {
   option (google.api.http) = {
     post: "/v5/setcompactionconfig"
@@ -496,4 +503,12 @@ message ReducedResolutionRange {
   int64 Start = 1;
   int64 End = 2;
   uint32 Resolution = 3;
+}
+message SubscriptionParams {
+  bytes uuid = 1;
+}
+
+message SubscriptionResp {
+  Status stat = 1;
+  repeated RawPoint values = 2;
 }
