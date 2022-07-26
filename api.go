@@ -799,3 +799,32 @@ func (b *BTrDB) GetMetadataUsage(ctx context.Context, prefix string) (tags map[s
 	}
 	return tags, annotations, err
 }
+
+// Execute a wide raw values query.
+func (b *BTrDB) WValues(ctx context.Context, streams []*Stream, start int64, end int64, version uint64) (chan RawPointVec, chan uint64, chan error) {
+	return b.WValuesAligned(ctx, streams, start, end, version, 0)
+}
+
+// Execute a wide raw value query with time alignment.
+func (b *BTrDB) WValuesAligned(ctx context.Context, streams []*Stream, start int64, end int64, version uint64, period int64) (chan RawPointVec, chan uint64, chan error) {
+	var ep *Endpoint
+	var err error
+
+	m := make(map[*Endpoint][]uuid.UUID)
+	pvc := make(chan RawPointVec)
+	rvc := make(chan uint64, 1)
+	evc := make(chan error, 1)
+	for _, s := range streams {
+		for s.b.TestEpError(ep, err) {
+			ep, err = s.b.ReadEndpointFor(ctx, s.uuid)
+			if err != nil {
+				continue
+			}
+		}
+		m[ep] = append(m[ep], s.uuid)
+	}
+	for ep, ids := range m {
+		ep.MultiRawValues(ctx, ids, pvc, rvc, evc, start, end, version, period)
+	}
+	return pvc, rvc, evc
+}

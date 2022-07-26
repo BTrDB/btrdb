@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BTrDBClient interface {
 	RawValues(ctx context.Context, in *RawValuesParams, opts ...grpc.CallOption) (BTrDB_RawValuesClient, error)
+	MultiRawValues(ctx context.Context, in *MultiRawValuesParams, opts ...grpc.CallOption) (BTrDB_MultiRawValuesClient, error)
 	AlignedWindows(ctx context.Context, in *AlignedWindowsParams, opts ...grpc.CallOption) (BTrDB_AlignedWindowsClient, error)
 	Windows(ctx context.Context, in *WindowsParams, opts ...grpc.CallOption) (BTrDB_WindowsClient, error)
 	StreamInfo(ctx context.Context, in *StreamInfoParams, opts ...grpc.CallOption) (*StreamInfoResponse, error)
@@ -83,8 +84,40 @@ func (x *bTrDBRawValuesClient) Recv() (*RawValuesResponse, error) {
 	return m, nil
 }
 
+func (c *bTrDBClient) MultiRawValues(ctx context.Context, in *MultiRawValuesParams, opts ...grpc.CallOption) (BTrDB_MultiRawValuesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[1], "/v5api.BTrDB/MultiRawValues", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &bTrDBMultiRawValuesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type BTrDB_MultiRawValuesClient interface {
+	Recv() (*MultiRawValuesResponse, error)
+	grpc.ClientStream
+}
+
+type bTrDBMultiRawValuesClient struct {
+	grpc.ClientStream
+}
+
+func (x *bTrDBMultiRawValuesClient) Recv() (*MultiRawValuesResponse, error) {
+	m := new(MultiRawValuesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *bTrDBClient) AlignedWindows(ctx context.Context, in *AlignedWindowsParams, opts ...grpc.CallOption) (BTrDB_AlignedWindowsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[1], "/v5api.BTrDB/AlignedWindows", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[2], "/v5api.BTrDB/AlignedWindows", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +149,7 @@ func (x *bTrDBAlignedWindowsClient) Recv() (*AlignedWindowsResponse, error) {
 }
 
 func (c *bTrDBClient) Windows(ctx context.Context, in *WindowsParams, opts ...grpc.CallOption) (BTrDB_WindowsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[2], "/v5api.BTrDB/Windows", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[3], "/v5api.BTrDB/Windows", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +217,7 @@ func (c *bTrDBClient) Create(ctx context.Context, in *CreateParams, opts ...grpc
 }
 
 func (c *bTrDBClient) ListCollections(ctx context.Context, in *ListCollectionsParams, opts ...grpc.CallOption) (BTrDB_ListCollectionsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[3], "/v5api.BTrDB/ListCollections", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[4], "/v5api.BTrDB/ListCollections", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +249,7 @@ func (x *bTrDBListCollectionsClient) Recv() (*ListCollectionsResponse, error) {
 }
 
 func (c *bTrDBClient) LookupStreams(ctx context.Context, in *LookupStreamsParams, opts ...grpc.CallOption) (BTrDB_LookupStreamsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[4], "/v5api.BTrDB/LookupStreams", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[5], "/v5api.BTrDB/LookupStreams", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +290,7 @@ func (c *bTrDBClient) Nearest(ctx context.Context, in *NearestParams, opts ...gr
 }
 
 func (c *bTrDBClient) Changes(ctx context.Context, in *ChangesParams, opts ...grpc.CallOption) (BTrDB_ChangesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[5], "/v5api.BTrDB/Changes", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[6], "/v5api.BTrDB/Changes", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +385,7 @@ func (c *bTrDBClient) GetMetadataUsage(ctx context.Context, in *MetadataUsagePar
 }
 
 func (c *bTrDBClient) GenerateCSV(ctx context.Context, in *GenerateCSVParams, opts ...grpc.CallOption) (BTrDB_GenerateCSVClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[6], "/v5api.BTrDB/GenerateCSV", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[7], "/v5api.BTrDB/GenerateCSV", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +417,7 @@ func (x *bTrDBGenerateCSVClient) Recv() (*GenerateCSVResponse, error) {
 }
 
 func (c *bTrDBClient) SQLQuery(ctx context.Context, in *SQLQueryParams, opts ...grpc.CallOption) (BTrDB_SQLQueryClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[7], "/v5api.BTrDB/SQLQuery", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[8], "/v5api.BTrDB/SQLQuery", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +449,7 @@ func (x *bTrDBSQLQueryClient) Recv() (*SQLQueryResponse, error) {
 }
 
 func (c *bTrDBClient) Subscribe(ctx context.Context, in *SubscriptionParams, opts ...grpc.CallOption) (BTrDB_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[8], "/v5api.BTrDB/Subscribe", opts...)
+	stream, err := c.cc.NewStream(ctx, &BTrDB_ServiceDesc.Streams[9], "/v5api.BTrDB/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -470,6 +503,7 @@ func (c *bTrDBClient) GetCompactionConfig(ctx context.Context, in *GetCompaction
 // for forward compatibility
 type BTrDBServer interface {
 	RawValues(*RawValuesParams, BTrDB_RawValuesServer) error
+	MultiRawValues(*MultiRawValuesParams, BTrDB_MultiRawValuesServer) error
 	AlignedWindows(*AlignedWindowsParams, BTrDB_AlignedWindowsServer) error
 	Windows(*WindowsParams, BTrDB_WindowsServer) error
 	StreamInfo(context.Context, *StreamInfoParams) (*StreamInfoResponse, error)
@@ -501,6 +535,9 @@ type UnimplementedBTrDBServer struct {
 
 func (UnimplementedBTrDBServer) RawValues(*RawValuesParams, BTrDB_RawValuesServer) error {
 	return status.Errorf(codes.Unimplemented, "method RawValues not implemented")
+}
+func (UnimplementedBTrDBServer) MultiRawValues(*MultiRawValuesParams, BTrDB_MultiRawValuesServer) error {
+	return status.Errorf(codes.Unimplemented, "method MultiRawValues not implemented")
 }
 func (UnimplementedBTrDBServer) AlignedWindows(*AlignedWindowsParams, BTrDB_AlignedWindowsServer) error {
 	return status.Errorf(codes.Unimplemented, "method AlignedWindows not implemented")
@@ -599,6 +636,27 @@ type bTrDBRawValuesServer struct {
 }
 
 func (x *bTrDBRawValuesServer) Send(m *RawValuesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _BTrDB_MultiRawValues_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MultiRawValuesParams)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BTrDBServer).MultiRawValues(m, &bTrDBMultiRawValuesServer{stream})
+}
+
+type BTrDB_MultiRawValuesServer interface {
+	Send(*MultiRawValuesResponse) error
+	grpc.ServerStream
+}
+
+type bTrDBMultiRawValuesServer struct {
+	grpc.ServerStream
+}
+
+func (x *bTrDBMultiRawValuesServer) Send(m *MultiRawValuesResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -1090,6 +1148,11 @@ var BTrDB_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "RawValues",
 			Handler:       _BTrDB_RawValues_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "MultiRawValues",
+			Handler:       _BTrDB_MultiRawValues_Handler,
 			ServerStreams: true,
 		},
 		{

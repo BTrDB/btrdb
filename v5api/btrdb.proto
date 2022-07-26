@@ -12,6 +12,13 @@ service BTrDB {
        body: "*"
      };
   }
+  rpc MultiRawValues(MultiRawValuesParams) returns (stream MultiRawValuesResponse) {
+  option (google.api.http) = {
+     post: "/v5/multirawvalues"
+       body: "*"
+     };
+  }
+
   rpc AlignedWindows(AlignedWindowsParams) returns (stream AlignedWindowsResponse) {
   option (google.api.http) = {
      post: "/v5/alignedwindows"
@@ -164,6 +171,23 @@ message RawValuesResponse {
   uint64 versionMinor = 3;
   repeated RawPoint values = 4;
 }
+message MultiRawValuesParams {
+  repeated bytes uuid = 1;
+  sfixed64 start = 2;
+  sfixed64 end = 3;
+  uint64 versionMajor = 4;
+  int64 periodNs = 5;
+}
+message MultiRawValuesResponse {
+  Status stat = 1;
+  repeated uint64 versionMajor = 2;
+  repeated uint64 versionMinor = 3;
+  repeated RawPointVec values = 4;
+}
+message RawPointVec {
+  sfixed64 time = 1;
+  repeated double value = 2;
+};
 message AlignedWindowsParams {
   bytes uuid = 1;
   sfixed64 start = 2;
