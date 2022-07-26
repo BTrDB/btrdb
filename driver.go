@@ -42,6 +42,14 @@ type RawPoint struct {
 	Value float64
 }
 
+//RawPoint represents a single timestamped value
+type RawPointVec struct {
+	//Nanoseconds since the epoch
+	Time int64
+	//Value. Units are stream-dependent
+	Value []float64
+}
+
 type InsertParams struct {
 	RoundBits   *int
 	MergePolicy MergePolicy
@@ -569,6 +577,63 @@ func (b *Endpoint) SQLQuery(ctx context.Context, query string, params []string) 
 		}
 	}()
 	return rvc, rve
+}
+
+func (b *Endpoint) MultiRawValues(ctx context.Context, ids []uuid.UUID,
+	rvc chan RawPointVec, rvv chan uint64, rve chan error,
+	start, end int64, vers uint64, period int64) {
+
+	idbytes := [][]byte{}
+	for _, uu := range ids {
+		idbytes = append(idbytes, uu)
+	}
+	rv, err := b.g.MultiRawValues(ctx, &pb.MultiRawValuesParams{
+		Uuid:         idbytes,
+		Start:        start,
+		End:          end,
+		VersionMajor: vers,
+		PeriodNs:     period,
+	})
+	wroteVer := false
+	if err != nil {
+		close(rvv)
+		close(rvc)
+		rve <- err
+		close(rve)
+		return
+	}
+	go func() {
+		for {
+			rawv, err := rv.Recv()
+			if err == io.EOF {
+				close(rvc)
+				close(rvv)
+				close(rve)
+				return
+			}
+			if err != nil {
+				close(rvc)
+				close(rvv)
+				rve <- err
+				close(rve)
+				return
+			}
+			if rawv.Stat != nil {
+				close(rvc)
+				close(rvv)
+				rve <- &CodedError{rawv.Stat}
+				close(rve)
+				return
+			}
+			if !wroteVer {
+				rvv <- 0
+				wroteVer = true
+			}
+			for _, x := range rawv.Values {
+				rvc <- RawPointVec{x.Time, x.Value}
+			}
+		}
+	}()
 }
 
 //RawValues is a low level function, rather use Stream.RawValues()

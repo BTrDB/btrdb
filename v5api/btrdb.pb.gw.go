@@ -56,6 +56,31 @@ func request_BTrDB_RawValues_0(ctx context.Context, marshaler runtime.Marshaler,
 
 }
 
+func request_BTrDB_MultiRawValues_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (BTrDB_MultiRawValuesClient, runtime.ServerMetadata, error) {
+	var protoReq MultiRawValuesParams
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.MultiRawValues(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
 func request_BTrDB_AlignedWindows_0(ctx context.Context, marshaler runtime.Marshaler, client BTrDBClient, req *http.Request, pathParams map[string]string) (BTrDB_AlignedWindowsClient, runtime.ServerMetadata, error) {
 	var protoReq AlignedWindowsParams
 	var metadata runtime.ServerMetadata
@@ -745,6 +770,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		return
 	})
 
+	mux.Handle("POST", pattern_BTrDB_MultiRawValues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
 	mux.Handle("POST", pattern_BTrDB_AlignedWindows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -765,12 +797,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/StreamInfo", runtime.WithHTTPPathPattern("/v5/streaminfo"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/StreamInfo", runtime.WithHTTPPathPattern("/v5/streaminfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_StreamInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_StreamInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -788,12 +821,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetStreamAnnotations", runtime.WithHTTPPathPattern("/v5/setstreamannotations"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetStreamAnnotations", runtime.WithHTTPPathPattern("/v5/setstreamannotations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_SetStreamAnnotations_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_SetStreamAnnotations_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -811,12 +845,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetStreamTags", runtime.WithHTTPPathPattern("/v5/setstreamtags"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetStreamTags", runtime.WithHTTPPathPattern("/v5/setstreamtags"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_SetStreamTags_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_SetStreamTags_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -834,12 +869,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Create", runtime.WithHTTPPathPattern("/v5/create"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Create", runtime.WithHTTPPathPattern("/v5/create"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Create_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Create_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -871,12 +907,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Nearest", runtime.WithHTTPPathPattern("/v5/nearest"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Nearest", runtime.WithHTTPPathPattern("/v5/nearest"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Nearest_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Nearest_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -901,12 +938,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Insert", runtime.WithHTTPPathPattern("/v5/insert"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Insert", runtime.WithHTTPPathPattern("/v5/insert"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Insert_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Insert_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -924,12 +962,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Delete", runtime.WithHTTPPathPattern("/v5/delete"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Delete", runtime.WithHTTPPathPattern("/v5/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Delete_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Delete_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -947,12 +986,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Info", runtime.WithHTTPPathPattern("/v5/info"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Info", runtime.WithHTTPPathPattern("/v5/info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Info_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Info_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -970,12 +1010,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/FaultInject", runtime.WithHTTPPathPattern("/v5/faultinject"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/FaultInject", runtime.WithHTTPPathPattern("/v5/faultinject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_FaultInject_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_FaultInject_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -993,12 +1034,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Flush", runtime.WithHTTPPathPattern("/v5/flush"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Flush", runtime.WithHTTPPathPattern("/v5/flush"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Flush_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Flush_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1016,12 +1058,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Obliterate", runtime.WithHTTPPathPattern("/v5/obliterate"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/Obliterate", runtime.WithHTTPPathPattern("/v5/obliterate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_Obliterate_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_Obliterate_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1039,12 +1082,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/GetMetadataUsage", runtime.WithHTTPPathPattern("/v5/getmetadatausage"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/GetMetadataUsage", runtime.WithHTTPPathPattern("/v5/getmetadatausage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_GetMetadataUsage_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_GetMetadataUsage_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1083,12 +1127,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetCompactionConfig", runtime.WithHTTPPathPattern("/v5/setcompactionconfig"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/SetCompactionConfig", runtime.WithHTTPPathPattern("/v5/setcompactionconfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_SetCompactionConfig_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_SetCompactionConfig_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1106,12 +1151,13 @@ func RegisterBTrDBHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/GetCompactionConfig", runtime.WithHTTPPathPattern("/v5/getcompactionconfig"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/v5api.BTrDB/GetCompactionConfig", runtime.WithHTTPPathPattern("/v5/getcompactionconfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_BTrDB_GetCompactionConfig_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_BTrDB_GetCompactionConfig_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1168,12 +1214,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/RawValues", runtime.WithHTTPPathPattern("/v5/rawvalues"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/RawValues", runtime.WithHTTPPathPattern("/v5/rawvalues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_RawValues_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_RawValues_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1184,16 +1231,38 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
-	mux.Handle("POST", pattern_BTrDB_AlignedWindows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_BTrDB_MultiRawValues_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/AlignedWindows", runtime.WithHTTPPathPattern("/v5/alignedwindows"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/MultiRawValues", runtime.WithHTTPPathPattern("/v5/multirawvalues"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_AlignedWindows_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_MultiRawValues_0(ctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_BTrDB_MultiRawValues_0(ctx, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_BTrDB_AlignedWindows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/AlignedWindows", runtime.WithHTTPPathPattern("/v5/alignedwindows"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_BTrDB_AlignedWindows_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1208,12 +1277,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Windows", runtime.WithHTTPPathPattern("/v5/windows"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Windows", runtime.WithHTTPPathPattern("/v5/windows"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Windows_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Windows_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1228,12 +1298,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/StreamInfo", runtime.WithHTTPPathPattern("/v5/streaminfo"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/StreamInfo", runtime.WithHTTPPathPattern("/v5/streaminfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_StreamInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_StreamInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1248,12 +1319,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetStreamAnnotations", runtime.WithHTTPPathPattern("/v5/setstreamannotations"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetStreamAnnotations", runtime.WithHTTPPathPattern("/v5/setstreamannotations"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_SetStreamAnnotations_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_SetStreamAnnotations_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1268,12 +1340,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetStreamTags", runtime.WithHTTPPathPattern("/v5/setstreamtags"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetStreamTags", runtime.WithHTTPPathPattern("/v5/setstreamtags"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_SetStreamTags_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_SetStreamTags_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1288,12 +1361,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Create", runtime.WithHTTPPathPattern("/v5/create"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Create", runtime.WithHTTPPathPattern("/v5/create"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Create_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Create_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1308,12 +1382,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/ListCollections", runtime.WithHTTPPathPattern("/v5/listcollections"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/ListCollections", runtime.WithHTTPPathPattern("/v5/listcollections"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_ListCollections_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_ListCollections_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1328,12 +1403,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/LookupStreams", runtime.WithHTTPPathPattern("/v5/lookupstreams"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/LookupStreams", runtime.WithHTTPPathPattern("/v5/lookupstreams"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_LookupStreams_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_LookupStreams_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1348,12 +1424,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Nearest", runtime.WithHTTPPathPattern("/v5/nearest"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Nearest", runtime.WithHTTPPathPattern("/v5/nearest"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Nearest_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Nearest_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1368,12 +1445,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Changes", runtime.WithHTTPPathPattern("/v5/changes"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Changes", runtime.WithHTTPPathPattern("/v5/changes"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Changes_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Changes_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1388,12 +1466,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Insert", runtime.WithHTTPPathPattern("/v5/insert"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Insert", runtime.WithHTTPPathPattern("/v5/insert"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Insert_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Insert_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1408,12 +1487,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Delete", runtime.WithHTTPPathPattern("/v5/delete"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Delete", runtime.WithHTTPPathPattern("/v5/delete"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Delete_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Delete_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1428,12 +1508,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Info", runtime.WithHTTPPathPattern("/v5/info"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Info", runtime.WithHTTPPathPattern("/v5/info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Info_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Info_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1448,12 +1529,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/FaultInject", runtime.WithHTTPPathPattern("/v5/faultinject"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/FaultInject", runtime.WithHTTPPathPattern("/v5/faultinject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_FaultInject_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_FaultInject_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1468,12 +1550,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Flush", runtime.WithHTTPPathPattern("/v5/flush"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Flush", runtime.WithHTTPPathPattern("/v5/flush"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Flush_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Flush_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1488,12 +1571,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Obliterate", runtime.WithHTTPPathPattern("/v5/obliterate"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Obliterate", runtime.WithHTTPPathPattern("/v5/obliterate"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Obliterate_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Obliterate_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1508,12 +1592,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GetMetadataUsage", runtime.WithHTTPPathPattern("/v5/getmetadatausage"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GetMetadataUsage", runtime.WithHTTPPathPattern("/v5/getmetadatausage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_GetMetadataUsage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_GetMetadataUsage_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1528,12 +1613,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GenerateCSV", runtime.WithHTTPPathPattern("/v5/generatecsv"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GenerateCSV", runtime.WithHTTPPathPattern("/v5/generatecsv"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_GenerateCSV_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_GenerateCSV_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1548,12 +1634,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SQLQuery", runtime.WithHTTPPathPattern("/v5/sqlquery"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SQLQuery", runtime.WithHTTPPathPattern("/v5/sqlquery"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_SQLQuery_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_SQLQuery_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1568,12 +1655,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Subscribe", runtime.WithHTTPPathPattern("/v5/subscribe"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/Subscribe", runtime.WithHTTPPathPattern("/v5/subscribe"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_Subscribe_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_Subscribe_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1588,12 +1676,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetCompactionConfig", runtime.WithHTTPPathPattern("/v5/setcompactionconfig"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/SetCompactionConfig", runtime.WithHTTPPathPattern("/v5/setcompactionconfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_SetCompactionConfig_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_SetCompactionConfig_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1608,12 +1697,13 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GetCompactionConfig", runtime.WithHTTPPathPattern("/v5/getcompactionconfig"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/v5api.BTrDB/GetCompactionConfig", runtime.WithHTTPPathPattern("/v5/getcompactionconfig"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_BTrDB_GetCompactionConfig_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_BTrDB_GetCompactionConfig_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -1629,6 +1719,8 @@ func RegisterBTrDBHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 var (
 	pattern_BTrDB_RawValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "rawvalues"}, ""))
+
+	pattern_BTrDB_MultiRawValues_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "multirawvalues"}, ""))
 
 	pattern_BTrDB_AlignedWindows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v5", "alignedwindows"}, ""))
 
@@ -1677,6 +1769,8 @@ var (
 
 var (
 	forward_BTrDB_RawValues_0 = runtime.ForwardResponseStream
+
+	forward_BTrDB_MultiRawValues_0 = runtime.ForwardResponseStream
 
 	forward_BTrDB_AlignedWindows_0 = runtime.ForwardResponseStream
 
