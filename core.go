@@ -418,7 +418,10 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 	if len(id) == 0 {
 		return nil, fmt.Errorf("no ids provided")
 	}
-	subs := &Subscriptions{}
+	subs := &Subscriptions{
+		feed: make(chan SubRecord, 100),
+		err:  make(chan error),
+	}
 	for _, v := range id {
 		s := sub{v, nil}
 		var err error
@@ -435,8 +438,6 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 		}
 		subs.s = append(subs.s, s)
 	}
-	subs.feed = make(chan SubRecord, 100)
-	subs.err = make(chan error)
 	go subs.watch(ctx)
 	return subs, nil
 }
