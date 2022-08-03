@@ -428,7 +428,7 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 			if err != nil {
 				continue
 			}
-			s.c = append(s.c, ep.SubscribeTo(ctx, v))
+			s.c = append(s.c, ep.SubscribeTo(ctx, v, subs.err))
 		}
 		if err != nil {
 			return nil, err

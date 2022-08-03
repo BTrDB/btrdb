@@ -1023,13 +1023,14 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 	return rvc, rvv, rve
 }
 
-func (b *Endpoint) SubscribeTo(ctx context.Context, uuid uuid.UUID) chan *RawPoint {
+func (b *Endpoint) SubscribeTo(ctx context.Context, uuid uuid.UUID, errc chan error) chan *RawPoint {
 	stream, err := b.g.Subscribe(ctx, &pb.SubscriptionParams{
 		Uuid: uuid,
 	})
 
 	rvc := make(chan *RawPoint, 100)
 	if err != nil {
+		errc <- err
 		close(rvc)
 		return rvc
 	}
@@ -1038,6 +1039,7 @@ func (b *Endpoint) SubscribeTo(ctx context.Context, uuid uuid.UUID) chan *RawPoi
 		for {
 			rp, err := stream.Recv()
 			if err != nil || rp.Stat != nil {
+				errc <- err
 				close(rvc)
 				return
 			}
