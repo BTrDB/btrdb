@@ -1038,8 +1038,13 @@ func (b *Endpoint) SubscribeTo(ctx context.Context, uuid uuid.UUID, errc chan er
 	go func() {
 		for {
 			rp, err := stream.Recv()
-			if err != nil || rp.Stat != nil {
+			if err != nil {
 				errc <- err
+				close(rvc)
+				return
+			}
+			if rp.Stat != nil {
+				errc <- errors.New(rp.Stat.Msg)
 				close(rvc)
 				return
 			}
