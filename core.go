@@ -414,6 +414,10 @@ type SubRecord struct {
 	Val *RawPoint
 }
 
+//Subscribe takes a list of stream UUIDs to receive real time data points from.
+//Connections are made to each relevant endpoints, and streams that belong to the
+//same endpoint use the same connection. Data points are "raw", meaning they
+//are given in the exact same sequence the database received them from the client.
 func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions, error) {
 	if len(id) == 0 {
 		return nil, fmt.Errorf("no ids provided")
@@ -463,6 +467,8 @@ func (subs *Subscriptions) watch(ctx context.Context) {
 	}
 }
 
+//Next gives either the most recent data for the set of subscriptions
+//or an error regarding the connection state.
 func (subs *Subscriptions) Next(ctx context.Context) (*SubRecord, error) {
 	select {
 	case <-ctx.Done():
