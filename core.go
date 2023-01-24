@@ -430,7 +430,7 @@ func (b *BTrDB) EndpointsSplit(ctx context.Context, id ...uuid.UUID) ([]EPGroup,
 			for i := range id {
 				_, _, addrs := m.EndpointFor(id[i])
 				if addrs == nil || len(addrs) != 1 {
-					panic("bad")
+					return nil, fmt.Errorf("can't find endpoint for %s", id[i])
 				}
 				who[addrs[0]] = append(who[addrs[0]], id[i])
 
@@ -473,12 +473,8 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 		return nil, err
 	}
 	for _, ep := range eps {
-		err := ep.Endpoint.SubscribeTo(ctx, ep.ID, subs.c)
-		if err != nil {
-			return nil, err
-		}
+		ep.Endpoint.SubscribeTo(ctx, ep.ID, subs.c, subs.err)
 	}
-	subs.err = make(chan error)
 	return subs, nil
 }
 

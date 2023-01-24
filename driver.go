@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -1024,7 +1023,7 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 	return rvc, rvv, rve
 }
 
-func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []SubRecord) error {
+func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []SubRecord, errc chan error) {
 	by := make([][]byte, len(uuid))
 	for i := range uuid {
 		by[i] = []byte(uuid[i])
@@ -1034,15 +1033,16 @@ func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []S
 	})
 
 	if err != nil {
-		return err
+		errc <- err
+		return
 	}
 
 	go func() {
 		for {
 			rp, err := stream.Recv()
 			if err != nil || rp.Stat != nil {
+				errc <- err
 				close(c)
-				log.Println("ERR")
 				return
 			}
 			arr := make([]SubRecord, len(rp.Values))
@@ -1052,6 +1052,4 @@ func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []S
 			c <- arr
 		}
 	}()
-
-	return nil
 }
