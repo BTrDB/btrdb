@@ -529,7 +529,7 @@ message ReducedResolutionRange {
   uint32 Resolution = 3;
 }
 message SubscriptionParams {
-  bytes uuid = 1;
+  repeated bytes uuid = 1;
 }
 
 message SubscriptionResp {
