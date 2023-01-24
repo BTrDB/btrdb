@@ -398,20 +398,60 @@ func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 	return rv
 }
 
-type sub struct {
-	id uuid.UUID
-	c  []chan *RawPoint
-}
-
 type Subscriptions struct {
-	feed chan SubRecord
-	err  chan error
-	s    []sub
+	err chan error
+	id  []uuid.UUID
+	c   chan []SubRecord
 }
 
 type SubRecord struct {
 	ID  uuid.UUID
-	Val *RawPoint
+	Val RawPoint
+}
+
+type EPGroup struct {
+	*Endpoint
+	ID []uuid.UUID
+}
+
+func (b *BTrDB) EndpointsSplit(ctx context.Context, id ...uuid.UUID) ([]EPGroup, error) {
+	var err error
+	var ep *Endpoint
+	who := make(map[string][]uuid.UUID)
+	for b.TestEpError(ep, err) {
+		ep, err = b.GetAnyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		if b.isproxied {
+			who["proxy"] = id
+		} else {
+			m := b.activeMash.Load().(*MASH)
+			for i := range id {
+				_, _, addrs := m.EndpointFor(id[i])
+				if addrs == nil || len(addrs) != 1 {
+					panic("bad")
+				}
+				who[addrs[0]] = append(who[addrs[0]], id[i])
+
+			}
+		}
+	}
+
+	var out []EPGroup
+	i := 0
+	for _, v := range who {
+		ep, err := b.EndpointFor(ctx, v[0])
+		for b.TestEpError(ep, err) {
+			ep, err = b.EndpointFor(ctx, v[0])
+		}
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, EPGroup{ep, v})
+		i++
+	}
+	return out, nil
 }
 
 //Subscribe takes a list of stream UUIDs to receive real time data points from.
@@ -422,60 +462,35 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 	if len(id) == 0 {
 		return nil, fmt.Errorf("no ids provided")
 	}
-	subs := &Subscriptions{}
-	for _, v := range id {
-		s := sub{v, nil}
-		var err error
-		var ep *Endpoint
-		for b.TestEpError(ep, err) {
-			ep, err = b.EndpointFor(ctx, v)
-			if err != nil {
-				continue
-			}
-			s.c = append(s.c, ep.SubscribeTo(ctx, v))
-		}
+	subs := &Subscriptions{
+		id:  id,
+		err: make(chan error),
+		c:   make(chan []SubRecord),
+	}
+
+	eps, err := b.EndpointsSplit(ctx, id...)
+	if err != nil {
+		return nil, err
+	}
+	for _, ep := range eps {
+		err := ep.Endpoint.SubscribeTo(ctx, ep.ID, subs.c)
 		if err != nil {
 			return nil, err
 		}
-		subs.s = append(subs.s, s)
 	}
-	subs.feed = make(chan SubRecord, 100)
 	subs.err = make(chan error)
-	go subs.watch(ctx)
 	return subs, nil
-}
-
-func (subs *Subscriptions) watch(ctx context.Context) {
-	for {
-		for _, s := range subs.s {
-			for _, c := range s.c {
-				select {
-				case <-ctx.Done():
-					subs.err <- ctx.Err()
-					return
-				case rp, more := <-c:
-					if !more && rp == nil {
-						close(subs.feed)
-						subs.err <- fmt.Errorf("connection broke")
-						return
-					}
-					subs.feed <- SubRecord{s.id, rp}
-				default:
-				}
-			}
-		}
-	}
 }
 
 //Next gives either the most recent data for the set of subscriptions
 //or an error regarding the connection state.
-func (subs *Subscriptions) Next(ctx context.Context) (*SubRecord, error) {
+func (subs *Subscriptions) Next(ctx context.Context) ([]SubRecord, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	case err := <-subs.err:
 		return nil, err
-	case sr := <-subs.feed:
-		return &sr, nil
+	case sr := <-subs.c:
+		return sr, nil
 	}
 }
