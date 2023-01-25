@@ -401,12 +401,12 @@ func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 type Subscriptions struct {
 	err chan error
 	id  []uuid.UUID
-	c   chan []SubRecord
+	c   chan SubRecord
 }
 
 type SubRecord struct {
 	ID  uuid.UUID
-	Val RawPoint
+	Val []RawPoint
 }
 
 type EPGroup struct {
@@ -465,7 +465,7 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 	subs := &Subscriptions{
 		id:  id,
 		err: make(chan error),
-		c:   make(chan []SubRecord),
+		c:   make(chan SubRecord),
 	}
 
 	eps, err := b.EndpointsSplit(ctx, id...)
@@ -480,13 +480,12 @@ func (b *BTrDB) Subscribe(ctx context.Context, id ...uuid.UUID) (*Subscriptions,
 
 //Next gives either the most recent data for the set of subscriptions
 //or an error regarding the connection state.
-func (subs *Subscriptions) Next(ctx context.Context) ([]SubRecord, error) {
+func (subs *Subscriptions) Next(ctx context.Context) (sr SubRecord, err error) {
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
-	case err := <-subs.err:
-		return nil, err
-	case sr := <-subs.c:
-		return sr, nil
+		err = ctx.Err()
+	case err = <-subs.err:
+	case sr = <-subs.c:
 	}
+	return
 }

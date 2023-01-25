@@ -534,5 +534,6 @@ message SubscriptionParams {
 
 message SubscriptionResp {
   Status stat = 1;
+  bytes uuid = 3;
   repeated RawPoint values = 2;
 }
