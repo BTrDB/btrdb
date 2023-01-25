@@ -191,7 +191,7 @@ func (b *Endpoint) InsertGeneric(ctx context.Context, uu uuid.UUID, values []*pb
 	if p != nil {
 		if p.RoundBits != nil {
 			rounding = &pb.RoundSpec{
-				Spec: &pb.RoundSpec_Bits{int32(*p.RoundBits)},
+				Spec: &pb.RoundSpec_Bits{Bits: int32(*p.RoundBits)},
 			}
 		}
 		switch p.MergePolicy {
@@ -1023,7 +1023,7 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 	return rvc, rvv, rve
 }
 
-func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []SubRecord, errc chan error) {
+func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan SubRecord, errc chan error) {
 	by := make([][]byte, len(uuid))
 	for i := range uuid {
 		by[i] = []byte(uuid[i])
@@ -1031,25 +1031,33 @@ func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan []S
 	stream, err := b.g.Subscribe(ctx, &pb.SubscriptionParams{
 		Uuid: by,
 	})
-
 	if err != nil {
 		errc <- err
+		close(c)
 		return
 	}
 
 	go func() {
 		for {
 			rp, err := stream.Recv()
-			if err != nil || rp.Stat != nil {
+			if err != nil {
 				errc <- err
 				close(c)
 				return
 			}
-			arr := make([]SubRecord, len(rp.Values))
-			for i := range rp.Values {
-				arr[i] = SubRecord{nil, RawPoint{rp.Values[i].Time, rp.Values[i].Value}}
+			if rp.Stat != nil {
+				errc <- errors.New(rp.Stat.Msg)
+				close(c)
+				return
 			}
-			c <- arr
+			sr := SubRecord{
+				ID:  rp.Uuid,
+				Val: make([]RawPoint, len(rp.Values)),
+			}
+			for i := range rp.Values {
+				sr.Val[i] = RawPoint{rp.Values[i].Time, rp.Values[i].Value}
+			}
+			c <- sr
 		}
 	}()
 }
