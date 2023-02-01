@@ -1023,6 +1023,8 @@ func (b *Endpoint) Changes(ctx context.Context, uu uuid.UUID, fromVersion uint64
 	return rvc, rvv, rve
 }
 
+//SubscribeTo is a low level function that forks a goroutine in the background and fills the provided channls.
+//It is assumed the caller has already ensured that this endpoint is responsible for the provided uuids.
 func (b *Endpoint) SubscribeTo(ctx context.Context, uuid []uuid.UUID, c chan SubRecord, errc chan error) {
 	by := make([][]byte, len(uuid))
 	for i := range uuid {

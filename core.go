@@ -398,22 +398,28 @@ func (b *BTrDB) SnoopEpErr(ep *Endpoint, err chan error) chan error {
 	return rv
 }
 
+//Subscriptions represent a set of
+//real time subscriptions to streaming data.
 type Subscriptions struct {
 	err chan error
 	id  []uuid.UUID
 	c   chan SubRecord
 }
 
+//Data for a single stream returned from a Subscription.
 type SubRecord struct {
 	ID  uuid.UUID
 	Val []RawPoint
 }
 
+//An endpoint and its associated uuids.
 type EPGroup struct {
 	*Endpoint
 	ID []uuid.UUID
 }
 
+//EndpointSplit takes a variadic list of uuids and organizes them by the endpoint
+//responsible for them.
 func (b *BTrDB) EndpointsSplit(ctx context.Context, id ...uuid.UUID) ([]EPGroup, error) {
 	var err error
 	var ep *Endpoint
